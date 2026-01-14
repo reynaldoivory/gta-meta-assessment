@@ -1,0 +1,299 @@
+/* src/components/shared/TrapWarnings.css */
+/* Styling for the TrapWarnings component */
+
+/* Subtle animation for cascade traps */
+@keyframes pulse-subtle {
+  0%, 100% { 
+    opacity: 1; 
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+  }
+  50% { 
+    opacity: 0.95; 
+    box-shadow: 0 0 20px 5px rgba(239, 68, 68, 0.15);
+  }
+}
+
+.animate-pulse-subtle {
+  animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+/* Trap severity colors */
+.trap-card.severity-critical {
+  background: linear-gradient(135deg, rgba(127, 29, 29, 0.4), rgba(185, 28, 28, 0.2));
+  border-color: rgba(239, 68, 68, 0.7);
+}
+
+.trap-card.severity-high {
+  background: linear-gradient(135deg, rgba(124, 45, 18, 0.3), rgba(194, 65, 12, 0.15));
+  border-color: rgba(249, 115, 22, 0.5);
+}
+
+.trap-card.severity-medium {
+  background: linear-gradient(135deg, rgba(113, 63, 18, 0.2), rgba(161, 98, 7, 0.1));
+  border-color: rgba(234, 179, 8, 0.4);
+}
+
+.trap-card.severity-low {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.1));
+  border-color: rgba(59, 130, 246, 0.3);
+}
+
+/* Recovery timeline styles */
+.recovery-timeline {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.2), rgba(126, 34, 206, 0.1));
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.recovery-timeline h5 {
+  color: #c4b5fd;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.timeline-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+}
+
+.timeline-stat {
+  background: rgba(0, 0, 0, 0.3);
+  padding: 0.5rem;
+  border-radius: 0.5rem;
+  text-align: center;
+}
+
+.timeline-stat .stat-label {
+  display: block;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  margin-bottom: 0.25rem;
+}
+
+.timeline-stat .stat-value {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #a855f7;
+}
+
+/* Efficiency decay chart styles */
+.efficiency-decay {
+  background: linear-gradient(135deg, rgba(88, 28, 135, 0.2), rgba(126, 34, 206, 0.1));
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 0.75rem;
+}
+
+.efficiency-decay h5 {
+  color: #c4b5fd;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.decay-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.decay-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.decay-bar .bar-label {
+  font-size: 0.75rem;
+  color: #94a3b8;
+}
+
+.decay-bar .bar-visual {
+  height: 2rem;
+  border-radius: 0.375rem;
+  display: flex;
+  align-items: center;
+  padding: 0 0.5rem;
+  transition: width 0.5s ease-out;
+}
+
+.decay-bar.old .bar-visual {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.decay-bar.recent .bar-visual {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.decay-bar .bar-value {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: white;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.decay-message {
+  font-size: 0.875rem;
+  color: #f87171;
+  margin-top: 0.5rem;
+}
+
+/* Recently fixed banner */
+.recently-fixed-banner {
+  background: linear-gradient(135deg, rgba(22, 101, 52, 0.3), rgba(21, 128, 61, 0.2));
+  border: 2px solid rgba(34, 197, 94, 0.5);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-bottom: 1rem;
+}
+
+.recently-fixed-banner .banner-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+
+.recently-fixed-banner .celebration-icon {
+  font-size: 1.5rem;
+}
+
+.recently-fixed-banner h3 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #22c55e;
+}
+
+.recently-fixed-banner .fixes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.recently-fixed-banner .fix-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(0, 0, 0, 0.2);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+}
+
+.recently-fixed-banner .fix-content {
+  display: flex;
+  flex-direction: column;
+}
+
+.recently-fixed-banner .fix-content strong {
+  color: #86efac;
+  font-size: 0.875rem;
+}
+
+.recently-fixed-banner .fix-date {
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.recently-fixed-banner .score-boost {
+  background: rgba(34, 197, 94, 0.3);
+  color: #22c55e;
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+}
+
+/* Community trap stats */
+.community-trap-stats {
+  background: linear-gradient(135deg, rgba(30, 58, 138, 0.2), rgba(37, 99, 235, 0.1));
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.community-trap-stats h4 {
+  color: #93c5fd;
+  font-size: 0.875rem;
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trap-rate-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid rgba(59, 130, 246, 0.1);
+}
+
+.trap-rate-item:last-child {
+  border-bottom: none;
+}
+
+.trap-rate-item .trap-name {
+  color: #e2e8f0;
+  font-size: 0.875rem;
+}
+
+.trap-rate-item .trap-rate {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.trap-rate-item .rate-bar {
+  width: 60px;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.trap-rate-item .rate-fill {
+  height: 100%;
+  border-radius: 3px;
+  transition: width 0.5s ease-out;
+}
+
+.trap-rate-item .rate-fill.high {
+  background: linear-gradient(90deg, #ef4444, #dc2626);
+}
+
+.trap-rate-item .rate-fill.medium {
+  background: linear-gradient(90deg, #f59e0b, #d97706);
+}
+
+.trap-rate-item .rate-fill.low {
+  background: linear-gradient(90deg, #22c55e, #16a34a);
+}
+
+.trap-rate-item .rate-value {
+  font-size: 0.75rem;
+  font-weight: 600;
+  min-width: 40px;
+  text-align: right;
+}
+
+.trap-rate-item .rate-value.high {
+  color: #f87171;
+}
+
+.trap-rate-item .rate-value.medium {
+  color: #fbbf24;
+}
+
+.trap-rate-item .rate-value.low {
+  color: #4ade80;
+}

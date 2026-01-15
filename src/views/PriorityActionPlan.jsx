@@ -1,7 +1,7 @@
 // src/views/PriorityActionPlan.jsx
-import React from 'react';
+import React, { useMemo, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
-import { buildCompactActionPlan } from '../utils/actionPlanBuilder';
+import { buildCompactActionPlan, buildSessionPlan } from '../utils/actionPlanBuilder';
 import { prioritizeActions } from '../utils/actionPriority';
 import { buildLLMPrompt, buildPlanCritiquePrompt, buildLLMJsonPayload, buildGoogleDocExport, buildWhatIfPrompt } from '../utils/buildLLMPrompt';
 import { getWeeklyBonuses } from '../config/weeklyEvents';
@@ -9,6 +9,16 @@ import { ArrowLeft, Target, Clock, BookOpen, DollarSign, AlertTriangle, Trending
 
 const PriorityActionPlan = () => {
   const { formData, results, setStep, whatIfText, setWhatIfText } = useAssessment();
+  const [sessionMinutes, setSessionMinutes] = useState(60);
+  const sessionPlan = useMemo(() => {
+    if (!results) return null;
+    try {
+      return buildSessionPlan({ formData, results, sessionMinutes });
+    } catch (e) {
+      console.error('Error building session plan:', e);
+      return null;
+    }
+  }, [formData, results, sessionMinutes]);
 
   if (!results) {
     return (
@@ -47,6 +57,62 @@ const PriorityActionPlan = () => {
     actionPlan = [];
     weeklyBonuses = [];
   }
+
+  const renderSessionCard = (label, action) => {
+    if (!action) {
+      return (
+        <div className="p-4 rounded-xl border border-slate-700 bg-slate-900/40">
+          <div className="text-xs font-bold text-slate-400 mb-2">{label}</div>
+          <div className="text-slate-400 text-sm">No recommendation found for this slot.</div>
+        </div>
+      );
+    }
+
+    const blocked = action.blockedBy && action.blockedBy.length > 0;
+    const multiplier = action.launchesPassiveTimer ? '3× Passive Multiplier' : null;
+    const velocity = typeof action.unlockVelocity === 'number' ? `Unlock Velocity: ${action.unlockVelocity}` : null;
+
+    return (
+      <div className={`p-4 rounded-xl border ${blocked ? 'border-red-500/40 bg-red-950/10' : 'border-slate-700 bg-slate-900/40'}`}>
+        <div className="flex items-center justify-between mb-2">
+          <div className="text-xs font-bold text-slate-400">{label}</div>
+          <div className="flex items-center gap-2">
+            {action.estimatedMinutes != null && (
+              <span className="text-xs text-slate-300 bg-slate-800 px-2 py-1 rounded inline-flex items-center gap-1">
+                <Clock className="w-3 h-3" />
+                {action.estimatedMinutes}m
+              </span>
+            )}
+            {multiplier && (
+              <span className="text-xs text-cyan-300 bg-cyan-900/20 border border-cyan-500/20 px-2 py-1 rounded">
+                {multiplier}
+              </span>
+            )}
+            {velocity && (
+              <span className="text-xs text-purple-300 bg-purple-900/20 border border-purple-500/20 px-2 py-1 rounded">
+                {velocity}
+              </span>
+            )}
+          </div>
+        </div>
+
+        <div className="text-white font-bold">{action.title}</div>
+        <div className="text-slate-300 text-sm mt-1">{action.why}</div>
+
+        {blocked && (
+          <div className="mt-3 p-3 rounded-lg border border-red-500/30 bg-red-900/10">
+            <div className="flex items-start gap-2">
+              <AlertTriangle className="w-4 h-4 text-red-400 flex-shrink-0 mt-0.5" />
+              <div>
+                <div className="text-xs text-red-400 font-bold mb-1">GATEKEEPER BLOCK</div>
+                <div className="text-xs text-red-300">{action.blockedBy.join(', ')}</div>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const handleCopyToClipboard = async (text, successMessage = 'Copied to clipboard!') => {
     try {
@@ -162,6 +228,51 @@ const PriorityActionPlan = () => {
           </div>
         )}
 
+        {/* Session Consultant */}
+        {sessionPlan && (
+          <div className="bg-slate-900/60 border border-emerald-900/30 rounded-2xl p-6">
+            <div className="flex items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xl font-bold text-white">Session Consultant</h3>
+                <p className="text-sm text-slate-400">
+                  Compound Efficiency: start passive clocks first, then bridge with best executable money, then invest in unlocks.
+                </p>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-slate-400">I have</span>
+                <select
+                  value={sessionMinutes}
+                  onChange={(e) => setSessionMinutes(Number(e.target.value))}
+                  className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+                >
+                  <option value={30}>30 minutes</option>
+                  <option value={60}>60 minutes</option>
+                  <option value={90}>90 minutes</option>
+                  <option value={120}>120 minutes</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+              {renderSessionCard('1) The Tax (first 5 mins)', sessionPlan.tax)}
+              {renderSessionCard('2) The Bridge (main block)', sessionPlan.bridge)}
+              {renderSessionCard('3) The Investment (final mins)', sessionPlan.investment)}
+            </div>
+
+            <div className="mt-4 text-xs text-slate-400">
+              Passive systems maxed: <span className={sessionPlan.meta?.passiveProgress?.allMaxed ? 'text-emerald-400 font-semibold' : 'text-yellow-400 font-semibold'}>
+                {sessionPlan.meta?.passiveProgress?.readyCount ?? 0}/{sessionPlan.meta?.passiveProgress?.total ?? 4}
+              </span>
+              {!sessionPlan.meta?.passiveProgress?.allMaxed && (
+                <span className="ml-2 text-slate-500">
+                  (linear grinds are de-prioritized until passives are upgraded)
+                </span>
+              )}
+            </div>
+          </div>
+        )}
+
         {/* Action Plan */}
         {actionPlan && actionPlan.length > 0 ? (
           <div className="bg-slate-900/60 border border-blue-900/30 rounded-2xl p-6">
@@ -176,7 +287,6 @@ const PriorityActionPlan = () => {
               {actionPlan.map((action, idx) => {
                 const isUrgent = action.urgency === 'URGENT' || action.urgency === 'BUY NOW' || action.urgency === 'GRIND NOW';
                 const isBlocker = action.urgency === 'BLOCKER';
-                const isBlocked = action.priority === 'BLOCKED' || action.blockedBy;
                 
                 return (
                   <div 
@@ -414,10 +524,11 @@ const PriorityActionPlan = () => {
             </div>
 
             <div className="mt-4 space-y-2 pt-4 border-t border-slate-700/50">
-              <label className="block text-xs font-semibold text-slate-400">
+              <label htmlFor="what-if" className="block text-xs font-semibold text-slate-400">
                 Optional: Describe a "what if" change to sanity-check with an AI assistant
               </label>
               <textarea
+                id="what-if"
                 value={whatIfText}
                 onChange={(e) => setWhatIfText(e.target.value)}
                 className="w-full rounded-lg bg-slate-900 border border-slate-700 p-2 text-xs text-slate-100 resize-none h-16 focus:border-blue-500 focus:outline-none"

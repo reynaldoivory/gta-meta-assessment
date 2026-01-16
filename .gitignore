@@ -22,3 +22,6 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Prevent accidental nested repo clones
+/gta-meta-assessment/

@@ -52,9 +52,13 @@ export const validateField = (field, value) => {
       return null;
       
     case 'nightclubFeeders':
-      const feeders = Number(value);
-      if (value && (isNaN(feeders) || feeders < 0 || feeders > 5)) {
-        return 'Feeder businesses must be between 0-5';
+      // Legacy validation - nightclubFeeders is now computed from nightclubSources
+      // This case is kept for backwards compatibility
+      if (typeof value === 'number' || typeof value === 'string') {
+        const feeders = Number(value);
+        if (value && (isNaN(feeders) || feeders < 0 || feeders > 7)) {
+          return 'Feeder businesses must be between 0-7';
+        }
       }
       return null;
       

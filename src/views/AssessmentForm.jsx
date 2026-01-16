@@ -7,6 +7,7 @@ import AssetCard from '../components/shared/AssetCard';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
 import CarWashExpiryBadge from '../components/shared/CarWashExpiryBadge';
 import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
+import NightclubLogistics from '../components/shared/NightclubLogistics';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
 
 // Helper function to format last saved time
@@ -132,9 +133,27 @@ export default function AssessmentForm() {
         hasAcidLab: true,
         acidLabUpgraded: true,
         hasNightclub: true,
-        nightclubTechs: '3',
+        nightclubTechs: 3,
+        nightclubSources: {
+          imports: true,   // Coke
+          cargo: true,     // Hangar/CEO
+          pharma: true,    // Meth
+          sporting: false, // Bunker
+          cash: false,
+          organic: false,
+          printing: false
+        },
+        nightclubFloors: '2',
+        nightclubEquipmentUpgrade: false,
+        nightclubStaffUpgrade: false,
+        nightclubStorage: {
+          hasPounder: false,
+          hasMule: false
+        },
         hasBunker: true,
-        bunkerUpgraded: true,
+        bunkerEquipmentUpgrade: true,
+        bunkerStaffUpgrade: true,
+        bunkerSecurityUpgrade: false,
         hasAutoShop: true,
         cayoCompletions: '25',
         cayoAvgTime: '60',
@@ -163,10 +182,27 @@ export default function AssessmentForm() {
         hasAcidLab: true,
         acidLabUpgraded: true,
         hasNightclub: true,
-        nightclubTechs: '5',
-        nightclubFeeders: '5',
+        nightclubTechs: 5,
+        nightclubSources: {
+          imports: true,   // Coke
+          cargo: true,     // Hangar/CEO
+          pharma: true,    // Meth
+          sporting: true,  // Bunker
+          cash: true,      // Cash
+          organic: false,  // Weed (low value)
+          printing: false  // Docs (low value)
+        },
+        nightclubFloors: '5',
+        nightclubEquipmentUpgrade: true,
+        nightclubStaffUpgrade: true,
+        nightclubStorage: {
+          hasPounder: true,
+          hasMule: false
+        },
         hasBunker: true,
-        bunkerUpgraded: true,
+        bunkerEquipmentUpgrade: true,
+        bunkerStaffUpgrade: true,
+        bunkerSecurityUpgrade: true,
         hasAutoShop: true,
         hasMansion: true,
         hasSalvageYard: true,
@@ -564,49 +600,122 @@ export default function AssessmentForm() {
                 isOwned={formData.hasNightclub} 
                 onToggle={() => setFormData(p => ({ ...p, hasNightclub: !p.hasNightclub }))}
               >
-                <div>
-                  <label htmlFor="nightclubTechs" className="text-xs text-slate-500 font-bold uppercase mb-1 block">Technicians Hired (0-5)</label>
-                  <input 
-                    id="nightclubTechs"
-                    name="nightclubTechs"
-                    type="number" 
-                    placeholder="0" 
-                    min="0"
-                    max="5"
-                    value={formData.nightclubTechs} 
-                    onChange={handleInputChange} 
-                    className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-purple-500 outline-none transition-colors mb-3 ${
-                      errors.nightclubTechs ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                    }`}
-                  />
-                  {errors.nightclubTechs && (
-                    <div className="flex items-center gap-1 mb-3 text-red-400 text-xs">
-                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                      <span>{errors.nightclubTechs}</span>
+                <div className="space-y-4">
+                  {/* Warehouse Floors */}
+                  <div>
+                    <label htmlFor="nightclubFloors" className="text-xs text-slate-500 font-bold uppercase mb-1 block">
+                      Warehouse Floors (1-5)
+                      <span className="text-yellow-400 ml-1 font-normal">← Affects AFK Duration</span>
+                    </label>
+                    <select
+                      id="nightclubFloors"
+                      name="nightclubFloors"
+                      value={formData.nightclubFloors || 1}
+                      onChange={handleInputChange}
+                      className="w-full bg-slate-800 border border-slate-700 rounded p-2 text-sm focus:border-purple-500 outline-none"
+                    >
+                      <option value="1">1 Floor (20hr AFK cap)</option>
+                      <option value="2">2 Floors (32hr AFK cap)</option>
+                      <option value="3">3 Floors (44hr AFK cap)</option>
+                      <option value="4">4 Floors (56hr AFK cap)</option>
+                      <option value="5">5 Floors (66hr+ AFK - Overnight Safe)</option>
+                    </select>
+                    <div className="text-xs text-slate-500 mt-1">More floors = longer AFK before goods cap out</div>
+                  </div>
+
+                  {/* Upgrades */}
+                  <div className="grid grid-cols-2 gap-2">
+                    <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        name="nightclubEquipmentUpgrade"
+                        checked={formData.nightclubEquipmentUpgrade} 
+                        onChange={handleInputChange} 
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-purple-500"
+                      />
+                      <div>
+                        <span className="text-sm text-slate-300">Equipment</span>
+                        <div className="text-[10px] text-green-400">+100% Speed</div>
+                      </div>
+                    </label>
+                    <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
+                      <input 
+                        type="checkbox" 
+                        name="nightclubStaffUpgrade"
+                        checked={formData.nightclubStaffUpgrade} 
+                        onChange={handleInputChange} 
+                        className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-purple-500"
+                      />
+                      <div>
+                        <span className="text-sm text-slate-300">Staff</span>
+                        <div className="text-[10px] text-slate-500">Popularity</div>
+                      </div>
+                    </label>
+                  </div>
+
+                  {/* Delivery Vehicles */}
+                  <div>
+                    <label className="text-xs text-slate-500 font-bold uppercase mb-2 block">
+                      Delivery Vehicles
+                      <span className="text-red-400 ml-1 font-normal">← Critical for Large Sales</span>
+                    </label>
+                    <div className="grid grid-cols-2 gap-2">
+                      <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.nightclubStorage?.hasPounder || false} 
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            nightclubStorage: {
+                              ...prev.nightclubStorage,
+                              hasPounder: e.target.checked
+                            }
+                          }))}
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-green-500"
+                        />
+                        <div>
+                          <span className="text-sm text-slate-300">Pounder Custom</span>
+                          <div className="text-[10px] text-green-400">✓ Best Choice</div>
+                        </div>
+                      </label>
+                      <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition-colors border border-red-900/30">
+                        <input 
+                          type="checkbox" 
+                          checked={formData.nightclubStorage?.hasMule || false} 
+                          onChange={(e) => setFormData(prev => ({
+                            ...prev,
+                            nightclubStorage: {
+                              ...prev.nightclubStorage,
+                              hasMule: e.target.checked
+                            }
+                          }))}
+                          className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-red-500"
+                        />
+                        <div>
+                          <span className="text-sm text-slate-300">Mule Custom</span>
+                          <div className="text-[10px] text-red-400">⚠️ Trap</div>
+                        </div>
+                      </label>
                     </div>
-                  )}
-                  <label htmlFor="nightclubFeeders" className="text-xs text-slate-500 font-bold uppercase mb-1 block">Feeder Businesses Linked (0-5)</label>
-                  <input 
-                    id="nightclubFeeders"
-                    name="nightclubFeeders"
-                    type="number" 
-                    placeholder="0" 
-                    min="0"
-                    max="5"
-                    value={formData.nightclubFeeders} 
-                    onChange={handleInputChange} 
-                    className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-purple-500 outline-none transition-colors ${
-                      errors.nightclubFeeders ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                    }`}
-                  />
-                  {errors.nightclubFeeders ? (
-                    <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
-                      <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                      <span>{errors.nightclubFeeders}</span>
-                    </div>
-                  ) : (
-                    <div className="text-xs text-slate-500 mt-1">Need: Coke, Meth, Cash, Weed, Documents (5 total)</div>
-                  )}
+                    {formData.nightclubStorage?.hasMule && !formData.nightclubStorage?.hasPounder && (
+                      <div className="mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
+                        ⚠️ <strong>Warning:</strong> The Mule is slow and buggy. You still need the Pounder for 90+ crate sales. Consider buying Pounder instead.
+                      </div>
+                    )}
+                  </div>
+
+                  {/* Technicians & Logistics */}
+                  <div className="mt-4 pt-4 border-t border-slate-800">
+                    <NightclubLogistics formData={formData} setFormData={setFormData} />
+                    
+                    {/* Validation Error Display */}
+                    {errors.nightclubTechs && (
+                      <div className="flex items-center gap-1 mt-2 text-red-400 text-xs">
+                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                        <span>Please select your technicians</span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </AssetCard>
 
@@ -642,20 +751,59 @@ export default function AssessmentForm() {
                 isOwned={formData.hasBunker} 
                 onToggle={() => setFormData(p => ({ ...p, hasBunker: !p.hasBunker }))}
               >
-                <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
-                  <input 
-                    type="checkbox" 
-                    name="bunkerUpgraded"
-                    checked={formData.bunkerUpgraded} 
-                    onChange={handleInputChange} 
-                    className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
-                    aria-label="Bunker Fully Upgraded"
-                  />
-                  <div className="flex-1">
-                    <div className="text-slate-200 font-medium">Fully Upgraded</div>
-                    <div className="text-xs text-slate-500">Cost: $1.7M • Equipment + Staff upgrades</div>
-                  </div>
-                </label>
+                <div className="space-y-3">
+                  {/* Equipment Upgrade - CRITICAL */}
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      name="bunkerEquipmentUpgrade"
+                      checked={formData.bunkerEquipmentUpgrade || formData.bunkerUpgraded} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
+                    />
+                    <div className="flex-1">
+                      <div className="text-slate-200 font-medium">Equipment Upgrade</div>
+                      <div className="text-xs text-green-400">+300% Income • $1.15M • Essential</div>
+                    </div>
+                  </label>
+                  
+                  {/* Staff Upgrade - CRITICAL */}
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      name="bunkerStaffUpgrade"
+                      checked={formData.bunkerStaffUpgrade || formData.bunkerUpgraded} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
+                    />
+                    <div className="flex-1">
+                      <div className="text-slate-200 font-medium">Staff Upgrade</div>
+                      <div className="text-xs text-green-400">Faster Production • $600k • Essential</div>
+                    </div>
+                  </label>
+                  
+                  {/* Security Upgrade - OPTIONAL */}
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors opacity-70">
+                    <input 
+                      type="checkbox" 
+                      name="bunkerSecurityUpgrade"
+                      checked={formData.bunkerSecurityUpgrade} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-slate-500 focus:ring-slate-500"
+                    />
+                    <div className="flex-1">
+                      <div className="text-slate-200 font-medium">Security Upgrade</div>
+                      <div className="text-xs text-slate-500">Reduces Raids • $351k • Optional</div>
+                    </div>
+                  </label>
+                  
+                  {/* Income Warning */}
+                  {formData.hasBunker && !formData.bunkerEquipmentUpgrade && !formData.bunkerUpgraded && (
+                    <div className="p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
+                      🚨 <strong>PASSIVE INCOME LEAK:</strong> Your bunker is unupgraded. You're earning $20k/hr instead of $60k/hr. Equipment + Staff upgrades pay for themselves in 45 hours.
+                    </div>
+                  )}
+                </div>
               </AssetCard>
 
               {/* AUTO SHOP */}

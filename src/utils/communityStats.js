@@ -362,7 +362,11 @@ export const getTrapAvoidanceStats = (formData, currentTraps) => {
   const fellFor = [];
   
   // Check which common traps player AVOIDED
-  if (formData.hasNightclub && Number(formData.nightclubFeeders) >= 3) {
+  // Calculate feeders from nightclubSources (new format) or use legacy number
+  const nightclubFeeders = formData.nightclubSources 
+    ? Object.values(formData.nightclubSources).filter(Boolean).length 
+    : Number(formData.nightclubFeeders) || 0;
+  if (formData.hasNightclub && nightclubFeeders >= 3) {
     avoided.push({
       trap: 'Nightclub Trap',
       communityRate: occurrenceRates.nightclubTrap,

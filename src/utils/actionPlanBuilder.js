@@ -2,9 +2,245 @@
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
 
-import { WEEKLY_EVENTS, getDaysRemaining } from '../config/weeklyEvents';
+import { WEEKLY_EVENTS, getDaysRemaining } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
+import { checkGatekeeper } from './gatekeeperEngine.js';
+import { generateInfrastructureRecommendations } from './infrastructureAdvisor.js';
+
+/**
+ * Map activity names from weekly events to task identifiers
+ * This allows matching tasks by eventId, tags, or title keywords
+ */
+const ACTIVITY_MAPPING = {
+  'business_battles': ['business_battle', 'business battle', 'freemode'],
+  'nightclub_goods': ['nightclub', 'nc_sell', 'nightclub goods'],
+  'nightclub_safe': ['nightclub_safe', 'nightclub safe', 'nc_safe'],
+  'mansion_raid': ['mansion_raid', 'mansion raid'],
+  'auto_shop_finales': ['auto_shop', 'auto shop', 'robbery contract'],
+  'paper_trail': ['paper_trail', 'paper trail', 'operation paper trail'],
+};
+
+/**
+ * Check if a task matches a weekly boost activity
+ * @param {Object} task - Task object with eventId, tags, or title
+ * @param {string} activity - Activity name from weekly events
+ * @returns {boolean} True if task matches the activity
+ */
+const taskMatchesActivity = (task, activity) => {
+  const mapping = ACTIVITY_MAPPING[activity] || [activity];
+  const taskId = (task.eventId || '').toLowerCase();
+  const taskTitle = (task.title || '').toLowerCase();
+  const taskTags = (task.tags || []).map(t => t.toLowerCase());
+  
+  return mapping.some(keyword => 
+    taskId.includes(keyword.toLowerCase()) ||
+    taskTitle.includes(keyword.toLowerCase()) ||
+    taskTags.some(tag => tag.includes(keyword.toLowerCase()))
+  );
+};
+
+/**
+ * Apply weekly boosts to a task
+ * Supports both object format (WEEKLY_EVENTS.bonuses) and array format (activeBoosts)
+ * @param {Object} task - Task object with eventId, tags, or title
+ * @param {Object} weeklyEvents - WEEKLY_EVENTS object (or compatible structure)
+ * @param {Object} user - User object with gtaPlus flag
+ * @returns {Object} { multiplier, timeRemaining }
+ */
+export const applyWeeklyBoosts = (task, weeklyEvents, user) => {
+  let multiplier = 1;
+  let timeRemaining = null;
+  
+  if (!weeklyEvents) {
+    return { multiplier, timeRemaining };
+  }
+  
+  const now = Date.now();
+  
+  // Handle array format (activeBoosts) - for JSON compatibility
+  if (Array.isArray(weeklyEvents.activeBoosts)) {
+    weeklyEvents.activeBoosts.forEach(boost => {
+      if (taskMatchesActivity(task, boost.activity)) {
+        const expiryDate = new Date(boost.expires);
+        if (now < expiryDate.getTime()) {
+          const taskMultiplier = boost.multiplier || 1;
+          if (taskMultiplier > multiplier) {
+            multiplier = taskMultiplier;
+            timeRemaining = expiryDate.getTime() - now;
+          }
+        }
+      }
+    });
+  }
+  
+  // Handle object format (WEEKLY_EVENTS.bonuses) - current structure
+  if (weeklyEvents.bonuses && typeof weeklyEvents.bonuses === 'object') {
+    Object.entries(weeklyEvents.bonuses).forEach(([key, bonus]) => {
+      if (!bonus.isActive) return;
+      
+      // Skip GTA+ only bonuses if user doesn't have GTA+
+      if (bonus.gtaPlusOnly && !user?.gtaPlus) return;
+      
+      // Check if task matches this bonus activity
+      const activityKey = key === 'autoShop' ? 'auto_shop_finales' :
+                         key === 'paperTrail' ? 'paper_trail' :
+                         key === 'businessBattles' ? 'business_battles' :
+                         key === 'nightclubGoods' ? 'nightclub_goods' :
+                         key === 'nightclubSafe' ? 'nightclub_safe' :
+                         key === 'mansionRaid' ? 'mansion_raid' : key;
+      
+      if (taskMatchesActivity(task, activityKey)) {
+        // Check expiry
+        const expiryDate = user?.gtaPlus && bonus.gtaPlusValidUntil 
+          ? new Date(bonus.gtaPlusValidUntil)
+          : new Date(bonus.validUntil);
+        
+        if (now < expiryDate.getTime()) {
+          const taskMultiplier = typeof bonus.multiplier === 'number' 
+            ? bonus.multiplier 
+            : (user?.gtaPlus && bonus.gtaPlusMultiplier 
+                ? bonus.gtaPlusMultiplier 
+                : bonus.baseMultiplier || 1);
+          
+          // Use the highest multiplier found
+          if (taskMultiplier > multiplier) {
+            multiplier = taskMultiplier;
+            timeRemaining = expiryDate.getTime() - now;
+          }
+        }
+      }
+    });
+  }
+  
+  // Check GTA+ monthly bonuses if user is subscriber
+  if (user?.gtaPlus && weeklyEvents.gtaPlus?.monthlyBonuses) {
+    weeklyEvents.gtaPlus.monthlyBonuses.forEach(monthlyBonus => {
+      if (taskMatchesActivity(task, monthlyBonus.activity)) {
+        const expiryDate = new Date(monthlyBonus.expires);
+        if (now < expiryDate.getTime()) {
+          const taskMultiplier = monthlyBonus.multiplier || 1;
+          if (taskMultiplier > multiplier) {
+            multiplier = taskMultiplier;
+            timeRemaining = expiryDate.getTime() - now;
+          }
+        }
+      }
+    });
+  }
+  
+  return { multiplier, timeRemaining };
+};
+
+/**
+ * Calculate compound efficiency score with gatekeeper logic and weekly boosts
+ * @param {Object} task - Task object with eventId, tags, title, basePayout
+ * @param {Object} user - User object with stats, assets, gtaPlus flag
+ * @param {Object} gameState - Game state object (optional)
+ * @param {Object} weeklyEvents - WEEKLY_EVENTS object
+ * @returns {Object} { score, reasoning, warnings, gatekeeperResult }
+ */
+export const calculateCompoundEfficiency = (task, user, gameState, weeklyEvents) => {
+  const reasoning = [];
+  const warnings = [];
+  
+  // --- Gatekeeper Logic ---
+  const taskId = task.eventId || task.id || '';
+  // Support both flat user structure and nested formData structure
+  const userData = user?.formData || user || {};
+  
+  // Build assets array from form data fields (hasKosatka, hasAgency, etc.)
+  // This matches the logic in buildSmartActionPlan
+  const builtAssets = [
+    userData?.hasKosatka && 'kosatka',
+    userData?.hasAgency && 'agency',
+    userData?.hasAcidLab && 'acid_lab',
+    userData?.hasNightclub && 'nightclub',
+    userData?.hasBunker && 'bunker',
+    userData?.hasAutoShop && 'auto_shop',
+    userData?.hasSparrow && 'sparrow',
+    userData?.hasOppressor && 'oppressor_mk2',
+    userData?.hasRaiju && 'raiju',
+  ].filter(Boolean);
+  
+  const userProfile = {
+    stats: {
+      flying: validateStat(userData?.flying || 0),
+      strength: validateStat(userData?.strength || 0),
+      shooting: validateStat(userData?.shooting || 0),
+      stealth: validateStat(userData?.stealth || 0),
+      stamina: validateStat(userData?.stamina || 0),
+      driving: validateStat(userData?.driving || 0),
+    },
+    assets: user?.assets || builtAssets,
+  };
+  
+  const gatekeeperResult = checkGatekeeper(taskId, userProfile);
+  const viabilityMultiplier = gatekeeperResult.score_penalty || 1.0;
+  
+  if (gatekeeperResult.status === 'LOCKED') {
+    reasoning.push(`🔒 ${gatekeeperResult.reason}`);
+    warnings.push(`Cannot complete: ${gatekeeperResult.reason}`);
+    return {
+      score: 0,
+      reasoning,
+      warnings,
+      gatekeeperResult,
+      multiplier: 0,
+    };
+  }
+  
+  if (gatekeeperResult.status === 'WARNING') {
+    reasoning.push(`⚠️ ${gatekeeperResult.reason} (${(viabilityMultiplier * 100).toFixed(0)}% efficiency)`);
+    warnings.push(gatekeeperResult.reason);
+  }
+  
+  // --- Base Score Calculation ---
+  let score = (task.basePayout || 0) * viabilityMultiplier;
+  
+  // Special handling for dynamic payout tasks (e.g., nightclub sale)
+  if (task.dynamicPayout && gameState?.businesses?.nightclub?.accumulatedValue) {
+    score = gameState.businesses.nightclub.accumulatedValue * viabilityMultiplier;
+    reasoning.push(`Sell accumulated goods: $${score.toLocaleString()}`);
+  }
+  
+  // Normalize user object for gtaPlus check (support both flat and formData structures)
+  const hasGtaPlus = user?.gtaPlus || user?.hasGTAPlus || 
+                     user?.formData?.gtaPlus || user?.formData?.hasGTAPlus || false;
+  const userForBoosts = { ...user, gtaPlus: hasGtaPlus };
+  
+  // --- Apply Weekly Boosts ---
+  const boost = applyWeeklyBoosts(task, weeklyEvents, userForBoosts);
+  if (boost.multiplier > 1) {
+    const originalScore = score;
+    score *= boost.multiplier;
+    
+    reasoning.push(
+      `🎉 ${boost.multiplier}x Event: $${originalScore.toLocaleString()} → $${Math.round(score).toLocaleString()}`
+    );
+    
+    // Urgency warning if expiring soon
+    if (boost.timeRemaining && boost.timeRemaining < 48 * 60 * 60 * 1000) {
+      const hoursLeft = Math.round(boost.timeRemaining / (1000 * 60 * 60));
+      warnings.push(`⏰ This ${boost.multiplier}x bonus expires in ${hoursLeft} hours!`);
+    }
+  } else if (reasoning.length === 0) {
+    // Add default reasoning for tasks without boosts
+    if (task.basePayout > 0) {
+      const hourlyRate = Math.round((task.basePayout / (task.baseDuration || 60)) * 60);
+      reasoning.push(`Base payout: $${task.basePayout.toLocaleString()} ($${hourlyRate.toLocaleString()}/hr)`);
+    }
+  }
+  
+  return {
+    score: Math.round(score),
+    reasoning,
+    warnings,
+    gatekeeperResult,
+    multiplier: boost.multiplier,
+    timeRemaining: boost.timeRemaining,
+  };
+};
 
 /**
  * Meta efficiency benchmarks
@@ -136,9 +372,6 @@ const calculatePriorityScore = (action, now) => {
  * @returns {Array} Prioritized action plan (minimum 3 actions)
  */
 export const buildCompactActionPlan = (bottlenecks, heistReady, formData, results = null) => {
-  // #region agent log H1
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:90',message:'buildCompactActionPlan ENTRY',data:{bottlenecksCount:bottlenecks?.length||0,bottlenecksNull:bottlenecks===null,bottlenecksUndefined:bottlenecks===undefined,hasFormData:!!formData},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
   // Cache Date.now() once at the start
   const now = Date.now();
   
@@ -162,14 +395,8 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
     actions.push(bottleneckToAction(bottleneck, now));
   });
   
-  // #region agent log H1-post
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:162',message:'After bottleneck processing',data:{actionsFromBottlenecks:actions.length,seenIds:Array.from(seenBottleneckIds)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H1'})}).catch(()=>{});
-  // #endregion
   // Then add the smart action plan (which handles Auto Shop, etc.)
   const smartActions = buildSmartActionPlan(formData, results);
-  // #region agent log H2
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:166',message:'After buildSmartActionPlan',data:{smartActionsCount:smartActions?.length||0,smartActionTitles:smartActions?.map(a=>a.title)||[]},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H2'})}).catch(()=>{});
-  // #endregion
   
   // Merge: bottlenecks first, then smart actions
   const allActions = [...actions, ...smartActions];
@@ -195,15 +422,30 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
     allActions.push(...filteredActions);
   }
   
+  // Deduplicate: Remove duplicate Auto Shop actions (grind, event, union depository)
+  const autoShopKeywords = ['auto shop', 'union depository', 'robbery contract'];
+  const autoShopActions = allActions.filter(a => 
+    a.title && autoShopKeywords.some(kw => a.title.toLowerCase().includes(kw))
+  );
+  if (autoShopActions.length > 1) {
+    // Keep only the highest priority Auto Shop action
+    autoShopActions.sort((a, b) => {
+      const scoreA = calculatePriorityScore(a, now);
+      const scoreB = calculatePriorityScore(b, now);
+      return scoreB - scoreA; // Higher score = higher priority
+    });
+    const keepAutoShopTitle = autoShopActions[0].title;
+    const filteredAutoShop = allActions.filter(a => 
+      !(a.title && autoShopKeywords.some(kw => a.title.toLowerCase().includes(kw))) || 
+      a.title === keepAutoShopTitle
+    );
+    allActions.length = 0;
+    allActions.push(...filteredAutoShop);
+  }
+  
   // ENFORCE MINIMUM 3-5 ACTIONS
-  // #region agent log H3
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:195',message:'Before maintenance check',data:{allActionsCount:allActions.length,needsMaintenance:allActions.length<3},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-  // #endregion
   if (allActions.length < 3) {
     const maintenanceActions = generateMaintenanceActions(formData, results);
-    // #region agent log H3-backfill
-    fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:200',message:'Maintenance backfill triggered',data:{maintenanceActionsGenerated:maintenanceActions.length,toAdd:5-allActions.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     allActions.push(...maintenanceActions.slice(0, 5 - allActions.length));
   }
   
@@ -220,9 +462,6 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
   
   // GUARANTEE: Always return at least 3 actions
   if (sortedActions.length < 3) {
-    // #region agent log H3-final
-    fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:222',message:'Final guarantee check triggered',data:{sortedActionsBeforeBackfill:sortedActions.length},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H3'})}).catch(()=>{});
-    // #endregion
     const additionalMaintenance = generateMaintenanceActions(formData, results);
     // Add more maintenance actions until we have at least 3
     for (const action of additionalMaintenance) {
@@ -233,9 +472,6 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
       }
     }
   }
-  // #region agent log H4
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:235',message:'buildCompactActionPlan RETURN',data:{finalActionsCount:sortedActions.length,finalActionTitles:sortedActions.map(a=>a.title)},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H4'})}).catch(()=>{});
-  // #endregion
   return sortedActions;
 };
 
@@ -290,13 +526,14 @@ const generateMaintenanceActions = (formData, results) => {
   });
   
   // Passive income checks
-  if (formData.hasNightclub && formData.nightclubTechs < 5) {
+  const nightclubTechsCount = Number(formData.nightclubTechs) || 0;
+  if (formData.hasNightclub && nightclubTechsCount < 5) {
     actions.push({
       priority: 6,
       urgency: 'LOW',
       type: 'OPTIMIZE',
       title: 'Optimize Nightclub (Add Technicians)',
-      why: `You have ${formData.nightclubTechs || 0}/5 technicians. Adding more increases passive income.`,
+      why: `You have ${nightclubTechsCount}/5 technicians. Adding more increases passive income.`,
       solution: 'Buy technicians from Nightclub computer',
       timeToComplete: '5 minutes',
       cost: 141000, // Per technician
@@ -371,9 +608,6 @@ export const buildSmartActionPlan = (formData, results = null) => {
   
   const actions = [];
   const daysLeft = getDaysRemaining();
-  // #region agent log H5
-  fetch('http://127.0.0.1:7243/ingest/c4a02f61-1070-4bc0-9e46-2dbb03156bda',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'actionPlanBuilder.js:368',message:'buildSmartActionPlan ENTRY',data:{nowDefined:typeof now!=='undefined',nowValue:now,daysLeft:daysLeft,hasGTAPlus:formData?.hasGTAPlus,hasAutoShop:formData?.hasAutoShop},timestamp:Date.now(),sessionId:'debug-session',hypothesisId:'H5'})}).catch(()=>{});
-  // #endregion
   
   // Parse Data (Handle 0-5 Bar scale -> 0-100% conversion)
   // Use validateStat helper to convert once instead of manual * 20 conversions
@@ -384,26 +618,60 @@ export const buildSmartActionPlan = (formData, results = null) => {
   const playerRank = Number(formData.rank) || 0;
   const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
   
+  // Build user profile for gatekeeper checks
+  const userProfile = {
+    stats: {
+      flying: flyingPct,
+      strength: strengthPct,
+      shooting: validateStat(formData.shooting),
+      hacking: validateStat(formData.hacking),
+      stealth: validateStat(formData.stealth),
+      stamina: validateStat(formData.stamina),
+      driving: validateStat(formData.driving),
+    },
+    assets: [
+      formData.hasKosatka && 'kosatka',
+      formData.hasAgency && 'agency',
+      formData.hasAcidLab && 'acid_lab',
+      formData.hasNightclub && 'nightclub',
+      formData.hasBunker && 'bunker',
+      formData.hasAutoShop && 'auto_shop',
+      formData.hasSparrow && 'sparrow',
+      formData.hasOppressor && 'oppressor_mk2', // hasOppressor is the actual field name
+      formData.hasRaiju && 'raiju',
+      // NOTE: hasArcade and hasBrickade6x6 not tracked in form state yet
+      // Add them to AssessmentContext if gatekeeper rules require them
+    ].filter(Boolean), // Remove falsy values
+  };
+  
   // --- PRIORITY 0: TIME-LIMITED EVENTS (The Auto Shop Meta) ---
-  // NOTE: 2X Auto Shop bonus is GTA+ ONLY this week (public gets 3X Legal Money Fronts instead)
-  if (daysLeft > 0 && WEEKLY_EVENTS.bonuses?.autoShop?.isActive) {
-    const shopCost = hasGTAPlus ? (WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate || 835000) : 1800000;
+  // NOTE: 2X Auto Shop bonus is GTA+ ONLY - check gtaPlusOnly flag before showing
+  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
+  const isAutoShopEventAvailable = daysLeft > 0 && 
+    autoShopBonus?.isActive && 
+    (!autoShopBonus?.gtaPlusOnly || hasGTAPlus); // Respect gtaPlusOnly flag
+  
+  if (isAutoShopEventAvailable) {
+    const shopCost = WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate || 835000;
     
-    // Case A: Buy It Now (High Capital)
+    // Case A: Buy It Now (High Capital) - Only show if GTA+ or event is not GTA+ exclusive
     if (!formData.hasAutoShop && cash >= shopCost) {
-      const autoShopExpiry = WEEKLY_EVENTS.bonuses?.autoShop?.gtaPlusValidUntil 
-        ? new Date(WEEKLY_EVENTS.bonuses.autoShop.gtaPlusValidUntil).getTime()
-        : WEEKLY_EVENTS.bonuses?.autoShop?.validUntil
-          ? new Date(WEEKLY_EVENTS.bonuses.autoShop.validUntil).getTime()
+      const autoShopExpiry = autoShopBonus?.gtaPlusValidUntil 
+        ? new Date(autoShopBonus.gtaPlusValidUntil).getTime()
+        : autoShopBonus?.validUntil
+          ? new Date(autoShopBonus.validUntil).getTime()
           : null;
       const expiresSoon = autoShopExpiry && isExpiringSoon(autoShopExpiry, now);
+      
+      // Run gatekeeper check for auto shop (if we had a task ID for it)
+      // For now, auto shop doesn't have gatekeeper rules, so this is a placeholder
       
       actions.push({
         priority: 0,
         urgency: expiresSoon ? 'URGENT' : 'URGENT',
         type: 'PURCHASE',
-        title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate || 'Jan 14'})`,
-        why: `You have $${(cash/1000000).toFixed(1)}M. Buying this unlocks $1.3M-$1.5M/hr income this week (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
+        title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate || 'Jan 21'})`,
+        why: `You have $${(cash/1000000).toFixed(1)}M. Buying this unlocks $1.3M-$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
         cost: shopCost,
         earnings: '$1.3M-$1.5M/hr',
         timeRemaining: `${daysLeft} days`,
@@ -416,8 +684,8 @@ export const buildSmartActionPlan = (formData, results = null) => {
     // Case B: Grind It (Owns it) - HIGHEST PRIORITY
     else if (formData.hasAutoShop && hasGTAPlus) {
       // Auto Shop 2X is active for GTA+ members through Feb 4
-      const autoShopExpiry = WEEKLY_EVENTS.bonuses?.autoShop?.gtaPlusValidUntil 
-        ? new Date(WEEKLY_EVENTS.bonuses.autoShop.gtaPlusValidUntil).getTime()
+      const autoShopExpiry = autoShopBonus?.gtaPlusValidUntil 
+        ? new Date(autoShopBonus.gtaPlusValidUntil).getTime()
         : null;
       const daysLeftAutoShop = autoShopExpiry 
         ? Math.ceil((autoShopExpiry - now) / (1000 * 60 * 60 * 24))
@@ -526,41 +794,192 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
     }
   }
 
+  // --- PRIORITY 1: WEEKLY EVENTS (Expires sooner than GTA+ monthly) ---
+  // 4X Business Battles (Jan 15-21) - ALL PLAYERS
+  const bbExpiry = WEEKLY_EVENTS.bonuses?.businessBattles?.validUntil 
+    ? new Date(WEEKLY_EVENTS.bonuses.businessBattles.validUntil).getTime()
+    : null;
+  const bbActive = WEEKLY_EVENTS.bonuses?.businessBattles?.isActive && bbExpiry && bbExpiry > now;
+  
+  if (bbActive) {
+    const hoursLeft = Math.ceil((bbExpiry - now) / (1000 * 60 * 60));
+    const daysLeftBB = Math.ceil(hoursLeft / 24);
+    const urgencyText = hoursLeft < 48 ? `${hoursLeft} hours left` : `${daysLeftBB} days left`;
+    
+    // Different messaging based on Nightclub ownership
+    if (formData.hasNightclub) {
+      actions.push({
+        priority: 1,
+        urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
+        type: 'FREEMODE',
+        title: '⚡ Contest Business Battles (4X This Week!)',
+        why: `4X Business Battles + 4X Nightclub Goods expires Jan 21 (${urgencyText}). Your Nightclub profits massively from won battles. Stack between Auto Shop cooldowns.`,
+        solution: 'Join Business Battles in Freemode (every ~15 mins). Goods go to your Nightclub at 4X value. Best stacking activity.',
+        timeToComplete: '5-10 min per battle',
+        earnings: '$200-400k per battle + 4X Nightclub goods',
+        timeRemaining: urgencyText,
+        expiresAt: bbExpiry,
+        category: 'freemode',
+      });
+    } else {
+      actions.push({
+        priority: 1,
+        urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
+        type: 'FREEMODE',
+        title: '⚡ Contest Business Battles (4X This Week!)',
+        why: `4X Business Battles expires Jan 21 (${urgencyText}). Even without Nightclub, battles pay 4X goods. Consider buying Nightclub at 40% off this week!`,
+        solution: 'Join Business Battles in Freemode (every ~15 mins). Good money even without Nightclub.',
+        timeToComplete: '5-10 min per battle',
+        earnings: '$200-400k per battle',
+        timeRemaining: urgencyText,
+        expiresAt: bbExpiry,
+        category: 'freemode',
+      });
+    }
+  }
+  
+  // 40% Off Nightclub Upgrades (Jan 15-21) - If Nightclub not optimized
+  const ncDiscountExpiry = WEEKLY_EVENTS.discounts?.nightclubUpgrades?.validUntil
+    ? new Date(WEEKLY_EVENTS.discounts.nightclubUpgrades.validUntil).getTime()
+    : null;
+  const ncDiscountActive = WEEKLY_EVENTS.discounts?.nightclubUpgrades && ncDiscountExpiry && ncDiscountExpiry > now;
+  
+  // Calculate feeders from nightclubSources (new format) or use legacy number
+  const nightclubFeedersCount = formData.nightclubSources 
+    ? Object.values(formData.nightclubSources).filter(Boolean).length 
+    : Number(formData.nightclubFeeders) || 0;
+  const ncTechsCount = Number(formData.nightclubTechs) || 0;
+  
+  if (ncDiscountActive && formData.hasNightclub && 
+      (ncTechsCount < 5 || nightclubFeedersCount < 5)) {
+    const hoursLeft = Math.ceil((ncDiscountExpiry - now) / (1000 * 60 * 60));
+    const urgencyText = hoursLeft < 48 ? `${hoursLeft} hours left` : `${Math.ceil(hoursLeft / 24)} days left`;
+    
+    actions.push({
+      priority: 1,
+      urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
+      type: 'PURCHASE',
+      title: '💰 Buy Nightclub Upgrades (40% OFF!)',
+      why: `Your Nightclub isn't optimized. 40% off upgrades expires Jan 21 (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
+      solution: 'Buy Equipment Upgrade + Staff Upgrade from Nightclub computer. They boost production speed significantly.',
+      timeToComplete: '5 minutes',
+      savings: '~$600k savings',
+      timeRemaining: urgencyText,
+      expiresAt: ncDiscountExpiry,
+    });
+  }
+
   // --- PRIORITY 2: COMBAT PREP (Prerequisite for Auto Shop) ---
-  // Only show if Auto Shop 2X is active and player is Rank < 100
+  // Only show if Auto Shop 2X is active and player is Rank < 100 and strength NOT maxed
   const autoShop2XActive = formData.hasAutoShop && hasGTAPlus && 
     WEEKLY_EVENTS.bonuses?.autoShop?.isActive;
   
-  if (autoShop2XActive && playerRank < 100 && strengthPct >= 60) {
-    // Player has strength but still needs prep reminder
+  // Only show combat prep if strength is NOT maxed (< 100)
+  // Players with max strength (100%) have good damage resistance and don't need this warning
+  if (autoShop2XActive && playerRank < 100 && strengthPct < 100) {
     const maxHealthPercent = Math.floor(50 + (playerRank / 2));
-    actions.push({
-      priority: 2,
-      urgency: 'HIGH',
-      type: 'PREPARATION',
-      title: '💪 Survival Prep Before Auto Shop Finales',
-      why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Auto Shop finales are combat-heavy. Do this once to avoid failures.`,
-      solution: '1. Stock 10+ Snacks + 10 Super Heavy Armor. 2. Visit Agency armory for free snacks if owned.',
-      timeToComplete: 'One-time 10-15 min investment',
-      impact: 'Prevents wasted time on failed missions',
-      note: 'This is a prerequisite, not a grind loop. Do once, then start Priority 0.',
-    });
+    
+    if (strengthPct < 60) {
+      // Strength is critically low - needs full prep
+      actions.push({
+        priority: 2,
+        urgency: 'HIGH',
+        type: 'PREPARATION',
+        title: '💪 Max Strength Before Auto Shop Finales',
+        why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is ${strengthPct}% (low). You take extra damage. Max strength first.`,
+        solution: '1. Max Strength (30 min via Pier Pressure or Mansion Gym). 2. Then stock 10+ Snacks + 10 Super Heavy Armor.',
+        timeToComplete: '30-40 min one-time investment',
+        impact: 'Prevents wasted time on failed missions',
+        note: 'Do this before grinding Auto Shop.',
+      });
+    } else if (playerRank < 80) {
+      // Strength is OK but rank is low - just need snacks/armor
+      actions.push({
+        priority: 2,
+        urgency: 'MEDIUM',
+        type: 'PREPARATION',
+        title: '🛡️ Stock Snacks & Armor for Auto Shop',
+        why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is good (${strengthPct}%), but stock up on supplies.`,
+        solution: 'Stock 10+ Snacks + 10 Super Heavy Armor. Visit Agency armory for free snacks if owned.',
+        timeToComplete: '10-15 min one-time investment',
+        impact: 'Prevents wasted time on failed missions',
+      });
+    }
+    // Rank 80+ with strength >= 60 = no prep action needed
   }
+
+  // --- PRIORITY 2.5: INFRASTRUCTURE INVESTMENTS (Smart Shopping) ---
+  // Only show if player has cash and critical upgrades are missing
+  const infraRecommendations = generateInfrastructureRecommendations(formData);
+  const criticalInfra = infraRecommendations.filter(r => 
+    r.urgency === 'CRITICAL' || r.urgency === 'URGENT' || r.type === 'CRITICAL'
+  );
+  
+  // Add top infrastructure recommendations (limit to 2 to not overwhelm)
+  criticalInfra.slice(0, 2).forEach((rec, index) => {
+    // Skip if player can't afford it
+    if (rec.cost && cash < rec.cost) return;
+    
+    // Determine emoji based on type
+    let emoji = '🏭';
+    if (rec.isTrap) emoji = '⚠️';
+    else if (rec.isDiscounted) emoji = '💰';
+    else if (rec.category === 'nightclub') emoji = '🎭';
+    else if (rec.category === 'bunker') emoji = '🔫';
+    
+    const priorityBoost = rec.isDiscounted ? 1 : 2; // Discounted items get higher priority
+    
+    actions.push({
+      priority: priorityBoost + index,
+      urgency: rec.urgency,
+      type: 'INFRASTRUCTURE',
+      title: `${emoji} ${rec.title}`,
+      why: rec.why,
+      solution: rec.benefit,
+      timeToComplete: '5-10 minutes',
+      cost: rec.cost,
+      savings: rec.isDiscounted ? rec.originalCost - rec.cost : 0,
+      roiHours: rec.roiHours || null,
+      expiresAt: rec.expiresAt || null,
+      isDiscounted: rec.isDiscounted,
+      discountPercent: rec.discountPercent,
+      category: 'infrastructure',
+    });
+  });
 
   // --- PRIORITY 3: EFFICIENCY BENCHMARKING ---
   // Cayo Perico: Flag if > 45 min (meta benchmark - sub-45 target)
   if (formData.hasKosatka && cayoAvgTime > META_BENCHMARKS.cayoTime) {
     const efficiencyGap = cayoAvgTime - META_BENCHMARKS.cayoTime;
+    
+    // Run gatekeeper check for Cayo Perico
+    const cayoGatekeeper = checkGatekeeper('cayo_perico', userProfile);
+    
+    let actionTitle = `Fix Cayo Route: Target Sub-45 Min (Currently ${cayoAvgTime} min)`;
+    let actionWhy = `Your ${cayoAvgTime}-min runs are ${efficiencyGap} minutes slower than meta benchmark (${META_BENCHMARKS.cayoTime} min). Target sub-45 min after bonuses end Feb 4.`;
+    
+    // Apply gatekeeper verdict
+    if (cayoGatekeeper.status === 'LOCKED') {
+      // Should not happen since we check formData.hasKosatka, but handle it
+      actionTitle = `🔒 ${actionTitle}`;
+      actionWhy = `${cayoGatekeeper.reason}. ${actionWhy}`;
+    } else if (cayoGatekeeper.status === 'WARNING') {
+      actionTitle = `⚠️ ${actionTitle}`;
+      actionWhy = `${cayoGatekeeper.reason} ${actionWhy}`;
+    }
+    
     actions.push({
       priority: 3,
       urgency: 'MEDIUM',
       type: 'SKILL',
-      title: `Fix Cayo Route: Target Sub-45 Min (Currently ${cayoAvgTime} min)`,
-      why: `Your ${cayoAvgTime}-min runs are ${efficiencyGap} minutes slower than meta benchmark (${META_BENCHMARKS.cayoTime} min). Target sub-45 min after bonuses end Feb 4.`,
+      title: actionTitle,
+      why: actionWhy,
       solution: 'Drainage tunnel, primary only, swim exit. Study 2026 speedrun guides.',
       timeToComplete: '2-3 hours practice',
-      note: 'Do this after Auto Shop event ends Feb 4. Not urgent during event.',
+      note: cayoGatekeeper.status === 'WARNING' ? cayoGatekeeper.reason : 'Do this after Auto Shop event ends Feb 4. Not urgent during event.',
       efficiencyGap: efficiencyGap,
+      gatekeeperStatus: cayoGatekeeper.status,
+      gatekeeperPenalty: cayoGatekeeper.score_penalty,
     });
   }
   
@@ -628,15 +1047,36 @@ Math: You need ${impactsNeeded} punches to reach 40%. (~30 punches/min).`;
   // --- PRIORITY 4+: POST-EVENT OPTIMIZATION (After Feb 4) ---
   // Dr. Dre Contract (After Feb 4 when Auto Shop event ends)
   if (formData.hasAgency && !formData.dreContractDone) {
+    // Run gatekeeper check for Dr. Dre Contract
+    const dreGatekeeper = checkGatekeeper('dre_contract', userProfile);
+    
+    let actionTitle = 'Dr. Dre Contract (After Feb 4)';
+    let actionWhy = 'One-time $1M payout. Do after Auto Shop event ends Feb 4.';
+    let actionNote = 'Lower priority than time-limited events. Do after Feb 4.';
+    let actionPriority = 4;
+    
+    // Apply gatekeeper verdict
+    if (dreGatekeeper.status === 'LOCKED') {
+      actionTitle = `🔒 ${actionTitle}`;
+      actionWhy = `${dreGatekeeper.reason}. ${actionWhy}`;
+      actionNote = dreGatekeeper.reason;
+    } else if (dreGatekeeper.status === 'WARNING') {
+      actionTitle = `⚠️ ${actionTitle}`;
+      actionWhy = `${dreGatekeeper.reason} ${actionWhy}`;
+      actionNote = `${dreGatekeeper.reason}. ${actionNote}`;
+    }
+    
     actions.push({
-      priority: 4,
+      priority: actionPriority,
       urgency: 'LOW',
       type: 'CONTRACT',
-      title: 'Dr. Dre Contract (After Feb 4)',
-      why: 'One-time $1M payout. Do after Auto Shop event ends Feb 4.',
+      title: actionTitle,
+      why: actionWhy,
       solution: 'Complete Dr. Dre Contract from Agency computer',
       timeToComplete: '2-3 hours',
-      note: 'Lower priority than time-limited events. Do after Feb 4.',
+      note: actionNote,
+      gatekeeperStatus: dreGatekeeper.status,
+      gatekeeperPenalty: dreGatekeeper.score_penalty,
     });
   }
 

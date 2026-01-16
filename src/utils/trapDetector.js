@@ -220,6 +220,118 @@ const calculateAverageFixTime = (history) => {
 };
 
 /**
+ * NIGHTCLUB-SPECIFIC TRAP DETECTORS
+ * Detects delivery vehicle issues and inefficient technician assignments
+ */
+export const detectNightclubTraps = (formData) => {
+  const traps = [];
+  
+  if (!formData.hasNightclub) return traps;
+  
+  // --- TRAP 1: The Mule Custom Trap ---
+  // Context: The Mule is slower than the Pounder. If you own the Mule, 
+  // the game FORCES you to use it for medium sales (90-180 crates).
+  // If you own the Pounder but NOT the Mule, the Pounder covers everything >90.
+  const floors = Number(formData.nightclubFloors) || 1;
+  const storage = formData.nightclubStorage || {};
+  const hasMule = storage.hasMule || formData.hasMuleCustom;     // Handle new & old state
+  const hasPounder = storage.hasPounder || formData.hasPounderCustom;
+
+  // Scenario A: Owns Mule but NO Pounder (Worst Case)
+  // Warn even with 1 floor - player may expand storage later, and the Mule is always a trap.
+  // With 1 floor (72 crate max), they're safe now, but expanding to 2+ floors triggers Mule usage.
+  if (hasMule && !hasPounder) {
+    const isCurrentlyAffected = floors > 1; // 2+ floors can exceed 90 crates
+    traps.push({
+      id: 'nc_mule_missing_pounder',
+      severity: isCurrentlyAffected ? TRAP_SEVERITY.CRITICAL : TRAP_SEVERITY.MEDIUM,
+      title: '🚫 Delivery Vehicle Trap (Mule)',
+      icon: '🚛',
+      problem: isCurrentlyAffected 
+        ? 'You own the Mule Custom but NOT the Pounder Custom. The Mule is slow, buggy, and gets stuck easily.'
+        : 'You own the Mule Custom but NOT the Pounder Custom. Currently safe with 1 floor (72 max crates), but if you expand floors, you\'ll be forced to use the slow Mule.',
+      cost: isCurrentlyAffected 
+        ? 'For any sale over 90 crates, you will struggle with deliveries'
+        : 'Future floor expansion will force slow Mule deliveries (90-180 crates)',
+      lostPerHour: 0,
+      solution: 'Buy Pounder Custom ($350k) - handles large sales efficiently',
+      reasoning: 'The Mule Custom is a trap vehicle. It\'s slow and prone to getting stuck. The Pounder handles everything >90 crates much better. Buy the Pounder before you ever need the Mule.',
+      timeToFix: '5 minutes (purchase from Nightclub computer)',
+      requiredSteps: [
+        { step: 'Go to Nightclub computer', reason: 'Access vehicle purchases' },
+        { step: 'Buy Pounder Custom ($350k)', reason: 'Handles large deliveries reliably' },
+      ],
+      fixCost: 350000,
+    });
+  }
+
+  // Scenario B: Owns Mule AND Pounder (Annoyance Case)
+  // They can't sell the Mule, so they are stuck using it for 90-180 crate sales.
+  // Only relevant if floors >= 2 (can exceed 90 crates) - with 1 floor, Mule is never triggered
+  if (floors >= 2 && hasMule && hasPounder) {
+    traps.push({
+      id: 'nc_mule_avoidance',
+      severity: TRAP_SEVERITY.MEDIUM,
+      title: '⚠️ Avoid the Mule Custom',
+      icon: '🚛',
+      problem: 'You own the Mule Custom. The game will force you to use it for medium sales (90-180 crates).',
+      cost: 'Slower deliveries when stock is between 90-180',
+      lostPerHour: 0,
+      solution: 'Only sell when stock exceeds 180 crates to force Pounder usage',
+      reasoning: 'Since you can\'t sell the Mule, the workaround is to always sell above the Mule threshold. Wait for >180 crates.',
+      timeToFix: 'Strategy adjustment (no cost)',
+      requiredSteps: [
+        { step: 'Monitor stock levels', reason: 'Know when you hit 180+ crates' },
+        { step: 'Only sell when stock > 180', reason: 'Forces the game to use Pounder' },
+      ],
+      fixCost: 0,
+    });
+  }
+
+  // --- TRAP 2: The "Weed/Doc" Trap ---
+  // Using a technician on a low-value business while a high-value one sits idle.
+  if (formData.nightclubSources && formData.nightclubTechs) {
+    const sources = formData.nightclubSources;
+    const techs = Number(formData.nightclubTechs);
+    
+    // Check if they are running trash businesses
+    const isRunningTrash = (sources.organic || sources.printing);
+    
+    // Check if they are MISSING top tier businesses (the top 5)
+    const ownedCount = Object.values(sources).filter(Boolean).length;
+    const missingTopTier = (!sources.imports || !sources.cargo || !sources.pharma || !sources.sporting || !sources.cash);
+    
+    // If running trash AND missing gold AND have techs = TRAP
+    // Only flag if they have room for improvement (techs < owned high-value businesses)
+    if (isRunningTrash && missingTopTier && techs > 0 && ownedCount < 5) {
+      const trashValue = (sources.organic ? 4500 : 0) + (sources.printing ? 1500 : 0);
+      const potentialGain = 8000 - (trashValue / (sources.organic && sources.printing ? 2 : 1)); // Avg high-tier vs trash
+      
+      traps.push({
+        id: 'nc_inefficient_assignment',
+        severity: TRAP_SEVERITY.HIGH,
+        title: '📉 Low-Value Nightclub Assignment',
+        icon: '📉',
+        problem: 'You have technicians assigned to Weed or Documents (Low Value) while missing High Value businesses.',
+        cost: `Losing ~$${Math.round(potentialGain).toLocaleString()}/hr per low-value assignment`,
+        lostPerHour: Math.round(potentialGain),
+        solution: 'Buy Coke/Meth/Bunker/Cash businesses to replace low-value sources',
+        reasoning: 'Weed produces $4.5k/hr, Docs produce $1.5k/hr. Cocaine produces $10k/hr. That\'s a 2-6x difference per technician.',
+        timeToFix: '1-2 hours (purchase businesses)',
+        requiredSteps: [
+          { step: 'Check which top-tier you\'re missing', reason: 'Coke > Cargo > Meth > Bunker > Cash' },
+          { step: 'Buy the missing business', reason: 'Replace low-value technician slot' },
+          { step: 'Reassign tech in Nightclub', reason: 'Move tech from Weed/Docs to new business' },
+        ],
+        fixCost: 0, // Variable based on what they need
+      });
+    }
+  }
+
+  return traps;
+};
+
+/**
  * Detect all active traps in player's setup
  * @param {Object} formData - Player form data
  * @param {Object} assessment - Assessment results (optional)
@@ -235,6 +347,10 @@ export const detectTraps = (formData, assessment = null) => {
   // Run all trap detectors
   const nightclubTrap = detectNightclubTrap(formData);
   if (nightclubTrap) traps.push(nightclubTrap);
+  
+  // Add Nightclub-specific traps (Mule, low-value assignments)
+  const ncTraps = detectNightclubTraps(formData);
+  traps.push(...ncTraps);
   
   const bunkerTrap = detectUnupgradedBunkerTrap(formData);
   if (bunkerTrap) traps.push(bunkerTrap);
@@ -264,9 +380,12 @@ export const detectTraps = (formData, assessment = null) => {
  */
 const detectNightclubTrap = (formData) => {
   if (!formData.hasNightclub) return null;
-  
+
   const techs = Number(formData.nightclubTechs) || 0;
-  const feeders = Number(formData.nightclubFeeders) || 0;
+  // Calculate feeders from nightclubSources (new format) or use legacy number
+  const feeders = formData.nightclubSources 
+    ? Object.values(formData.nightclubSources).filter(Boolean).length 
+    : Number(formData.nightclubFeeders) || 0;
   const maxIncome = MODEL_CONFIG.income.passive.nightclubMax;
   const currentIncome = calculateNightclubIncome(techs, feeders);
   const efficiency = (currentIncome / maxIncome) * 100;

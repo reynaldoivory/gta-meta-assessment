@@ -46,11 +46,16 @@ export const computeAssessment = (formData) => {
     0,
     5
   );
-  const nightclubFeeders = validateNumericInput(
-    formData.nightclubFeeders,
-    0,
-    5
-  );
+  
+  // Calculate nightclubFeeders from nightclubSources (new format) or use legacy number
+  let nightclubFeeders = 0;
+  if (formData.nightclubSources && typeof formData.nightclubSources === 'object') {
+    // New format: count active sources
+    nightclubFeeders = Object.values(formData.nightclubSources).filter(Boolean).length;
+  } else {
+    // Legacy format: use number directly
+    nightclubFeeders = validateNumericInput(formData.nightclubFeeders, 0, 7);
+  }
 
   const securityContracts = validateNumericInput(
     formData.securityContracts,
@@ -111,7 +116,7 @@ export const computeAssessment = (formData) => {
   const { activeIncome, passiveIncome, gtaPlusBonusPerHour, incomePerHour, dynamicIncome } = incomeResult;
 
   // ---------- 3. GET ACTIVE EVENTS ----------
-  const activeEvents = getCurrentEvents({ hasGTAPlus, hasAutoShop, hasAgency }, now);
+  const activeEvents = getCurrentEvents({ hasGTAPlus, hasAutoShop, hasAgency, hasNightclub }, now);
 
   // ---------- 4. BOTTLENECK DETECTION ----------
   const bottlenecks = detectBottlenecks(normalizedParams, now, activeEvents, incomePerHour, formData);

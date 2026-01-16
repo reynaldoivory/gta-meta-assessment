@@ -10,6 +10,111 @@ import { recordAssessment } from '../utils/streakTracker';
 
 const AssessmentContext = createContext(null);
 
+/**
+ * Migration helper to upgrade old data formats to current version
+ * Handles: nightclubFeeders (Number) -> nightclubSources (Object)
+ * @param {Object} data - Raw data from localStorage
+ * @returns {Object} Migrated data with current structure
+ */
+const migrateUserData = (data) => {
+  let migrated = { ...data };
+  
+  // MIGRATION: Nightclub Feeders (Number) -> Sources (Object)
+  // If we have a number/string for feeders but no sources object, convert it
+  if ((migrated.nightclubFeeders !== undefined && migrated.nightclubFeeders !== '') && 
+      (!migrated.nightclubSources || Object.values(migrated.nightclubSources).every(v => v === false))) {
+    const feederCount = Number(migrated.nightclubFeeders) || 0;
+    
+    // The ranking order (Best to Worst income per tech)
+    const ORDER = ['imports', 'cargo', 'pharma', 'sporting', 'cash', 'organic', 'printing'];
+    
+    // Create the new object with all false
+    const newSources = {
+      imports: false, cargo: false, pharma: false, sporting: false, 
+      cash: false, organic: false, printing: false
+    };
+
+    // Auto-check the top N businesses based on their old count
+    // e.g., if they had 3 feeders, we assume they own the best 3 (Coke, Cargo, Meth)
+    for (let i = 0; i < feederCount && i < ORDER.length; i++) {
+      newSources[ORDER[i]] = true;
+    }
+
+    migrated.nightclubSources = newSources;
+    console.log(`✅ Migrated Nightclub: Converted ${feederCount} generic feeders to specific sources:`, newSources);
+  }
+
+  // Ensure the nightclubSources object exists even if migration didn't run (for new users)
+  if (!migrated.nightclubSources) {
+    migrated.nightclubSources = {
+      imports: false, cargo: false, pharma: false, sporting: false, 
+      cash: false, organic: false, printing: false
+    };
+  }
+  
+  // MIGRATION: hasPounderCustom/hasMuleCustom -> nightclubStorage
+  if (!migrated.nightclubStorage) {
+    migrated.nightclubStorage = {
+      hasPounder: migrated.hasPounderCustom || false,
+      hasMule: migrated.hasMuleCustom || false
+    };
+    if (migrated.hasPounderCustom || migrated.hasMuleCustom) {
+      console.log('✅ Migrated Nightclub delivery vehicles to nightclubStorage');
+    }
+  }
+
+  // MIGRATION: lungCapacity -> stamina
+  if (migrated.lungCapacity !== undefined && migrated.stamina === undefined) {
+    migrated.stamina = migrated.lungCapacity;
+    delete migrated.lungCapacity;
+    console.log('✅ Migrated Lung Capacity → Stamina');
+  }
+
+  // MIGRATION: bunkerUpgraded (boolean) -> individual upgrade fields
+  // If user had bunkerUpgraded=true, populate the new granular fields
+  if (migrated.bunkerUpgraded && 
+      migrated.bunkerEquipmentUpgrade === undefined && 
+      migrated.bunkerStaffUpgrade === undefined) {
+    migrated.bunkerEquipmentUpgrade = true;
+    migrated.bunkerStaffUpgrade = true;
+    // Security upgrade was not tracked before, default to false
+    migrated.bunkerSecurityUpgrade = false;
+    console.log('✅ Migrated bunkerUpgraded to granular upgrade fields');
+  }
+
+  // Ensure bunker upgrade fields exist (for new users or incomplete data)
+  if (migrated.bunkerEquipmentUpgrade === undefined) {
+    migrated.bunkerEquipmentUpgrade = false;
+  }
+  if (migrated.bunkerStaffUpgrade === undefined) {
+    migrated.bunkerStaffUpgrade = false;
+  }
+  if (migrated.bunkerSecurityUpgrade === undefined) {
+    migrated.bunkerSecurityUpgrade = false;
+  }
+
+  // Ensure purchaseDates object exists (prevents TypeError on deep merge)
+  if (!migrated.purchaseDates || typeof migrated.purchaseDates !== 'object') {
+    migrated.purchaseDates = {
+      kosatka: null,
+      sparrow: null,
+      agency: null,
+      nightclub: null,
+      acidLab: null,
+      bunker: null,
+      autoShop: null,
+      salvageYard: null,
+    };
+  }
+
+  // Ensure cayoHistory array exists
+  if (!Array.isArray(migrated.cayoHistory)) {
+    migrated.cayoHistory = [];
+  }
+
+  return migrated;
+};
+
 export const AssessmentProvider = ({ children }) => {
   // 1. Initialize State
   const [formData, setFormData] = useState({
@@ -18,10 +123,31 @@ export const AssessmentProvider = ({ children }) => {
     hasKosatka: false, hasSparrow: false, cayoCompletions: '', cayoAvgTime: '',
     hasAgency: false, dreContractDone: false, payphoneUnlocked: false, securityContracts: '',
     hasAcidLab: false, acidLabUpgraded: false, 
-    hasNightclub: false, nightclubTechs: '', nightclubFeeders: '',
+    hasNightclub: false, 
+    nightclubTechs: '', 
+    // Detailed tracking for precise Nightclub logistics
+    nightclubSources: {
+      imports: false,  // Coke (South American Imports)
+      cargo: false,    // Hangar/CEO (Cargo & Shipments)
+      pharma: false,   // Meth (Pharmaceutical Research)
+      sporting: false, // Bunker (Sporting Goods)
+      cash: false,     // Cash (Cash Creation)
+      organic: false,  // Weed (Organic Produce)
+      printing: false  // Docs (Printing & Copying)
+    },
+    nightclubFloors: '1',
+    nightclubStorage: {
+      hasPounder: false,
+      hasMule: false
+    },
     hasSalvageYard: false, hasTowTruck: false,
     hasSafehouse: false, hasRaiju: false, hasOppressor: false, hasArmoredKuruma: false,
-    hasBunker: false, bunkerUpgraded: false, hasAutoShop: false,
+    hasBunker: false, 
+    bunkerUpgraded: false, // Legacy field (kept for backward compatibility)
+    bunkerEquipmentUpgrade: false,
+    bunkerStaffUpgrade: false,
+    bunkerSecurityUpgrade: false,
+    hasAutoShop: false,
     hasMansion: false,
     mansionType: '',
     hasCarWash: false,
@@ -94,23 +220,32 @@ export const AssessmentProvider = ({ children }) => {
       const saved = localStorage.getItem(STORAGE_KEY);
       if (saved) {
         const parsed = JSON.parse(saved);
-        console.log('✅ Loaded saved data:', parsed); // Debug log
+        console.log('✅ Loaded saved data:', parsed);
         
-        // MIGRATION: Convert lungCapacity to stamina if stamina is missing
-        if (parsed.lungCapacity !== undefined && parsed.stamina === undefined) {
-          parsed.stamina = parsed.lungCapacity; // Carry over the value (0-5)
-          delete parsed.lungCapacity;
-          console.log('✅ Migrated Lung Capacity → Stamina');
-          // Save migrated data back
+        // Run all migrations (handles nightclubFeeders -> nightclubSources, etc.)
+        const upgradedData = migrateUserData(parsed);
+        
+        // Save migrated data back if migrations occurred
+        if (JSON.stringify(parsed) !== JSON.stringify(upgradedData)) {
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(upgradedData));
+            console.log('💾 Saved migrated data');
           } catch (e) {
             console.warn('Could not save migrated data:', e);
           }
         }
         
-        if (parsed.rank || parsed.liquidCash) {
-          setFormData(prev => ({ ...prev, ...parsed }));
+        if (upgradedData.rank || upgradedData.liquidCash) {
+          // Merge recursively to ensure nested objects don't get overwritten by shallow defaults
+          setFormData(prev => ({ 
+            ...prev, 
+            ...upgradedData,
+            // Deep merge nested objects (with fallbacks to prevent spread errors)
+            nightclubSources: { ...prev.nightclubSources, ...(upgradedData.nightclubSources || {}) },
+            nightclubStorage: { ...prev.nightclubStorage, ...(upgradedData.nightclubStorage || {}) },
+            purchaseDates: { ...prev.purchaseDates, ...(upgradedData.purchaseDates || {}) },
+            cayoHistory: upgradedData.cayoHistory || prev.cayoHistory || []
+          }));
           setHasDraft(true);
         }
       }
@@ -191,10 +326,30 @@ export const AssessmentProvider = ({ children }) => {
       hasKosatka: false, hasSparrow: false, cayoCompletions: '', cayoAvgTime: '',
       hasAgency: false, dreContractDone: false, payphoneUnlocked: false, securityContracts: '',
       hasAcidLab: false, acidLabUpgraded: false, 
-      hasNightclub: false, nightclubTechs: '', nightclubFeeders: '',
+      hasNightclub: false, 
+      nightclubTechs: '', 
+      nightclubSources: {
+        imports: false,
+        cargo: false,
+        pharma: false,
+        sporting: false,
+        cash: false,
+        organic: false,
+        printing: false
+      },
+      nightclubFloors: '1',
+      nightclubStorage: {
+        hasPounder: false,
+        hasMule: false
+      },
       hasSalvageYard: false, hasTowTruck: false,
       hasSafehouse: false, hasRaiju: false, hasOppressor: false, hasArmoredKuruma: false,
-      hasBunker: false, bunkerUpgraded: false, hasAutoShop: false,
+      hasBunker: false, 
+      bunkerUpgraded: false,
+      bunkerEquipmentUpgrade: false,
+      bunkerStaffUpgrade: false,
+      bunkerSecurityUpgrade: false,
+      hasAutoShop: false,
       hasMansion: false,
       mansionType: '',
       hasCarWash: false,

@@ -22,17 +22,23 @@ export const calculateCayoIncome = (avgTime, completions) => {
 };
 
 /**
- * Calculate Nightclub efficiency
+ * Calculate Nightclub efficiency (LEGACY/SIMPLE VERSION)
+ * 
+ * NOTE: This is the simplified calculation used for trap detection and prerequisite checks.
+ * For exact passive income calculation with per-business rates, use the function 
+ * in calculateIncome.js which takes formData and uses NC_RATES for precise math.
+ * 
  * @param {number} techs - Technicians hired (0-5)
- * @param {number} feeders - Linked businesses (0-5)
- * @returns {number} Income per hour
+ * @param {number} feeders - Linked businesses (0-7)
+ * @returns {number} Income per hour (estimated)
  */
 export const calculateNightclubIncome = (techs, feeders) => {
   const pCfg = MODEL_CONFIG.income?.passive || {};
   const maxNc = pCfg.nightclubMax ?? 50000;
   
   // Both need to be maxed for full efficiency
-  const efficiency = (techs / 5) * (feeders / 5);
+  // This uses a simplified efficiency calculation
+  const efficiency = (techs / 5) * (Math.min(feeders, 5) / 5);
   
   return maxNc * Math.max(0, Math.min(1, efficiency));
 };

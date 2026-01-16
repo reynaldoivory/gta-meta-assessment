@@ -306,7 +306,10 @@ const checkAgencyPrereqs = (formData, assessment) => {
 
 const checkNightclubPrereqs = (formData, assessment) => {
   const property = PROPERTIES.nightclub;
-  const feeders = Number(formData.nightclubFeeders) || 0;
+  // Calculate feeders from nightclubSources (new format) or use legacy number
+  const feeders = formData.nightclubSources 
+    ? Object.values(formData.nightclubSources).filter(Boolean).length 
+    : Number(formData.nightclubFeeders) || 0;
   const liquidCash = Number(formData.liquidCash) || 0;
   
   // BLOCKED: No feeder businesses = $0/hr income

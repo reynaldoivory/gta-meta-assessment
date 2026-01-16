@@ -1,11 +1,12 @@
 // src/views/PriorityActionPlan.jsx
-import React from 'react';
+import React, { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { buildCompactActionPlan } from '../utils/actionPlanBuilder';
 import { prioritizeActions } from '../utils/actionPriority';
 import { buildLLMPrompt, buildPlanCritiquePrompt, buildLLMJsonPayload, buildGoogleDocExport, buildWhatIfPrompt } from '../utils/buildLLMPrompt';
 import { getWeeklyBonuses } from '../config/weeklyEvents';
 import { ArrowLeft, Target, Clock, BookOpen, DollarSign, AlertTriangle, TrendingUp } from 'lucide-react';
+import ActionPlan from '../components/ActionPlan';
 
 const PriorityActionPlan = () => {
   const { formData, results, setStep, whatIfText, setWhatIfText } = useAssessment();
@@ -124,6 +125,11 @@ const PriorityActionPlan = () => {
           <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
             Priority Action Plan
           </div>
+        </div>
+
+        {/* Session Optimizer - Dynamic Recommendations */}
+        <div className="bg-slate-900/60 border border-green-900/30 rounded-2xl overflow-hidden">
+          <ActionPlan />
         </div>
 
         {/* Time to Goal Card */}

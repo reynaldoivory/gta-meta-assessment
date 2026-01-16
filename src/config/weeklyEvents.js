@@ -4,52 +4,100 @@
 
 export const WEEKLY_EVENTS = {
   meta: {
-    lastUpdated: '2026-01-10',
-    validFrom: '2026-01-08T09:00:00Z', // Thursday 4AM ET
-    validUntil: '2026-01-15T09:00:00Z', // Next Thursday 4AM ET
-    displayDate: 'Jan 8 - Jan 14',
+    lastUpdated: '2026-01-16',
+    validFrom: '2026-01-15T10:00:00Z', // Thursday 4AM ET
+    validUntil: '2026-01-21T10:00:00Z', // Next Thursday 4AM ET
+    displayDate: 'Jan 15 - Jan 21',
   },
   bonuses: {
     // Priority 0: The "Meta" Event
+    businessBattles: {
+      isActive: true,
+      multiplier: 4.0,
+      label: '4X Business Battles',
+      validUntil: '2026-01-21T10:00:00Z',
+      category: 'freemode',
+    },
+    nightclubGoods: {
+      isActive: true,
+      multiplier: 4.0,
+      label: '4X Nightclub Goods',
+      validUntil: '2026-01-21T10:00:00Z',
+      category: 'passive',
+    },
+    nightclubSafe: {
+      isActive: true,
+      multiplier: 2.0,
+      label: '2X Nightclub Safe Income',
+      validUntil: '2026-01-21T10:00:00Z',
+      category: 'passive',
+    },
+    mansionRaid: {
+      isActive: true,
+      multiplier: 2.0,
+      label: '2X Mansion Raid',
+      validUntil: '2026-01-21T10:00:00Z',
+      category: 'pvp',
+    },
     autoShop: {
       isActive: true,
       multiplier: 2.0,
       label: '2X Auto Shop Contracts',
-      expiresLabel: 'Feb 4 (GTA+ Monthly) / Jan 15 (Everyone else)',
-      gtaPlusValidUntil: '2026-02-05T09:00:00Z', // ✅ CORRECTED
-      validUntil: '2026-01-15T09:00:00Z',
-      gtaPlusOnly: false, // Weekly 2X for everyone, extends to Feb 4 for GTA+
+      expiresLabel: 'Feb 4 (GTA+ Monthly)',
+      gtaPlusValidUntil: '2026-02-04T10:00:00Z',
+      validUntil: '2026-01-21T10:00:00Z',
+      gtaPlusOnly: true, // GTA+ only
     },
     paperTrail: {
       isActive: true,
       label: 'Operation Paper Trail',
-      multiplier: '2X (4X for GTA+)',
+      multiplier: '2X (GTA+)',
       baseMultiplier: 2.0,
-      gtaPlusMultiplier: 4.0,
+      gtaPlusMultiplier: 2.0,
       isRpEvent: true, // Tag for Rank bottlenecks
-      validUntil: '2026-01-15T09:00:00Z',
+      gtaPlusValidUntil: '2026-02-04T10:00:00Z',
+      validUntil: '2026-01-21T10:00:00Z',
+      gtaPlusOnly: true, // GTA+ only
     },
-    carWash: {
-      isActive: true,
-      isFree: true,
-      label: 'FREE Hands On Car Wash',
-      normalPrice: 1400000,
-      validUntil: '2026-01-15T09:00:00Z',
-      urgent: true,
-    },
-    moneyFronts: { multiplier: 3, label: "3X GTA$ Legal Money Fronts" }
   },
+  oneTimeBonuses: [
+    {
+      id: 'mansion_raid_first_win',
+      reward: 200000,
+      description: 'Win one Mansion Raid match',
+      expires: '2026-01-18T10:00:00Z',
+      deliveryTime: 'within 72 hours',
+    },
+  ],
   discounts: {
-    autoShop: {
-      percent: 50,
-      requiresGTAPlus: true,
-      priceEstimate: 850000 // Strawberry location
-    }
+    nightclubProperties: {
+      percent: 40,
+      requiresGTAPlus: false,
+      validUntil: '2026-01-21T10:00:00Z',
+    },
+    nightclubUpgrades: {
+      percent: 40,
+      requiresGTAPlus: false,
+      validUntil: '2026-01-21T10:00:00Z',
+    },
   },
   gtaPlus: {
-    freeCar: "Pfister Astrale",
-    freeCarLocation: "The Vinewood Car Club"
-  }
+    freeCar: 'Benefactor SM722',
+    freeCarLocation: 'The Vinewood Car Club',
+    monthlyCash: 500000,
+    monthlyBonuses: [
+      {
+        activity: 'auto_shop_finales',
+        multiplier: 2,
+        expires: '2026-02-04T10:00:00Z',
+      },
+      {
+        activity: 'paper_trail',
+        multiplier: 2,
+        expires: '2026-02-04T10:00:00Z',
+      },
+    ],
+  },
 };
 
 // Helper to calculate days remaining
@@ -87,22 +135,40 @@ export const getWeeklyBonuses = () => {
   // Convert new structure to old array format for backward compatibility
   return [
     {
-      activity: 'Auto Shop Robbery Contracts',
+      activity: 'Business Battles',
+      multiplier: `${WEEKLY_EVENTS.bonuses.businessBattles.multiplier}X`,
+      note: WEEKLY_EVENTS.bonuses.businessBattles.label,
+      isGTAPlus: false,
+    },
+    {
+      activity: 'Nightclub Goods',
+      multiplier: `${WEEKLY_EVENTS.bonuses.nightclubGoods.multiplier}X`,
+      note: WEEKLY_EVENTS.bonuses.nightclubGoods.label,
+      isGTAPlus: false,
+    },
+    {
+      activity: 'Nightclub Safe Income',
+      multiplier: `${WEEKLY_EVENTS.bonuses.nightclubSafe.multiplier}X`,
+      note: WEEKLY_EVENTS.bonuses.nightclubSafe.label,
+      isGTAPlus: false,
+    },
+    {
+      activity: 'Mansion Raid',
+      multiplier: `${WEEKLY_EVENTS.bonuses.mansionRaid.multiplier}X`,
+      note: WEEKLY_EVENTS.bonuses.mansionRaid.label,
+      isGTAPlus: false,
+    },
+    {
+      activity: 'Auto Shop Contracts',
       multiplier: `${WEEKLY_EVENTS.bonuses.autoShop.multiplier}X`,
       note: WEEKLY_EVENTS.bonuses.autoShop.label,
-      isGTAPlus: false,
+      isGTAPlus: true, // GTA+ only
     },
     {
       activity: 'Operation Paper Trail',
       multiplier: WEEKLY_EVENTS.bonuses.paperTrail.multiplier,
       note: WEEKLY_EVENTS.bonuses.paperTrail.label,
-      isGTAPlus: false, // Both GTA+ and non-GTA+ can access, different multipliers
-    },
-    {
-      activity: 'Legal Money Fronts',
-      multiplier: `${WEEKLY_EVENTS.bonuses.moneyFronts.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.moneyFronts.label,
-      isGTAPlus: false,
+      isGTAPlus: true, // GTA+ only
     },
   ];
 };

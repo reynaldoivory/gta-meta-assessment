@@ -4,6 +4,60 @@
 import { MODEL_CONFIG } from './modelConfig.js';
 import { calculateDynamicIncome } from './dynamicIncome.js';
 
+// ============================================
+// 2026 Meta Rates (Dollars per Hour)
+// Source: GTA Online After Hours Business Rates
+// ============================================
+const NC_RATES = {
+  imports: 10000,  // Cocaine (South American Imports)
+  cargo: 8570,     // CEO/Hangar (Cargo & Shipments)
+  pharma: 8500,    // Meth (Pharmaceutical Research)
+  sporting: 7500,  // Bunker (Sporting Goods)
+  cash: 7000,      // Cash (Cash Creation)
+  organic: 4500,   // Weed (Organic Produce) - BAD
+  printing: 1500   // Documents (Printing & Copying) - TERRIBLE
+};
+
+/**
+ * Calculate exact Nightclub passive income using "Exact Stack" method
+ * Uses real per-hour rates and smart technician assignment logic
+ * @param {Object} formData - Player form data
+ * @returns {number} Income per hour in GTA$
+ */
+export const calculateNightclubIncome = (formData) => {
+  // 1. Get Technician Count (max 5)
+  const techs = Math.min(5, Number(formData.nightclubTechs) || 0);
+  
+  // 2. Exact Math (New System) - Uses nightclubSources object
+  if (formData.nightclubSources) {
+    // Identify which businesses are OWNED (set to true)
+    const ownedIds = Object.keys(formData.nightclubSources)
+      .filter(key => formData.nightclubSources[key]);
+
+    // Sort owned businesses by value (Highest to Lowest)
+    // This simulates "Smart Assignment": techs assigned to best available slots
+    const activeAssignment = ownedIds
+      .sort((a, b) => NC_RATES[b] - NC_RATES[a])
+      .slice(0, techs); // Only take as many as we have techs for
+
+    // Sum the exact rates
+    return activeAssignment.reduce((sum, id) => sum + NC_RATES[id], 0);
+  }
+
+  // 3. Fallback Math (Old System for legacy data)
+  // If user hasn't migrated yet, use efficiency formula matching incomeCalculators.js
+  // This ensures consistent values between computeAssessment and trapDetector/prerequisiteEngine
+  const oldFeeders = Number(formData.nightclubFeeders) || 0;
+  const maxNc = 50000; // MODEL_CONFIG.income.passive.nightclubMax
+  const efficiency = (techs / 5) * (Math.min(oldFeeders, 5) / 5);
+  return maxNc * Math.max(0, Math.min(1, efficiency));
+};
+
+/**
+ * Get the NC_RATES for external use (e.g., in UI components)
+ */
+export const getNightclubRates = () => NC_RATES;
+
 /**
  * Calculate all income sources for a player
  * @param {Object} params - Normalized player data
@@ -87,12 +141,10 @@ export const calculateIncome = (params, formData) => {
     passiveIncome += base * upgradeMult;
   }
 
-  // --- 2.4 Nightclub ---
+  // --- 2.4 Nightclub (Exact Stack Calculation) ---
   if (hasNightclub) {
-    const pCfg = MODEL_CONFIG.income?.passive || {};
-    const maxNc = pCfg.nightclubMax ?? 50000;             // /hr at 5 techs + 5 feeders
-    const efficiency = (nightclubTechs / 5) * (nightclubFeeders / 5);
-    passiveIncome += maxNc * Math.max(0, Math.min(1, efficiency));
+    // Use the new exact calculation method
+    passiveIncome += calculateNightclubIncome(formData);
   }
 
   // --- 2.5 Bunker ---

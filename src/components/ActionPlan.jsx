@@ -300,15 +300,21 @@ const TaskCard = ({ data, rank }) => {
         </div>
 
         {/* Action Button */}
-        <div className="mt-3 flex items-center justify-between">
-          <div className="inline-flex items-center gap-2 bg-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded border border-slate-700 font-mono">
-            <span>👉</span> {data.action}
+        <div className="mt-3 flex items-start justify-between gap-3">
+          {/* “UX bubble” — must wrap long text */}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-start gap-2 bg-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded border border-slate-700 font-mono whitespace-normal break-words [overflow-wrap:anywhere] max-w-full">
+              <span className="flex-shrink-0">👉</span>
+              <span className="min-w-0">
+                {data.action}
+              </span>
+            </div>
           </div>
           
           {data.warnings && data.warnings.length > 0 && (
             <button
               onClick={() => setExpanded(!expanded)}
-              className="text-xs text-slate-500 hover:text-slate-300 transition-colors"
+              className="flex-shrink-0 text-xs text-slate-500 hover:text-slate-300 transition-colors"
             >
               {expanded ? '▲ Less' : '▼ More'}
             </button>

@@ -243,6 +243,184 @@ export const calculateCompoundEfficiency = (task, user, gameState, weeklyEvents)
 };
 
 /**
+ * Compound Efficiency middleware helpers
+ * Philosophy: don't spend time on linear grind while passive systems are unbuilt/unfed,
+ * unless that grind is directly funding an unlock/upgrade.
+ */
+const parseMinutes = (timeToComplete) => {
+  if (!timeToComplete || typeof timeToComplete !== 'string') return null;
+  const str = timeToComplete.toLowerCase();
+  const hrMatch = str.match(/(\d+(\.\d+)?)\s*h/);
+  const minMatch = str.match(/(\d+(\.\d+)?)\s*m/);
+  if (hrMatch) return Math.round(parseFloat(hrMatch[1]) * 60);
+  if (minMatch) return Math.round(parseFloat(minMatch[1]));
+  const anyNumber = str.match(/(\d+(\.\d+)?)/);
+  return anyNumber ? Math.round(parseFloat(anyNumber[1])) : null;
+};
+
+const getPassiveProgress = (formData) => {
+  const acid = !!formData.hasAcidLab;
+  const acidUp = acid && !!formData.acidLabUpgraded;
+  const bunker = !!formData.hasBunker;
+  const bunkerUp = bunker && !!formData.bunkerUpgraded;
+  const nightclub = !!formData.hasNightclub;
+  const nightclubOptimized = nightclub && Number(formData.nightclubTechs) >= 5 && Number(formData.nightclubFeeders) >= 5;
+  // Agency isn't purely passive, but payphone hits + contracts are "parallel filler" during cooldowns.
+  const agency = !!formData.hasAgency;
+  const agencyUnlocked = agency && (!!formData.payphoneUnlocked || Number(formData.securityContracts) >= 3);
+
+  const items = [
+    { key: 'acid', ready: acidUp, owned: acid },
+    { key: 'bunker', ready: bunkerUp, owned: bunker },
+    { key: 'nightclub', ready: nightclubOptimized, owned: nightclub },
+    { key: 'agency', ready: agencyUnlocked, owned: agency },
+  ];
+  const readyCount = items.filter(i => i.ready).length;
+  return {
+    items,
+    readyCount,
+    total: items.length,
+    allMaxed: readyCount === items.length,
+  };
+};
+
+const generateSessionTaxActions = (formData) => {
+  const actions = [];
+  // Keep these intentionally short: "start the passive clock"
+  if (formData.hasAcidLab) {
+    actions.push({
+      priority: 0,
+      urgency: 'URGENT',
+      type: 'TAX',
+      title: 'Resupply Acid Lab',
+      why: 'Start your passive clock immediately. Empty supplies = money left on the table.',
+      solution: 'Call Mutt → Buy Supplies (or steal if cash is tight).',
+      timeToComplete: '3-5 mins',
+      estimatedMinutes: 5,
+      launchesPassiveTimer: true,
+      futureValue: 3,
+    });
+  }
+  if (formData.hasBunker) {
+    actions.push({
+      priority: 0,
+      urgency: 'URGENT',
+      type: 'TAX',
+      title: 'Resupply Bunker',
+      why: 'Supplies running = passive production running. Do this before any grind.',
+      solution: 'Bunker computer → Buy Supplies (best if upgraded).',
+      timeToComplete: '3-5 mins',
+      estimatedMinutes: 5,
+      launchesPassiveTimer: true,
+      futureValue: 3,
+    });
+  }
+  if (actions.length === 0) {
+    actions.push({
+      priority: 1,
+      urgency: 'MEDIUM',
+      type: 'TAX',
+      title: 'Quick Daily “Tax” Loop',
+      why: 'If you don’t have passive businesses yet, take 5 minutes to grab easy daily value.',
+      solution: 'Do Daily Objectives + any quick bonus claims (casino spin, free items).',
+      timeToComplete: '5 mins',
+      estimatedMinutes: 5,
+      launchesPassiveTimer: false,
+      futureValue: 1,
+    });
+  }
+  return actions;
+};
+
+const annotateForCompoundEfficiency = (action, formData, results, now) => {
+  const passive = getPassiveProgress(formData);
+  const strengthPct = validateStat(formData.strength);
+  const flyingPct = validateStat(formData.flying);
+
+  const estimatedMinutes =
+    action.estimatedMinutes ??
+    (typeof action.timeHours === 'number' ? Math.round(action.timeHours * 60) : null) ??
+    parseMinutes(action.timeToComplete);
+
+  // --- Gatekeeper: "Can I do it?" ---
+  const blockedBy = [];
+
+  // Time gate: if action has an estimate and is clearly long, flag it (UI can decide how to use).
+  if (estimatedMinutes !== null && estimatedMinutes >= 120 && action.urgency !== 'URGENT') {
+    blockedBy.push('Too long for most sessions (2h+)');
+  }
+
+  // Content gates (heuristic until each action has explicit requirements metadata)
+  const title = (action.title || '').toLowerCase();
+  if (title.includes('cayo') && !formData.hasKosatka) blockedBy.push('Requires Kosatka');
+  if (title.includes('auto shop') && !formData.hasAutoShop) blockedBy.push('Requires Auto Shop');
+  if (title.includes('cayo') && flyingPct < 60) blockedBy.push('Flying too low (aim 60%+)');
+  if ((title.includes('finale') || title.includes('contract') || title.includes('raid')) && strengthPct < 60) {
+    blockedBy.push('Strength too low for consistent combat (aim 60%+)');
+  }
+
+  // --- Parallel Multiplier: "Is it working while I sleep?" ---
+  const launchesPassiveTimer =
+    !!action.launchesPassiveTimer ||
+    action.type === 'TAX' ||
+    action.bottleneckId === 'acid_upgrade' ||
+    action.bottleneckId === 'bunker_upgrade' ||
+    action.bottleneckId === 'nightclub_partial';
+
+  // --- Unlock Velocity: "Does this change my future?" ---
+  const unlockVelocity =
+    action.futureValue ??
+    (action.type === 'STAT' ? 2 : 0) +
+    (action.type === 'PURCHASE' ? 3 : 0) +
+    (title.includes('flight school') ? 3 : 0) +
+    (title.includes('first dose') || title.includes('acid') ? 3 : 0);
+
+  // --- Compound Efficiency: prefer passive unlocks until maxed ---
+  const isLinearGrind =
+    action.type === 'GRIND' ||
+    (action.type === 'MISSION' && (title.includes('grind') || title.includes('farm') || title.includes('repeat')));
+
+  // Base score starts from the existing priority score if present.
+  // If not present, compute a lightweight approximation.
+  let compoundScore = action._priorityScore ?? 0;
+  if (!compoundScore) {
+    compoundScore =
+      (action.savingsPerHour ? 4000 + Math.min(action.savingsPerHour / 1000, 5000) : 0) +
+      (action.impact === 'CRITICAL' ? 6000 : action.impact === 'high' ? 3000 : action.impact === 'medium' ? 1500 : 0) +
+      (action.urgency === 'URGENT' || action.urgency === 'GRIND NOW' ? 5000 : 0);
+  }
+
+  // Add unlock velocity directly
+  compoundScore += unlockVelocity * 900;
+
+  // Apply parallel multiplier
+  if (launchesPassiveTimer) compoundScore *= 3;
+
+  // Penalize linear grind if passive systems aren’t maxed yet (unless it's funding an unlock)
+  if (!passive.allMaxed && isLinearGrind) {
+    compoundScore *= 0.6;
+  }
+
+  // If hard-blocked, push to bottom (but don’t delete, so UI can still show as “blocked”)
+  if (blockedBy.length > 0) compoundScore -= 10000;
+
+  return {
+    ...action,
+    estimatedMinutes,
+    launchesPassiveTimer,
+    unlockVelocity,
+    blockedBy: action.blockedBy || blockedBy,
+    compoundScore,
+    _compoundMeta: {
+      passiveReady: passive.readyCount,
+      passiveTotal: passive.total,
+      passiveAllMaxed: passive.allMaxed,
+      annotatedAt: now,
+    },
+  };
+};
+
+/**
  * Meta efficiency benchmarks
  */
 const META_BENCHMARKS = {
@@ -310,6 +488,7 @@ const bottleneckToAction = (bottleneck, now) => {
     why: bottleneck.detail,
     solution: bottleneck.solution,
     timeToComplete,
+    estimatedMinutes: bottleneck.timeHours ? Math.ceil(bottleneck.timeHours * 60) : null,
     cost: 0,
     timeRemaining,
     expiresAt: bottleneck.expiresAt,
@@ -454,9 +633,12 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
     action._priorityScore = calculatePriorityScore(action, now);
   });
   
-  // Sort by cached priority score (highest first)
-  const sortedActions = allActions
-    .sort((a, b) => b._priorityScore - a._priorityScore)
+  // Apply Compound Efficiency middleware (Gatekeeper + Parallel Multiplier + Unlock Velocity)
+  const annotatedActions = allActions.map(a => annotateForCompoundEfficiency(a, formData, results, now));
+
+  // Sort by compound score (highest first)
+  const sortedActions = annotatedActions
+    .sort((a, b) => (b.compoundScore || 0) - (a.compoundScore || 0))
     .slice(0, 5) // Limit to top 5
     .map(({ _priorityScore, ...action }) => action); // Remove cached score before returning
   
@@ -473,6 +655,60 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
     }
   }
   return sortedActions;
+};
+
+/**
+ * Session Consultant: builds a 3-part plan for a given session length.
+ * - Tax: start passive timers (first ~5 minutes)
+ * - Bridge: best “do now” activity you can actually execute
+ * - Investment: improve future capability/unlocks (stats/upgrades)
+ */
+export const buildSessionPlan = ({ formData, results, sessionMinutes = 60 }) => {
+  const now = Date.now();
+  const taxCandidates = generateSessionTaxActions(formData);
+  const tax = taxCandidates[0];
+
+  const remainingAfterTax = Math.max(0, sessionMinutes - (tax.estimatedMinutes || 5));
+
+  // Build candidate pool from the same sources as the action plan.
+  const bottlenecks = (results?.bottlenecks || []).map(b => bottleneckToAction(b, now));
+  const smart = buildSmartActionPlan(formData, results);
+  const candidates = [...bottlenecks, ...smart]
+    .map(a => annotateForCompoundEfficiency(a, formData, results, now))
+    // Don’t reuse the tax action verbatim
+    .filter(a => a.title !== tax.title);
+
+  // Investment: pick something with high unlock velocity that fits ~last 15 min (or less if short session)
+  const investBudget = Math.min(15, Math.max(5, Math.floor(remainingAfterTax * 0.25)));
+  const investment = candidates
+    .filter(a => (a.unlockVelocity || 0) >= 3)
+    .filter(a => a.estimatedMinutes == null || a.estimatedMinutes <= investBudget)
+    .sort((a, b) => (b.compoundScore || 0) - (a.compoundScore || 0))[0] || null;
+
+  const remainingAfterInvestment = Math.max(
+    0,
+    remainingAfterTax - (investment?.estimatedMinutes || 0)
+  );
+
+  // Bridge: pick the best executable action that fits the remaining time and isn’t hard-blocked
+  const bridge = candidates
+    .filter(a => !a.blockedBy || a.blockedBy.length === 0)
+    .filter(a => a.estimatedMinutes == null || a.estimatedMinutes <= remainingAfterInvestment)
+    // Prefer non-tax, non-investment
+    .filter(a => !investment || a.title !== investment.title)
+    .sort((a, b) => (b.compoundScore || 0) - (a.compoundScore || 0))[0] || null;
+
+  return {
+    sessionMinutes,
+    tax,
+    bridge,
+    investment,
+    meta: {
+      remainingAfterTax,
+      remainingAfterInvestment,
+      passiveProgress: getPassiveProgress(formData),
+    },
+  };
 };
 
 /**

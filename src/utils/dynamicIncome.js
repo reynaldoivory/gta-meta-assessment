@@ -59,29 +59,25 @@ export const calculateDynamicIncome = (formData) => {
   
   // GTA+ members get boosted rates on monthly benefits
   if (formData.hasGTAPlus) {
-    // Find the Auto Shop monthly bonus from config, or use the first monthly bonus expiry
+    // Only apply Auto Shop multiplier if a matching monthly bonus exists in config
     const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
     const autoShopMonthly = monthlyBonuses.find(b => b.activity.includes('auto_shop'));
-    const monthlyBenefitEnd = autoShopMonthly
-      ? new Date(autoShopMonthly.expires).getTime()
-      : monthlyBonuses.length > 0
-        ? new Date(monthlyBonuses[0].expires).getTime()
-        : 0;
-    const monthlyBenefitExpiry = autoShopMonthly
-      ? formatExpiry(autoShopMonthly.expires)
-      : monthlyBonuses.length > 0
-        ? formatExpiry(monthlyBonuses[0].expires)
-        : '';
 
-    if (monthlyBenefitEnd && now < monthlyBenefitEnd) {
-      autoShopMultiplier = autoShopBonus?.multiplier || 2.0; // Use from config or default to 2.0
-      autoShopEvent = {
-        activity: 'Auto Shop Robbery Contracts (GTA+)',
-        multiplier: `${autoShopMultiplier}X`,
-        note: autoShopBonus?.expiresLabel || `Through ${monthlyBenefitExpiry} (Monthly Benefit)`,
-        isGTAPlus: true,
-      };
+    if (autoShopMonthly) {
+      const monthlyBenefitEnd = new Date(autoShopMonthly.expires).getTime();
+      const monthlyBenefitExpiry = formatExpiry(autoShopMonthly.expires);
+
+      if (monthlyBenefitEnd && now < monthlyBenefitEnd) {
+        autoShopMultiplier = autoShopBonus?.multiplier || autoShopMonthly.multiplier || 2.0;
+        autoShopEvent = {
+          activity: 'Auto Shop Robbery Contracts (GTA+)',
+          multiplier: `${autoShopMultiplier}X`,
+          note: autoShopBonus?.expiresLabel || `Through ${monthlyBenefitExpiry} (Monthly Benefit)`,
+          isGTAPlus: true,
+        };
+      }
     }
+    // No auto_shop monthly bonus this month — skip GTA+ Auto Shop boost
   } else if (autoShopBonus?.isActive && isEventActive) {
     // Weekly event for non-GTA+ members (use new structure)
     autoShopMultiplier = autoShopBonus.multiplier || 2;

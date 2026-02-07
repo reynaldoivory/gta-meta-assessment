@@ -101,121 +101,48 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
   // TIER 1: INCOME LEAKS (Costing you money every hour)
   // ============================================
 
-  const autoShop2XEvent = activeEvents.find(e => e.name === 'autoShop2X');
-  const businessBattles4XEvent = activeEvents.find(e => e.name === 'businessBattles4X');
-  const nightclubGoods4XEvent = activeEvents.find(e => e.name === 'nightclubGoods4X');
-  const nightclubDiscountEvent = activeEvents.find(e => e.name === 'nightclubDiscount40');
-  
-  // Create bottlenecks from active events (highest priority)
+  // Build event lookups dynamically from whatever events are active this week
+  // Event names come from WEEKLY_EVENTS config keys (e.g., 'deadlineDuet', 'oddJobs', 'methProduction')
+  // Discount events are named '${key}Discount' (e.g., 'bunkerPropertiesDiscount')
+  const nightclubDiscountEvent = activeEvents.find(e => e.category === 'discount' && e.name.toLowerCase().includes('nightclub'));
+
+  // Create bottlenecks from ALL active bonus events (data-driven, no hardcoded names)
   activeEvents.forEach(event => {
-    // ============================================
-    // WEEKLY EVENTS (Higher priority - expires sooner)
-    // ============================================
-    
-    if (event.name === 'businessBattles4X') {
-      const urgencyText = event.hoursLeft < 48 
-        ? `${event.hoursLeft} hours left`
-        : `${event.daysLeft} days left`;
-      
-      bottlenecks.push({
-        id: 'business_battles_4x',
-        label: '⚡ 4X Business Battles THIS WEEK',
-        critical: event.critical,
-        urgent: event.urgent,
-        impact: 'high',
-        solution: 'Contest Business Battles in Freemode (every 15 mins). Goods go directly to your Nightclub at 4X value. Stack between Auto Shop contracts.',
-        actionType: 'freemode',
-        detail: `${getExpiryLabel(WEEKLY_EVENTS.bonuses.businessBattles?.validUntil || WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Business Battles pay 4X goods + 4X Nightclub value. If you have a Nightclub, this is massive passive income. Stack between mission cooldowns.`,
-        timeHours: 0,
-        savingsPerHour: event.hourlyRate,
-        expiresAt: event.expiryTimestamp,
-        eventTier: event.tier,
-        hoursLeft: event.hoursLeft,
-        daysLeft: event.daysLeft,
-      });
-    } else if (event.name === 'nightclubGoods4X' && hasNightclub) {
-      const urgencyText = event.hoursLeft < 48 
-        ? `${event.hoursLeft} hours left`
-        : `${event.daysLeft} days left`;
-      
-      bottlenecks.push({
-        id: 'nightclub_goods_4x',
-        label: '💰 4X Nightclub Goods (From Business Battles)',
-        critical: event.critical,
-        urgent: event.urgent,
-        impact: 'high',
-        solution: 'Win Business Battles to deposit 4X goods into your Nightclub. Sell when full for massive payout.',
-        actionType: 'passive',
-        detail: `${getExpiryLabel(WEEKLY_EVENTS.bonuses.nightclubGoods?.validUntil || WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Every Business Battle win deposits 4X goods into your Nightclub. Combined with Business Battles 4X = exponential value.`,
-        timeHours: 0,
-        expiresAt: event.expiryTimestamp,
-        eventTier: event.tier,
-        hoursLeft: event.hoursLeft,
-        daysLeft: event.daysLeft,
-      });
-    } else if (event.name === 'autoShop2X') {
-      const expiryText = event.daysLeft < 3 
-        ? `${Math.ceil(event.daysLeft * 24)} hours left`
-        : `${event.daysLeft} days left`;
-      
-      bottlenecks.push({
-        id: 'auto_shop_2x_grind',
-        label: '🔥 Auto Shop 2X Event Active (GTA+)',
-        critical: event.critical,
-        urgent: event.urgent,
-        impact: 'high',
-        solution: 'Run Union Depository, Lost MC, Superdollar Deal contracts repeatedly. Stack with client vehicle jobs (also 2X) between contracts. This beats Cayo Perico and requires zero prep time.',
-        actionType: 'mission',
-        detail: `Robbery Contract finales pay $600-800k per 20-min run = ${event.earningsRate}. Zero prep time. ${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${expiryText}). Highest $/hr in game right now. Solves cash crisis faster than Cayo.`,
-        timeHours: 0, // Ongoing activity
-        savingsPerHour: event.hourlyRate,
-        expiresAt: event.expiryTimestamp,
-        eventTier: event.tier,
-        daysLeft: event.daysLeft,
-      });
-    } else if (event.name === 'paperTrail4X') {
-      const urgencyText = event.hoursLeft < 72 
-        ? `${event.hoursLeft} hours left`
-        : `${event.daysLeft} days left`;
-      
-      bottlenecks.push({
-        id: 'paper_trail_4x',
-        label: '⚡ Paper Trail 4X THIS WEEK',
-        critical: event.critical,
-        urgent: event.urgent,
-        impact: 'high',
-        solution: 'Complete Operation Paper Trail missions repeatedly. GTA+ gets 4X GTA$ & 4X RP this week, then 2X through next month. Good variety if you get bored of Auto Shop grinding.',
-        actionType: 'mission',
-        detail: `${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). ${event.hoursLeft < 24 ? '🚨 DO THIS NOW - ' : ''}Massive RP boost = fastest path to Rank 50/100. 4X RP solves 'Rank Under 50' health/armor bottleneck faster than any grind method. Top priority for next ${event.hoursLeft < 24 ? 'few hours' : '24 hours'}.`,
-        timeHours: 0,
-        savingsPerHour: event.hourlyRate,
-        expiresAt: event.expiryTimestamp,
-        eventTier: event.tier,
-        hoursLeft: event.hoursLeft,
-      });
-    } else if (event.name === 'paperTrail2X') {
-      bottlenecks.push({
-        id: 'paper_trail_2x',
-        label: 'Paper Trail 2X Active',
-        critical: event.critical,
-        urgent: event.urgent,
-        impact: 'medium',
-        solution: 'Complete Operation Paper Trail missions. Good variety option and solid RP/$ ratio.',
-        actionType: 'mission',
-        detail: `${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${event.daysLeft} days left). Good RP for ranking.`,
-        timeHours: 0,
-        savingsPerHour: event.hourlyRate,
-        expiresAt: event.expiryTimestamp,
-        eventTier: event.tier,
-        daysLeft: event.daysLeft,
-      });
-    }
+    // Skip discount events (handled separately below) and GTA+ monthly events
+    if (event.category === 'discount' || event.category === 'gtaplus') return;
+
+    const urgencyText = event.hoursLeft < 48
+      ? `${event.hoursLeft} hours left`
+      : `${event.daysLeft} days left`;
+
+    const impactLevel = event.multiplier >= 3 ? 'high' : 'medium';
+    const expiryIso = event.expiryTimestamp
+      ? new Date(event.expiryTimestamp).toISOString()
+      : WEEKLY_EVENTS.meta.validUntil;
+
+    bottlenecks.push({
+      id: `weekly_event_${event.name}`,
+      label: `⚡ ${event.label || event.name} THIS WEEK`,
+      critical: event.critical,
+      urgent: event.urgent,
+      impact: impactLevel,
+      solution: `Take advantage of ${event.label || event.name} before it expires.`,
+      actionType: event.category === 'mission' ? 'mission' : event.category === 'passive' ? 'passive' : 'freemode',
+      detail: `${getExpiryLabel(expiryIso)} (${urgencyText}). ${event.multiplier}X bonus active — prioritize this over normal activities.`,
+      timeHours: 0,
+      savingsPerHour: event.hourlyRate || 0,
+      expiresAt: event.expiryTimestamp,
+      eventTier: event.tier,
+      hoursLeft: event.hoursLeft,
+      daysLeft: event.daysLeft,
+    });
   });
   
-  // Combat Prep Reminder for Rank < 100 during Auto Shop event
+  // Combat Prep Reminder for Rank < 100 during combat-heavy events
   // Logic aligned with buildSmartActionPlan for consistency
   // Thresholds: strength < 60% = needs full prep, strength 60-99% = just snacks/armor
-  if (rank < 100 && autoShop2XEvent && strength < 100) {
+  const hasCombatEvent = activeEvents.some(e => e.category === 'mission' || e.category === 'adversary');
+  if (rank < 100 && hasCombatEvent && strength < 100) {
     const maxHealthPercent = Math.floor(50 + (rank / 2)); // Approximate health calculation
     
     if (strength < 60) {
@@ -301,8 +228,8 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
     // Low flying skill causes turbulence which slows down Cayo prep runs significantly
     const flyingCritical = hasSparrowOrRaiju && flying < criticalStatThreshold;
     
-      // Lower priority when time-limited events are active (Paper Trail 4X, Auto Shop 2X)
-      const hasTimeLimitedEvent = activeEvents.some(e => e.name === 'paperTrail4X' || e.name === 'autoShop2X');
+      // Lower priority when time-limited events are active (any high-multiplier event)
+      const hasTimeLimitedEvent = activeEvents.some(e => e.multiplier >= 2 && e.tier <= 2);
       const flyingImpact = hasTimeLimitedEvent ? 'medium' : (hasSparrow ? 'high' : hasFastTravel ? 'medium' : 'low');
       
       bottlenecks.push({

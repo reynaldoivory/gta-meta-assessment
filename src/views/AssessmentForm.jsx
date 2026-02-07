@@ -293,14 +293,14 @@ export default function AssessmentForm() {
         {/* Weekly Bonus Banner - Only show for GTA+ subscribers */}
         {formData.hasGTAPlus && <WeeklyBonusBanner />}
 
-        {/* Free Pfister Astrale Reminder for GTA+ */}
+        {/* Free GTA+ Vehicle Reminder */}
         {formData.hasGTAPlus && !formData.claimedFreeCar && !formData.hasRaiju && !formData.hasOppressor && (
           <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/50 rounded-xl flex items-center gap-4">
             <div className="text-3xl">🏎️</div>
             <div className="flex-1">
-              <div className="font-bold text-white mb-1">Don't Forget: Free Pfister Astrale</div>
+              <div className="font-bold text-white mb-1">Don't Forget: Free {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}</div>
               <div className="text-sm text-slate-300">
-                Claim it at The Vinewood Car Club. It's a top-tier Sports Classic (worth $1.5M) for free. Perfect for early-game transport.
+                Claim it at {WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club'}. Worth ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M for free. Perfect for early-game transport.
               </div>
             </div>
           </div>
@@ -952,9 +952,9 @@ export default function AssessmentForm() {
                     />
                     <div className="flex-1">
                       <span className={`font-medium ${formData.claimedFreeCar ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-                        {formData.claimedFreeCar ? 'Claimed:' : 'Unclaimed:'} Pfister Astrale
+                        {formData.claimedFreeCar ? 'Claimed:' : 'Unclaimed:'} {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}
                       </span>
-                      <div className="text-xs text-purple-400">GTA+ Monthly Benefit (Save $1.6M)</div>
+                      <div className="text-xs text-purple-400">GTA+ Monthly Benefit (Save ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M)</div>
                     </div>
                   </label>
                 )}

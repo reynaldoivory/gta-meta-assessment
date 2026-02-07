@@ -389,13 +389,13 @@ const checkAcidLabPrereqs = (formData) => {
     status: PREREQ_STATUS.READY,
     property,
     recommendation: '🔥 BEST BEGINNER BUSINESS: 100% free via "First Dose" missions. Earns $75k/hr+ upgraded.',
-    expectedROI: 'FREE! Upgrade costs $750k but pays for itself in 10 hours.',
+    expectedROI: 'FREE! Upgrade costs $250k but pays for itself in ~4 hours.',
     nextSteps: [
       'Call Ron on your phone',
       'Accept "First Dose" mission series',
       'Complete 6 missions (2-3 hours)',
       'Acid Lab is yours - FREE!',
-      'Later: Buy equipment upgrade ($750k) for 40% more income',
+      'Later: Buy equipment upgrade ($250k) for 40% more income',
     ],
   };
 };

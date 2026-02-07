@@ -340,14 +340,14 @@ export const ACTION_INSTRUCTIONS = {
     title: 'How to Upgrade Acid Lab',
     steps: [
       'Call Mutt (Freakshop) from phone contacts',
-      'Select "Equipment Upgrade" ($500,000)',
+      'Select "Equipment Upgrade" ($250,000)',
       'Increases production speed by 2X',
-      'Pays for itself in ~7 hours of playtime',
+      'Pays for itself in ~4 hours of playtime',
     ],
     budgetAdvice: {
-      minimum: 500000,
-      recommended: 500000,
-      optimal: 500000,
+      minimum: 250000,
+      recommended: 250000,
+      optimal: 250000,
     },
     warnings: [
       '✅ Best upgrade ROI in the game',

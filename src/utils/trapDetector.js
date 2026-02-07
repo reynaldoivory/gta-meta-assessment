@@ -255,14 +255,14 @@ export const detectNightclubTraps = (formData) => {
         ? 'For any sale over 90 crates, you will struggle with deliveries'
         : 'Future floor expansion will force slow Mule deliveries (90-180 crates)',
       lostPerHour: 0,
-      solution: 'Buy Pounder Custom ($350k) - handles large sales efficiently',
+      solution: 'Buy Pounder Custom ($1.9M) - handles large sales efficiently',
       reasoning: 'The Mule Custom is a trap vehicle. It\'s slow and prone to getting stuck. The Pounder handles everything >90 crates much better. Buy the Pounder before you ever need the Mule.',
       timeToFix: '5 minutes (purchase from Nightclub computer)',
       requiredSteps: [
         { step: 'Go to Nightclub computer', reason: 'Access vehicle purchases' },
-        { step: 'Buy Pounder Custom ($350k)', reason: 'Handles large deliveries reliably' },
+        { step: 'Buy Pounder Custom ($1.9M)', reason: 'Handles large deliveries reliably' },
       ],
-      fixCost: 350000,
+      fixCost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
     });
   }
 
@@ -568,7 +568,7 @@ const detectUnupgradedAcidLabTrap = (formData) => {
     timeToFix: '5 minutes (purchase only)',
     requiredSteps: [
       'Go to Acid Lab computer',
-      'Purchase Equipment Upgrade ($750k)',
+      'Purchase Equipment Upgrade ($250k)',
     ],
     fixCost: upgradeCost,
   };

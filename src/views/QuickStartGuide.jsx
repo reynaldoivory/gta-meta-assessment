@@ -1,6 +1,7 @@
 // src/views/QuickStartGuide.jsx
 import React, { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
+import { WEEKLY_EVENTS } from '../config/weeklyEvents';
 import { Shield, DollarSign, Target, TrendingUp, Zap, CheckCircle2, X } from 'lucide-react';
 
 const QuickStartGuide = () => {
@@ -117,7 +118,7 @@ const QuickStartGuide = () => {
       title: "Hour 3-6: GTA+ Seed Money",
       icon: <DollarSign className="w-6 h-6" />,
       tasks: [
-        "🏎️ Visit Vinewood Car Club → Claim FREE Pfister Astrale (GTA+)",
+        `🏎️ Visit ${WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'Vinewood Car Club'} → Claim FREE ${WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'} (GTA+)`,
         "🏢 Register as VIP/CEO (level 1, free)",
         "💰 Run Cluckin' Bell Farm Raid (Vincent) up to 3 times",
         "💵 Each run: ~$500k + one-time $250k bonus on first clear",

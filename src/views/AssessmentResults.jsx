@@ -110,14 +110,14 @@ const AssessmentResults = () => {
           currentTraps={detectedTraps}
         />
 
-        {/* Free Pfister Astrale Reminder for GTA+ */}
+        {/* Free GTA+ Vehicle Reminder */}
         {formData.hasGTAPlus && !formData.claimedFreeCar && !formData.hasRaiju && !formData.hasOppressor && (
           <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/50 rounded-xl flex items-center gap-4">
             <div className="text-3xl">🏎️</div>
             <div className="flex-1">
-              <div className="font-bold text-white mb-1">Don't Forget: Free Pfister Astrale</div>
+              <div className="font-bold text-white mb-1">Don't Forget: Free {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}</div>
               <div className="text-sm text-slate-300">
-                Claim it at The Vinewood Car Club. It's a top-tier Sports Classic (worth $1.5M) for free. Perfect for early-game transport.
+                Claim it at {WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club'}. Worth ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M for free. Perfect for early-game transport.
               </div>
             </div>
           </div>
@@ -483,10 +483,12 @@ const AssessmentResults = () => {
 
 // Income Comparison Component - Clean, focused on meta opportunities
 const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
-  // Calculate Auto Shop income: $300k base * 2.4 contracts/hr * 2X multiplier = $720k/hr
+  // Calculate Auto Shop income: $300k base * 2.4 contracts/hr * multiplier
   const baseContractPayout = 300000;
   const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
-  const autoShopMultiplier = WEEKLY_EVENTS.bonuses?.autoShop?.multiplier || 2.0;
+  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
+  const isAutoShopEvent = autoShopBonus?.isActive === true;
+  const autoShopMultiplier = isAutoShopEvent ? (autoShopBonus.multiplier || 2.0) : 1.0;
   const autoShopRate = baseContractPayout * contractsPerHour * autoShopMultiplier;
   const cayoRate = 466000; // Nerfed solo rate/hr
 
@@ -502,10 +504,12 @@ const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
         }`}>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-bold text-white">Auto Shop (Event)</span>
-              <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded">2X BONUS</span>
+              <span className="font-bold text-white">Auto Shop{isAutoShopEvent ? ' (Event)' : ''}</span>
+              {isAutoShopEvent && (
+                <span className="px-2 py-0.5 bg-yellow-500/20 text-yellow-400 text-xs font-bold rounded">{autoShopMultiplier}X BONUS</span>
+              )}
             </div>
-            <div className="text-xs text-slate-400">No Cooldown • Expires {WEEKLY_EVENTS.meta.displayDate}</div>
+            <div className="text-xs text-slate-400">No Cooldown{isAutoShopEvent ? ` • Expires ${WEEKLY_EVENTS.meta.displayDate}` : ''}</div>
           </div>
           <div className="text-xl font-bold text-green-400">${(autoShopRate/1000).toFixed(0)}k/hr</div>
         </div>
@@ -520,7 +524,7 @@ const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
         </div>
       </div>
       
-      {!hasAutoShop && WEEKLY_EVENTS.bonuses.autoShop.isActive && (
+      {!hasAutoShop && isAutoShopEvent && (
         <div className="mt-4 p-4 bg-yellow-900/20 border border-yellow-500/50 rounded-lg">
           <div className="flex items-start gap-2">
             <AlertTriangle className="w-5 h-5 text-yellow-400 flex-shrink-0" />
@@ -529,8 +533,8 @@ const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
                 You're missing the best income option this week!
               </div>
               <div className="text-sm text-yellow-200">
-                Auto Shop 2X event earns ${((autoShopRate - cayoRate) / 1000).toFixed(0)}k/hr MORE than Cayo. 
-                Buy it now for ${(WEEKLY_EVENTS.discounts.autoShop.priceEstimate / 1000).toFixed(0)}k (GTA+) before event ends.
+                Auto Shop {autoShopMultiplier}X event earns ${((autoShopRate - cayoRate) / 1000).toFixed(0)}k/hr MORE than Cayo. 
+                Buy it now before the event ends.
               </div>
             </div>
           </div>

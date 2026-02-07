@@ -12,45 +12,13 @@ import {
   getDiscountedPrice,
 } from './infrastructureAdvisor.js';
 
-/**
- * Detect all bottlenecks for a player based on their current state
- * @param {Object} params - Normalized player data
- * @param {number} now - Current timestamp (passed to avoid duplication)
- * @param {Array} activeEvents - Active events from getCurrentEvents
- * @param {number} incomePerHour - Calculated income per hour
- * @param {Object} formData - Original form data for additional checks
- * @returns {Array} Array of bottleneck objects
- */
-export const detectBottlenecks = (params, now, activeEvents, incomePerHour, formData) => {
-  const {
-    rank,
-    liquidCash,
-    strength,
-    flying,
-    cayoCompletions,
-    cayoAvgTime,
-    nightclubTechs,
-    nightclubFeeders,
-    hasKosatka,
-    hasSparrow,
-    hasAgency,
-    hasAcidLab,
-    acidLabUpgraded,
-    hasNightclub,
-    hasBunker,
-    bunkerUpgraded,
-    dreContractDone,
-    hasRaiju,
-    hasOppressor,
-    hasGTAPlus,
-    hasAutoShop,
-  } = params;
+// ============================================
+// TIER 0: URGENT EXPIRING EVENTS (Front of queue)
+// ============================================
 
+const detectUrgentExpiring = (params, now, formData) => {
+  const { hasGTAPlus } = params;
   const bottlenecks = [];
-
-  // ============================================
-  // TIER 0: URGENT EXPIRING EVENTS (Front of queue)
-  // ============================================
 
   // 1. FREE CAR WASH (expiry from WEEKLY_EVENTS config)
   if (!formData.hasCarWash) {
@@ -97,9 +65,16 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
     });
   }
 
-  // ============================================
-  // TIER 1: INCOME LEAKS (Costing you money every hour)
-  // ============================================
+  return bottlenecks;
+};
+
+// ============================================
+// TIER 1: INCOME LEAKS (Costing you money every hour)
+// ============================================
+
+const detectIncomeLeaks = (params, now, activeEvents) => {
+  const { rank, strength } = params;
+  const bottlenecks = [];
 
   // Build event lookups dynamically from whatever events are active this week
   // Event names come from WEEKLY_EVENTS config keys (e.g., 'deadlineDuet', 'oddJobs', 'methProduction')
@@ -127,7 +102,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
       urgent: event.urgent,
       impact: impactLevel,
       solution: `Take advantage of ${event.label || event.name} before it expires.`,
-      actionType: event.category === 'mission' ? 'mission' : event.category === 'passive' ? 'passive' : 'freemode',
+      actionType: { mission: 'mission', passive: 'passive' }[event.category] || 'freemode',
       detail: `${getExpiryLabel(expiryIso)} (${urgencyText}). ${event.multiplier}X bonus active — prioritize this over normal activities.`,
       timeHours: 0,
       savingsPerHour: event.hourlyRate || 0,
@@ -177,138 +152,186 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
     // Rank 80+ with strength >= 60 = no prep needed, skip bottleneck
   }
 
-  // ============================================
-  // TIER 2: CONTEXT-AWARE STAT CHECKS
-  // ============================================
+  return { bottlenecks, nightclubDiscountEvent };
+};
 
-  // Stat bottlenecks
+// ============================================
+// TIER 2: CONTEXT-AWARE STAT CHECKS
+// ============================================
+
+// --- Strength sub-check ---
+const detectStrengthGap = (params, formData) => {
+  const { strength, rank, liquidCash, hasKosatka, hasSparrow, hasAgency, hasAcidLab, hasAutoShop, hasNightclub, hasBunker } = params;
   const criticalStatThreshold = MODEL_CONFIG.thresholds?.stats?.critical ?? 60;
-  
-  // 3. STRENGTH (Context-Aware + Mansion Check)
-  if (strength < criticalStatThreshold) {
-    const hasMansion = formData.hasMansion || false;
-    
-    // Calculate estimated net worth (sum of owned property values)
-    const estimatedNetWorth = liquidCash + 
-      (hasKosatka ? 2200000 : 0) +
-      (hasSparrow ? 1815000 : 0) +
-      (hasAgency ? 2010000 : 0) +
-      (hasAcidLab ? 750000 : 0) +
-      (hasAutoShop ? 1670000 : 0) +
-      (hasNightclub ? 1000000 : 0) +
-      (hasBunker ? 1165000 : 0) +
-      (hasMansion ? 11500000 : 0); // Minimum mansion value
-    
-    // Strength is CRITICAL for all players under Rank 100
-    // Provides damage resistance (not just melee) - critical for survival in combat-heavy content
-    const isUnderRank100 = rank < 100;
-    
-    bottlenecks.push({
-      id: 'strength_low',
-      label: 'Strength Critical for Survival',
-      critical: true, // Always critical - provides damage resistance
-      impact: isUnderRank100 ? 'high' : 'medium', // High priority for players under Rank 100
-      solution: hasMansion 
-        ? 'Use Mansion Gym (20 mins) - FASTEST METHOD: Bench press or sparring minigame in your Mansion gym' 
-        : estimatedNetWorth > 15000000
-          ? 'Buy Mansion ($11.5M+) OR use Pier Pressure (free)'
-          : 'Launch "Pier Pressure" mission → Punch NPCs (20 mins, free)',
-      actionType: 'mission',
-      detail: 'Strength provides damage resistance in all combat situations (not just melee). Low strength means you take significantly more damage from bullets, explosions, and falls. Critical for surviving Auto Shop contracts, heists, and PVP.',
-      timeHours: hasMansion ? 0.33 : 0.33, // 20 minutes for both methods (Mansion is faster but same time estimate)
-    });
+  if (strength >= criticalStatThreshold) return null;
+
+  const hasMansion = formData.hasMansion || false;
+  const estimatedNetWorth = liquidCash +
+    (hasKosatka ? 2200000 : 0) + (hasSparrow ? 1815000 : 0) +
+    (hasAgency ? 2010000 : 0) + (hasAcidLab ? 750000 : 0) +
+    (hasAutoShop ? 1670000 : 0) + (hasNightclub ? 1000000 : 0) +
+    (hasBunker ? 1165000 : 0) + (hasMansion ? 11500000 : 0);
+  const isUnderRank100 = rank < 100;
+
+  let strengthSolution;
+  if (hasMansion) {
+    strengthSolution = 'Use Mansion Gym (20 mins) - FASTEST METHOD: Bench press or sparring minigame in your Mansion gym';
+  } else if (estimatedNetWorth > 15000000) {
+    strengthSolution = 'Buy Mansion ($11.5M+) OR use Pier Pressure (free)';
+  } else {
+    strengthSolution = 'Launch "Pier Pressure" mission → Punch NPCs (20 mins, free)';
   }
-  
-  // 4. FLYING (Critical if owns fast travel vehicle but low skill)
+
+  return {
+    id: 'strength_low',
+    label: 'Strength Critical for Survival',
+    critical: true,
+    impact: isUnderRank100 ? 'high' : 'medium',
+    solution: strengthSolution,
+    actionType: 'mission',
+    detail: 'Strength provides damage resistance in all combat situations (not just melee). Low strength means you take significantly more damage from bullets, explosions, and falls. Critical for surviving Auto Shop contracts, heists, and PVP.',
+    timeHours: 0.33,
+  };
+};
+
+// --- Flying sub-check ---
+const detectFlyingGap = (params, activeEvents) => {
+  const { flying, hasSparrow, hasRaiju, hasOppressor } = params;
+  const criticalStatThreshold = MODEL_CONFIG.thresholds?.stats?.critical ?? 60;
+  if (flying >= criticalStatThreshold) return null;
+
   const hasFastTravel = hasSparrow || hasRaiju || hasOppressor;
   const hasSparrowOrRaiju = hasSparrow || hasRaiju;
+  const flyingCritical = hasSparrowOrRaiju && flying < criticalStatThreshold;
+  const hasTimeLimitedEvent = activeEvents.some(e => e.multiplier >= 2 && e.tier <= 2);
 
-  if (flying < criticalStatThreshold) {
-    // Critical if player owns Sparrow/Raiju but has low flying skill
-    // Low flying skill causes turbulence which slows down Cayo prep runs significantly
-    const flyingCritical = hasSparrowOrRaiju && flying < criticalStatThreshold;
-    
-      // Lower priority when time-limited events are active (any high-multiplier event)
-      const hasTimeLimitedEvent = activeEvents.some(e => e.multiplier >= 2 && e.tier <= 2);
-      const flyingImpact = hasTimeLimitedEvent ? 'medium' : (hasSparrow ? 'high' : hasFastTravel ? 'medium' : 'low');
-      
-      bottlenecks.push({
-        id: 'flying_low',
-        label: 'Flying Skill Low',
-        critical: hasTimeLimitedEvent ? false : flyingCritical, // Not critical when time-limited events are active
-        impact: flyingImpact,
-      solution: hasFastTravel
-        ? 'Flight School at LSIA (45 mins) - Reduces turbulence during Cayo prep runs'
-        : 'Buy Sparrow ($1.8M) OR do Flight School',
-      actionType: hasFastTravel ? 'mission' : 'property_purchase',
-      detail: hasSparrowOrRaiju
-        ? 'Low flying skill causes severe turbulence when using Sparrow/Raiju. This slows down Cayo Perico prep runs significantly (adds 5-10 mins per prep). Flight School fixes this.'
-        : !hasFastTravel
-        ? 'No fast travel vehicle. Turbulence causes crashes and wastes time.'
-        : 'Flying skill affects vehicle stability. Low skill = more turbulence = slower prep times.',
-      timeHours: hasFastTravel ? 0.75 : 0, // 45 mins for Flight School, 0 = buy vehicle
-    });
+  let flyingImpact;
+  if (hasTimeLimitedEvent) flyingImpact = 'medium';
+  else if (hasSparrow) flyingImpact = 'high';
+  else if (hasFastTravel) flyingImpact = 'medium';
+  else flyingImpact = 'low';
+
+  let flyingDetail;
+  if (hasSparrowOrRaiju) {
+    flyingDetail = 'Low flying skill causes severe turbulence when using Sparrow/Raiju. This slows down Cayo Perico prep runs significantly (adds 5-10 mins per prep). Flight School fixes this.';
+  } else if (hasFastTravel) {
+    flyingDetail = 'Flying skill affects vehicle stability. Low skill = more turbulence = slower prep times.';
+  } else {
+    flyingDetail = 'No fast travel vehicle. Turbulence causes crashes and wastes time.';
   }
-  
-  // 5. RANK (Event-aware) - HIGH PRIORITY for GTA+ with Paper Trail active
+
+  return {
+    id: 'flying_low',
+    label: 'Flying Skill Low',
+    critical: hasTimeLimitedEvent ? false : flyingCritical,
+    impact: flyingImpact,
+    solution: hasFastTravel
+      ? 'Flight School at LSIA (45 mins) - Reduces turbulence during Cayo prep runs'
+      : 'Buy Sparrow ($1.8M) OR do Flight School',
+    actionType: hasFastTravel ? 'mission' : 'property_purchase',
+    detail: flyingDetail,
+    timeHours: hasFastTravel ? 0.75 : 0,
+  };
+};
+
+// --- Rank sub-check ---
+const detectRankGap = (params, activeEvents) => {
+  const { rank } = params;
   const paperTrail4XEvent = activeEvents.find(e => e.name === 'paperTrail4X');
   const paperTrail2XEvent = activeEvents.find(e => e.name === 'paperTrail2X');
-  
-  // CRITICAL for all players under Rank 50 (low health/armor), HIGH priority for Rank < 100 with GTA+ and Paper Trail
+
   if (rank < 50) {
-    // Rank < 50 = CRITICAL for ALL players (low health, no full armor)
-    // Rank 33 = ~60% max health - makes combat-heavy content (Auto Shop) much harder
-    bottlenecks.push({
+    let rankSolution, rankTimeHours, rankSavingsPerHour;
+    if (paperTrail4XEvent) {
+      rankSolution = 'Farm Operation Paper Trail (4X RP & 4X GTA$ for GTA+ this week) - Magic Bullet for Rank + Good money variety';
+      rankTimeHours = 1.5;
+      rankSavingsPerHour = 400000;
+    } else if (paperTrail2XEvent) {
+      rankSolution = `Farm Operation Paper Trail (2X RP through ${formatExpiry(WEEKLY_EVENTS.gtaPlus?.monthlyBonuses?.[0]?.expires || WEEKLY_EVENTS.meta.validUntil)})`;
+      rankTimeHours = 2;
+      rankSavingsPerHour = 200000;
+    } else {
+      rankSolution = 'Run Cayo Perico (best RP/$ combo)';
+      rankTimeHours = 2.5;
+      rankSavingsPerHour = 0;
+    }
+
+    return [{
       id: 'rank_low',
       label: 'Rank Under 50 (Max Health & Armor Locked)',
-      critical: true, // ALWAYS critical for Rank < 50
-      urgent: !!paperTrail4XEvent, // Urgent for GTA+ members with Paper Trail 4X active (this week only)
+      critical: true,
+      urgent: !!paperTrail4XEvent,
       impact: 'high',
-      solution: paperTrail4XEvent
-        ? 'Farm Operation Paper Trail (4X RP & 4X GTA$ for GTA+ this week) - Magic Bullet for Rank + Good money variety'
-        : paperTrail2XEvent
-        ? `Farm Operation Paper Trail (2X RP through ${formatExpiry(WEEKLY_EVENTS.gtaPlus?.monthlyBonuses?.[0]?.expires || WEEKLY_EVENTS.meta.validUntil)})`
-        : 'Run Cayo Perico (best RP/$ combo)',
+      solution: rankSolution,
       actionType: 'mission',
       detail: `Rank ${rank} = ~${Math.floor(50 + (rank / 2))}% max health. You die instantly in Auto Shop raids. Cannot carry full body armor. Makes combat-heavy content much harder.`,
-      timeHours: paperTrail4XEvent ? 1.5 : paperTrail2XEvent ? 2.0 : 2.5,
-      savingsPerHour: paperTrail4XEvent ? 400000 : paperTrail2XEvent ? 200000 : 0,
-    });
-  } else if (rank < 100 && paperTrail4XEvent) {
-    // Rank 50-99 with GTA+ and Paper Trail 4X = HIGH priority (but not critical)
-    // Still beneficial to rank up for unlocks, but not blocking
-    bottlenecks.push({
+      timeHours: rankTimeHours,
+      savingsPerHour: rankSavingsPerHour,
+    }];
+  }
+
+  if (rank < 100 && paperTrail4XEvent) {
+    return [{
       id: 'rank_medium',
       label: 'Rank Under 100 (GTA+ Paper Trail 4X Opportunity)',
       critical: false,
-      urgent: true, // Urgent because Paper Trail 4X event is time-limited (this week only)
+      urgent: true,
       impact: 'medium',
       solution: 'Farm Operation Paper Trail (4X RP & GTA$ for GTA+ this week) - Fastest way to Rank 100+',
       actionType: 'mission',
       detail: `Rank ${rank}. Operation Paper Trail is paying 4X RP & 4X GTA$ this week for GTA+ members. Good variety option if you get bored of Auto Shop grinding. This is the fastest way to unlock Rank 100+ benefits.`,
       timeHours: 1.5,
-      savingsPerHour: 400000, // Paper Trail pays ~$400k/hr at 4X
-    });
+      savingsPerHour: 400000,
+    }];
   }
 
-  // ============================================
-  // TIER 3: ASSET GAPS (Same as before)
-  // ============================================
+  return [];
+};
 
-  // Asset bottlenecks
-  if (!hasKosatka) {
-    bottlenecks.push({
-      id: 'no_kosatka',
-      label: 'No Kosatka Submarine',
-      critical: false,
-      impact: 'high',
-      solution: 'Grind to $2.2M and purchase Kosatka from Warstock',
-      actionType: 'purchase',
-      detail: 'You are locked out of Cayo Perico, the best solo content even post-nerf.',
-      timeHours: MODEL_CONFIG.time?.assets?.kosatkaGrind ?? 5,
-    });
-  } else {
-    // Has Kosatka - check for optimization opportunities (consolidated to prevent duplicates)
+const detectStatBottlenecks = (params, activeEvents, formData) => {
+  const strengthGap = detectStrengthGap(params, formData);
+  const flyingGap = detectFlyingGap(params, activeEvents);
+  const rankGaps = detectRankGap(params, activeEvents);
+  return [strengthGap, flyingGap, ...rankGaps].filter(Boolean);
+};
+
+// ============================================
+// TIER 3: ASSET GAPS (Same as before)
+// ============================================
+
+// --- Cayo optimization helper ---
+const buildCayoOptimizationBottleneck = ({ hasSparrow, cayoCompletions, cayoAvgTime, masteryRuns }) => {
+  if (cayoAvgTime <= 50 && cayoCompletions >= masteryRuns) return null;
+
+  const isNewPlayer = cayoCompletions < masteryRuns;
+  const targetTime = isNewPlayer ? 50 : 45;
+  const basePayout = isNewPlayer ? 800000 : 700000;
+  const potentialPerHour = (60 / targetTime) * basePayout;
+  const currentPerHour = (60 / cayoAvgTime) * basePayout;
+  const lossPerHour = potentialPerHour - currentPerHour;
+  const isSkillIssue = hasSparrow;
+
+  return {
+    id: 'cayo_optimization',
+    label: isSkillIssue ? '🎯 Fix Cayo Perico Strategy (Skill/Route Issue)' : '🎯 OPTIMIZE CAYO RUNS (Critical)',
+    critical: true,
+    impact: 'high',
+    solution: 'Watch "Cayo Perico Solo Speedrun 2026" guide → Practice Longfin/Drainage Tunnel approach',
+    actionType: 'skill_improvement',
+    detail: isSkillIssue
+      ? `You have Sparrow (fast travel). Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. This is purely a knowledge gap. Target: ${targetTime} mins.`
+      : `Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. Target: ${targetTime} mins. This is your #1 income leak.`,
+    timeHours: isNewPlayer ? 2 : ((masteryRuns - cayoCompletions) * 0.75),
+    savingsPerHour: Math.round(lossPerHour),
+  };
+};
+
+// --- Kosatka/Cayo sub-check ---
+const detectCayoGaps = (params) => {
+  const { hasKosatka, hasSparrow, cayoCompletions, cayoAvgTime } = params;
+  const bottlenecks = [];
+
+  if (hasKosatka) {
     if (!hasSparrow) {
       bottlenecks.push({
         id: 'no_sparrow',
@@ -321,11 +344,9 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         timeHours: MODEL_CONFIG.time?.assets?.sparrowPurchase ?? 2,
       });
     }
-    
-    // Consolidated Cayo optimization check (prevents duplicates)
+
     const masteryRuns = MODEL_CONFIG.thresholds?.cayo?.masteryRuns ?? 10;
-    
-    // Case 1: No completions yet
+
     if (cayoCompletions === 0) {
       bottlenecks.push({
         id: 'cayo_no_runs',
@@ -337,36 +358,29 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         detail: 'First Cayo unlocks your main solo grind loop.',
         timeHours: MODEL_CONFIG.time?.assets?.firstCayo ?? 2,
       });
+    } else {
+      const cayoOpt = buildCayoOptimizationBottleneck({ hasSparrow, cayoCompletions, cayoAvgTime, masteryRuns });
+      if (cayoOpt) bottlenecks.push(cayoOpt);
     }
-    // Case 2: Slow runs (cayoAvgTime > 50) OR under mastery threshold
-    else if (cayoAvgTime > 50 || cayoCompletions < masteryRuns) {
-      // Determine target time and base payout based on completion count
-      const isNewPlayer = cayoCompletions < masteryRuns;
-      const targetTime = isNewPlayer ? 50 : 45; // New players: 50 min goal, experienced: 45 min goal
-      const basePayout = isNewPlayer ? 800000 : 700000; // Slightly lower for experienced (more realistic)
-      
-      const potentialPerHour = (60 / targetTime) * basePayout;
-      const currentPerHour = (60 / cayoAvgTime) * basePayout;
-      const lossPerHour = potentialPerHour - currentPerHour;
-      
-      // If player has Sparrow, this is purely a knowledge/skill gap, not an asset issue
-      const isSkillIssue = hasSparrow;
-
-      bottlenecks.push({
-        id: 'cayo_optimization',
-        label: isSkillIssue ? '🎯 Fix Cayo Perico Strategy (Skill/Route Issue)' : '🎯 OPTIMIZE CAYO RUNS (Critical)',
-        critical: true,
-        impact: 'high',
-        solution: 'Watch "Cayo Perico Solo Speedrun 2026" guide → Practice Longfin/Drainage Tunnel approach',
-        actionType: 'skill_improvement',
-        detail: isSkillIssue
-          ? `You have Sparrow (fast travel). Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. This is purely a knowledge gap. Target: ${targetTime} mins.`
-          : `Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. Target: ${targetTime} mins. This is your #1 income leak.`,
-        timeHours: isNewPlayer ? 2.0 : ((masteryRuns - cayoCompletions) * 0.75),
-        savingsPerHour: Math.round(lossPerHour), // ✅ Sorter prioritizes this
-      });
-    }
+  } else {
+    bottlenecks.push({
+      id: 'no_kosatka',
+      label: 'No Kosatka Submarine',
+      critical: false,
+      impact: 'high',
+      solution: 'Grind to $2.2M and purchase Kosatka from Warstock',
+      actionType: 'purchase',
+      detail: 'You are locked out of Cayo Perico, the best solo content even post-nerf.',
+      timeHours: MODEL_CONFIG.time?.assets?.kosatkaGrind ?? 5,
+    });
   }
+
+  return bottlenecks;
+};
+
+const detectAssetGaps = (params, incomePerHour) => {
+  const { hasAgency, hasAcidLab, acidLabUpgraded, dreContractDone } = params;
+  const bottlenecks = detectCayoGaps(params);
 
   if (!hasAgency && incomePerHour >= (MODEL_CONFIG.thresholds?.recommendations?.agencyPurchase ?? 400000)) {
     bottlenecks.push({
@@ -405,177 +419,205 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
     });
   }
 
-  // ============================================
-  // INFRASTRUCTURE INVESTMENT BOTTLENECKS (Smart Shopping)
-  // ============================================
+  return bottlenecks;
+};
 
-  // --- BUNKER INFRASTRUCTURE ---
-  if (hasBunker) {
-    const bunkerState = {
-      owned: true,
-      equipmentUpgrade: formData.bunkerEquipmentUpgrade || bunkerUpgraded,
-      staffUpgrade: formData.bunkerStaffUpgrade || bunkerUpgraded,
-    };
-    
-    const bunkerLeak = calculateBunkerLeak(bunkerState);
-    
-    if (bunkerLeak.hasLeak) {
-      bottlenecks.push({
-        id: 'bunker_passive_leak',
-        label: '🚨 BUNKER PASSIVE INCOME LEAK',
-        critical: true,
-        urgent: bunkerLeak.lostPerHour >= 30000, // Critical if losing $30k+/hr
-        impact: 'high',
-        solution: bunkerLeak.missingEquipment && bunkerLeak.missingStaff
-          ? `Buy Equipment ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M) + Staff ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k) upgrades.`
-          : bunkerLeak.missingEquipment
-            ? `Buy Equipment Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M)`
-            : `Buy Staff Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k)`,
-        actionType: 'infrastructure',
-        detail: `You're earning $${bunkerLeak.currentIncome.toLocaleString()}/hr instead of $${bunkerLeak.potentialIncome.toLocaleString()}/hr. Losing $${bunkerLeak.lostPerHour.toLocaleString()}/hr. ROI: ${bunkerLeak.roiHours} hours of passive income.`,
-        timeHours: 0.25,
-        savingsPerHour: bunkerLeak.lostPerHour,
-        cost: bunkerLeak.missingEquipment && bunkerLeak.missingStaff
-          ? INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade + INFRASTRUCTURE_COSTS.bunker.staffUpgrade
-          : bunkerLeak.missingEquipment
-            ? INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade
-            : INFRASTRUCTURE_COSTS.bunker.staffUpgrade,
-        roiHours: bunkerLeak.roiHours,
-      });
-    }
+// ============================================
+// INFRASTRUCTURE INVESTMENT BOTTLENECKS (Smart Shopping)
+// ============================================
+
+// --- Bunker infrastructure sub-check ---
+const detectBunkerInfra = (params, formData) => {
+  const { hasBunker, bunkerUpgraded } = params;
+  if (!hasBunker) return [];
+
+  const bunkerState = {
+    owned: true,
+    equipmentUpgrade: formData.bunkerEquipmentUpgrade || bunkerUpgraded,
+    staffUpgrade: formData.bunkerStaffUpgrade || bunkerUpgraded,
+  };
+
+  const bunkerLeak = calculateBunkerLeak(bunkerState);
+  if (!bunkerLeak.hasLeak) return [];
+
+  let bunkerSolution, bunkerUpgradeCost;
+  if (bunkerLeak.missingEquipment && bunkerLeak.missingStaff) {
+    bunkerSolution = `Buy Equipment ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M) + Staff ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k) upgrades.`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade + INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
+  } else if (bunkerLeak.missingEquipment) {
+    bunkerSolution = `Buy Equipment Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M)`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade;
+  } else {
+    bunkerSolution = `Buy Staff Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k)`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
   }
 
-  // --- NIGHTCLUB INFRASTRUCTURE ---
-  if (hasNightclub) {
-    // Read from nightclubStorage (new format) with fallback to legacy fields
-    const storage = formData.nightclubStorage || {};
-    const nightclubState = {
-      owned: true,
-      floors: Number(formData.nightclubFloors) || 1,
-      equipmentUpgrade: formData.nightclubEquipmentUpgrade,
-      staffUpgrade: formData.nightclubStaffUpgrade,
-      hasPounder: storage.hasPounder || formData.hasPounderCustom || false,
-      hasMule: storage.hasMule || formData.hasMuleCustom || false,
-      techs: nightclubTechs,
-      feeders: nightclubFeeders,
-    };
-    
-    const ncOptimization = calculateNightclubOptimization(nightclubState);
-    
-    // MULE TRAP WARNING (Highest Priority)
-    const muleTrap = ncOptimization.issues.find(i => i.id === 'nc_mule_trap');
-    if (muleTrap) {
-      bottlenecks.push({
-        id: 'nightclub_mule_trap',
-        label: '⚠️ MULE CUSTOM TRAP DETECTED',
-        critical: true,
-        urgent: true,
-        impact: 'high',
-        solution: 'Buy Pounder Custom ($1.9M). The Mule cannot handle 90+ crate sales. This is a permanent fix.',
-        actionType: 'infrastructure',
-        detail: muleTrap.detail,
-        timeHours: 0.25,
-        cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
-        isTrap: true,
-      });
-    }
-    
-    // Equipment Upgrade (if missing)
-    const needsEquipment = ncOptimization.issues.find(i => i.id === 'nc_no_equipment');
-    if (needsEquipment) {
-      const { price, isDiscounted, discountPercent } = getDiscountedPrice(
-        INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
-        'nightclub'
-      );
-      
-      bottlenecks.push({
-        id: 'nightclub_equipment',
-        label: isDiscounted 
-          ? `💰 NC Equipment ${discountPercent}% OFF (Production 50% Slower)`
-          : '🎭 Nightclub Equipment Upgrade Missing',
-        critical: isDiscounted,
-        urgent: isDiscounted,
-        impact: 'high',
-        solution: `Buy Equipment Upgrade ($${(price / 1000000).toFixed(2)}M${isDiscounted ? ' - ' + discountPercent + '% OFF!' : ''})`,
-        actionType: 'infrastructure',
-        detail: needsEquipment.detail + (isDiscounted ? ` 🎉 ${discountPercent}% OFF expires soon!` : ''),
-        timeHours: 0.25,
-        cost: price,
-        originalCost: INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
-        isDiscounted,
-        expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
-      });
-    }
-    
-    // Floor expansion (if < 5 floors)
-    const needsFloors = ncOptimization.issues.find(i => i.id === 'nc_floors_low');
-    if (needsFloors) {
-      const currentFloors = nightclubState.floors;
-      const currentAFK = NIGHTCLUB_FLOOR_AFK[currentFloors]?.maxHours || 20;
-      const maxAFK = NIGHTCLUB_FLOOR_AFK[5].maxHours;
-      
-      // Calculate cost to max floors
-      let floorCost = 0;
-      for (let f = currentFloors + 1; f <= 5; f++) {
-        floorCost += INFRASTRUCTURE_COSTS.nightclub.floors[f];
-      }
-      const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub');
-      
-      bottlenecks.push({
-        id: 'nightclub_floors',
-        label: isDiscounted
-          ? `💰 NC Floors ${discountPercent}% OFF (AFK Limited)`
-          : `🎭 Nightclub Floors ${currentFloors}/5 (AFK Limited)`,
-        critical: false,
-        urgent: isDiscounted,
-        impact: isDiscounted ? 'high' : 'medium',
-        solution: `Buy Floors ${currentFloors + 1}-5 ($${(price / 1000000).toFixed(2)}M${isDiscounted ? ' - ' + discountPercent + '% OFF!' : ''})`,
-        actionType: 'infrastructure',
-        detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).${isDiscounted ? ' 🎉 Discount expires soon!' : ''}`,
-        timeHours: 0.25,
-        cost: price,
-        originalCost: floorCost,
-        isDiscounted,
-        expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
-      });
-    }
-    
-    // Pounder recommendation (if scaling up without delivery vehicle)
-    const needsPounder = ncOptimization.recommendations.find(r => r.id === 'buy_nc_pounder');
-    if (needsPounder && !muleTrap) {
-      bottlenecks.push({
-        id: 'nightclub_pounder',
-        label: '🚚 Need Pounder Custom for Large Sales',
-        critical: false,
-        urgent: nightclubState.floors >= 4 || nightclubState.techs >= 4,
-        impact: 'high',
-        solution: 'Buy Pounder Custom ($1.9M) from Warstock. DO NOT buy Mule Custom.',
-        actionType: 'infrastructure',
-        detail: 'Essential for selling 90+ crates. The Mule is slow and buggy - skip it entirely.',
-        timeHours: 0.25,
-        cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
-      });
-    }
-    
-    // Tech/Feeder balance
-    if (nightclubTechs < 5 || nightclubFeeders < 5) {
-      const techImbalance = ncOptimization.issues.find(i => i.id === 'nc_tech_imbalance');
-      
-      bottlenecks.push({
-        id: 'nightclub_partial',
-        label: 'Nightclub Not Fully Optimized',
-        critical: false,
-        impact: 'medium',
-        solution: techImbalance 
-          ? `Hire ${nightclubFeeders - nightclubTechs} more technicians. You have idle businesses.`
-          : 'Add more technicians and link feeder businesses.',
-        actionType: 'optimization',
-        detail: techImbalance?.detail || `${nightclubTechs}/5 techs, ${nightclubFeeders}/5 feeders. Missing up to 50% potential income.`,
-        timeHours: 0.5,
-      });
-    }
+  return [{
+    id: 'bunker_passive_leak',
+    label: '🚨 BUNKER PASSIVE INCOME LEAK',
+    critical: true,
+    urgent: bunkerLeak.lostPerHour >= 30000,
+    impact: 'high',
+    solution: bunkerSolution,
+    actionType: 'infrastructure',
+    detail: `You're earning $${bunkerLeak.currentIncome.toLocaleString()}/hr instead of $${bunkerLeak.potentialIncome.toLocaleString()}/hr. Losing $${bunkerLeak.lostPerHour.toLocaleString()}/hr. ROI: ${bunkerLeak.roiHours} hours of passive income.`,
+    timeHours: 0.25,
+    savingsPerHour: bunkerLeak.lostPerHour,
+    cost: bunkerUpgradeCost,
+    roiHours: bunkerLeak.roiHours,
+  }];
+};
+
+// --- Nightclub helper functions ---
+const buildNightclubMuleTrapBottleneck = (ncOptimization) => {
+  const muleTrap = ncOptimization.issues.find(i => i.id === 'nc_mule_trap');
+  if (!muleTrap) return null;
+
+  return {
+    id: 'nightclub_mule_trap',
+    label: '⚠️ MULE CUSTOM TRAP DETECTED',
+    critical: true,
+    urgent: true,
+    impact: 'high',
+    solution: 'Buy Pounder Custom ($1.9M). The Mule cannot handle 90+ crate sales. This is a permanent fix.',
+    actionType: 'infrastructure',
+    detail: muleTrap.detail,
+    timeHours: 0.25,
+    cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
+    isTrap: true,
+  };
+};
+
+const buildNightclubEquipmentBottleneck = (ncOptimization, nightclubDiscountEvent) => {
+  const needsEquipment = ncOptimization.issues.find(i => i.id === 'nc_no_equipment');
+  if (!needsEquipment) return null;
+
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(
+    INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
+    'nightclub'
+  );
+  return {
+    id: 'nightclub_equipment',
+    label: isDiscounted
+      ? `💰 NC Equipment ${discountPercent}% OFF (Production 50% Slower)`
+      : '🎭 Nightclub Equipment Upgrade Missing',
+    critical: isDiscounted,
+    urgent: isDiscounted,
+    impact: 'high',
+    solution: `Buy Equipment Upgrade ($${(price / 1000000).toFixed(2)}M${isDiscounted ? ' - ' + discountPercent + '% OFF!' : ''})`,
+    actionType: 'infrastructure',
+    detail: needsEquipment.detail + (isDiscounted ? ` 🎉 ${discountPercent}% OFF expires soon!` : ''),
+    timeHours: 0.25,
+    cost: price,
+    originalCost: INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
+    isDiscounted,
+    expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
+  };
+};
+
+const buildNightclubFloorsBottleneck = (ncOptimization, nightclubState, nightclubDiscountEvent) => {
+  const needsFloors = ncOptimization.issues.find(i => i.id === 'nc_floors_low');
+  if (!needsFloors) return null;
+
+  const currentFloors = nightclubState.floors;
+  const currentAFK = NIGHTCLUB_FLOOR_AFK[currentFloors]?.maxHours || 20;
+  const maxAFK = NIGHTCLUB_FLOOR_AFK[5].maxHours;
+  let floorCost = 0;
+  for (let f = currentFloors + 1; f <= 5; f++) {
+    floorCost += INFRASTRUCTURE_COSTS.nightclub.floors[f];
   }
-  
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub');
+  return {
+    id: 'nightclub_floors',
+    label: isDiscounted
+      ? `💰 NC Floors ${discountPercent}% OFF (AFK Limited)`
+      : `🎭 Nightclub Floors ${currentFloors}/5 (AFK Limited)`,
+    critical: false,
+    urgent: isDiscounted,
+    impact: isDiscounted ? 'high' : 'medium',
+    solution: `Buy Floors ${currentFloors + 1}-5 ($${(price / 1000000).toFixed(2)}M${isDiscounted ? ' - ' + discountPercent + '% OFF!' : ''})`,
+    actionType: 'infrastructure',
+    detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).${isDiscounted ? ' 🎉 Discount expires soon!' : ''}`,
+    timeHours: 0.25,
+    cost: price,
+    originalCost: floorCost,
+    isDiscounted,
+    expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
+  };
+};
+
+const buildNightclubPounderBottleneck = (ncOptimization, nightclubState, hasMuleTrap) => {
+  const needsPounder = ncOptimization.recommendations.find(r => r.id === 'buy_nc_pounder');
+  if (!needsPounder || hasMuleTrap) return null;
+
+  return {
+    id: 'nightclub_pounder',
+    label: '🚚 Need Pounder Custom for Large Sales',
+    critical: false,
+    urgent: nightclubState.floors >= 4 || nightclubState.techs >= 4,
+    impact: 'high',
+    solution: 'Buy Pounder Custom ($1.9M) from Warstock. DO NOT buy Mule Custom.',
+    actionType: 'infrastructure',
+    detail: 'Essential for selling 90+ crates. The Mule is slow and buggy - skip it entirely.',
+    timeHours: 0.25,
+    cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
+  };
+};
+
+const buildNightclubTechFeederBottleneck = (ncOptimization, nightclubTechs, nightclubFeeders) => {
+  if (nightclubTechs >= 5 && nightclubFeeders >= 5) return null;
+
+  const techImbalance = ncOptimization.issues.find(i => i.id === 'nc_tech_imbalance');
+  return {
+    id: 'nightclub_partial',
+    label: 'Nightclub Not Fully Optimized',
+    critical: false,
+    impact: 'medium',
+    solution: techImbalance
+      ? `Hire ${nightclubFeeders - nightclubTechs} more technicians. You have idle businesses.`
+      : 'Add more technicians and link feeder businesses.',
+    actionType: 'optimization',
+    detail: techImbalance?.detail || `${nightclubTechs}/5 techs, ${nightclubFeeders}/5 feeders. Missing up to 50% potential income.`,
+    timeHours: 0.5,
+  };
+};
+
+// --- Nightclub infrastructure sub-check ---
+const detectNightclubInfra = (params, formData, nightclubDiscountEvent) => {
+  const { hasNightclub, nightclubTechs, nightclubFeeders } = params;
+  if (!hasNightclub) return [];
+
+  const storage = formData.nightclubStorage || {};
+  const nightclubState = {
+    owned: true,
+    floors: Number(formData.nightclubFloors) || 1,
+    equipmentUpgrade: formData.nightclubEquipmentUpgrade,
+    staffUpgrade: formData.nightclubStaffUpgrade,
+    hasPounder: storage.hasPounder || formData.hasPounderCustom || false,
+    hasMule: storage.hasMule || formData.hasMuleCustom || false,
+    techs: nightclubTechs,
+    feeders: nightclubFeeders,
+  };
+
+  const ncOptimization = calculateNightclubOptimization(nightclubState);
+  const muleTrapResult = buildNightclubMuleTrapBottleneck(ncOptimization);
+
+  return [
+    muleTrapResult,
+    buildNightclubEquipmentBottleneck(ncOptimization, nightclubDiscountEvent),
+    buildNightclubFloorsBottleneck(ncOptimization, nightclubState, nightclubDiscountEvent),
+    buildNightclubPounderBottleneck(ncOptimization, nightclubState, !!muleTrapResult),
+    buildNightclubTechFeederBottleneck(ncOptimization, nightclubTechs, nightclubFeeders),
+  ].filter(Boolean);
+};
+
+const detectInfrastructureGaps = (params, formData, nightclubDiscountEvent) => {
+  const { hasNightclub } = params;
+  const bottlenecks = [
+    ...detectBunkerInfra(params, formData),
+    ...detectNightclubInfra(params, formData, nightclubDiscountEvent),
+  ];
+
   // Recommend buying Nightclub if player doesn't have one and discount is active
   if (!hasNightclub && nightclubDiscountEvent) {
     bottlenecks.push({
@@ -592,6 +634,17 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
       savingsValue: 600000,
     });
   }
+
+  return bottlenecks;
+};
+
+// ============================================
+// TIER 4: DAILY/QUALITY OF LIFE
+// ============================================
+
+const detectQualityOfLife = (params, formData, incomePerHour, nightclubDiscountEvent) => {
+  const { hasGTAPlus, hasKosatka } = params;
+  const bottlenecks = [];
 
   // Suggest GTA+ only when it clearly pays off
   if (!hasGTAPlus && hasKosatka && incomePerHour >= 500000) {
@@ -623,10 +676,6 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
     });
   }
 
-  // ============================================
-  // TIER 4: DAILY/QUALITY OF LIFE
-  // ============================================
-
   // Casino Wheel (GTA+ gets 2 spins) - Only if not claimed/opted out
   const claimedWheelSpin = !!formData.claimedWheelSpin;
   if (hasGTAPlus && !claimedWheelSpin) {
@@ -643,4 +692,24 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
   }
 
   return bottlenecks;
+};
+
+/**
+ * Detect all bottlenecks for a player based on their current state
+ * @param {Object} params - Normalized player data
+ * @param {number} now - Current timestamp (passed to avoid duplication)
+ * @param {Array} activeEvents - Active events from getCurrentEvents
+ * @param {number} incomePerHour - Calculated income per hour
+ * @param {Object} formData - Original form data for additional checks
+ * @returns {Array} Array of bottleneck objects
+ */
+export const detectBottlenecks = (params, now, activeEvents, incomePerHour, formData) => {
+  const tier0 = detectUrgentExpiring(params, now, formData);
+  const { bottlenecks: tier1, nightclubDiscountEvent } = detectIncomeLeaks(params, now, activeEvents);
+  const tier2 = detectStatBottlenecks(params, activeEvents, formData);
+  const tier3 = detectAssetGaps(params, incomePerHour);
+  const infra = detectInfrastructureGaps(params, formData, nightclubDiscountEvent);
+  const qol = detectQualityOfLife(params, formData, incomePerHour, nightclubDiscountEvent);
+  
+  return [...tier0, ...tier1, ...tier2, ...tier3, ...infra, ...qol];
 };

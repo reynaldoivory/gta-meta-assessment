@@ -83,12 +83,15 @@ export const applyWeeklyBoosts = (task, weeklyEvents, user) => {
       if (bonus.gtaPlusOnly && !user?.gtaPlus) return;
       
       // Check if task matches this bonus activity
-      const activityKey = key === 'autoShop' ? 'auto_shop_finales' :
-                         key === 'paperTrail' ? 'paper_trail' :
-                         key === 'businessBattles' ? 'business_battles' :
-                         key === 'nightclubGoods' ? 'nightclub_goods' :
-                         key === 'nightclubSafe' ? 'nightclub_safe' :
-                         key === 'mansionRaid' ? 'mansion_raid' : key;
+      const KEY_TO_ACTIVITY = {
+        autoShop: 'auto_shop_finales',
+        paperTrail: 'paper_trail',
+        businessBattles: 'business_battles',
+        nightclubGoods: 'nightclub_goods',
+        nightclubSafe: 'nightclub_safe',
+        mansionRaid: 'mansion_raid',
+      };
+      const activityKey = KEY_TO_ACTIVITY[key] || key;
       
       if (taskMatchesActivity(task, activityKey)) {
         // Check expiry
@@ -97,11 +100,14 @@ export const applyWeeklyBoosts = (task, weeklyEvents, user) => {
           : new Date(bonus.validUntil);
         
         if (now < expiryDate.getTime()) {
-          const taskMultiplier = typeof bonus.multiplier === 'number' 
-            ? bonus.multiplier 
-            : (user?.gtaPlus && bonus.gtaPlusMultiplier 
-                ? bonus.gtaPlusMultiplier 
-                : bonus.baseMultiplier || 1);
+          let taskMultiplier;
+          if (typeof bonus.multiplier === 'number') {
+            taskMultiplier = bonus.multiplier;
+          } else if (user?.gtaPlus && bonus.gtaPlusMultiplier) {
+            taskMultiplier = bonus.gtaPlusMultiplier;
+          } else {
+            taskMultiplier = bonus.baseMultiplier || 1;
+          }
           
           // Use the highest multiplier found
           if (taskMultiplier > multiplier) {
@@ -176,7 +182,7 @@ export const calculateCompoundEfficiency = (task, user, gameState, weeklyEvents)
   };
   
   const gatekeeperResult = checkGatekeeper(taskId, userProfile);
-  const viabilityMultiplier = gatekeeperResult.score_penalty || 1.0;
+  const viabilityMultiplier = gatekeeperResult.score_penalty || 1;
   
   if (gatekeeperResult.status === 'LOCKED') {
     reasoning.push(`🔒 ${gatekeeperResult.reason}`);
@@ -250,12 +256,12 @@ export const calculateCompoundEfficiency = (task, user, gameState, weeklyEvents)
 const parseMinutes = (timeToComplete) => {
   if (!timeToComplete || typeof timeToComplete !== 'string') return null;
   const str = timeToComplete.toLowerCase();
-  const hrMatch = str.match(/(\d+(\.\d+)?)\s*h/);
-  const minMatch = str.match(/(\d+(\.\d+)?)\s*m/);
-  if (hrMatch) return Math.round(parseFloat(hrMatch[1]) * 60);
-  if (minMatch) return Math.round(parseFloat(minMatch[1]));
-  const anyNumber = str.match(/(\d+(\.\d+)?)/);
-  return anyNumber ? Math.round(parseFloat(anyNumber[1])) : null;
+  const hrMatch = /^(\d+(\.\d+)?)\s*h/.exec(str);
+  const minMatch = /^(\d+(\.\d+)?)\s*m/.exec(str);
+  if (hrMatch) return Math.round(Number.parseFloat(hrMatch[1]) * 60);
+  if (minMatch) return Math.round(Number.parseFloat(minMatch[1]));
+  const anyNumber = /^(\d+(\.\d+)?)/.exec(str);
+  return anyNumber ? Math.round(Number.parseFloat(anyNumber[1])) : null;
 };
 
 const getPassiveProgress = (formData) => {
@@ -384,9 +390,10 @@ const annotateForCompoundEfficiency = (action, formData, results, now) => {
   // If not present, compute a lightweight approximation.
   let compoundScore = action._priorityScore ?? 0;
   if (!compoundScore) {
+    const IMPACT_SCORE = { CRITICAL: 6000, high: 3000, medium: 1500 };
     compoundScore =
       (action.savingsPerHour ? 4000 + Math.min(action.savingsPerHour / 1000, 5000) : 0) +
-      (action.impact === 'CRITICAL' ? 6000 : action.impact === 'high' ? 3000 : action.impact === 'medium' ? 1500 : 0) +
+      (IMPACT_SCORE[action.impact] || 0) +
       (action.urgency === 'URGENT' || action.urgency === 'GRIND NOW' ? 5000 : 0);
   }
 
@@ -460,7 +467,6 @@ const bottleneckToAction = (bottleneck, now) => {
     urgency = 'HIGH';
   } else if (bottleneck.impact === 'medium') {
     priority = 3;
-    urgency = 'MEDIUM';
   }
   
   // Check if expires soon (< 48 hours but > 24 hours)
@@ -637,8 +643,8 @@ export const buildCompactActionPlan = (bottlenecks, heistReady, formData, result
   const annotatedActions = allActions.map(a => annotateForCompoundEfficiency(a, formData, results, now));
 
   // Sort by compound score (highest first)
+  annotatedActions.sort((a, b) => (b.compoundScore || 0) - (a.compoundScore || 0));
   const sortedActions = annotatedActions
-    .sort((a, b) => (b.compoundScore || 0) - (a.compoundScore || 0))
     .slice(0, 5) // Limit to top 5
     .map(({ _priorityScore, ...action }) => action); // Remove cached score before returning
   
@@ -719,7 +725,6 @@ export const buildSessionPlan = ({ formData, results, sessionMinutes = 60 }) => 
  */
 const generateMaintenanceActions = (formData, results) => {
   const actions = [];
-  const rank = Number(formData.rank) || 0;
   const cash = Number(formData.liquidCash) || 0;
   
   // Daily objectives - ALWAYS include this as a fallback
@@ -892,11 +897,12 @@ export const buildSmartActionPlan = (formData, results = null) => {
     
     // Case A: Buy It Now (High Capital) - Only show if GTA+ or event is not GTA+ exclusive
     if (!formData.hasAutoShop && cash >= shopCost) {
-      const autoShopExpiry = autoShopBonus?.gtaPlusValidUntil 
-        ? new Date(autoShopBonus.gtaPlusValidUntil).getTime()
-        : autoShopBonus?.validUntil
-          ? new Date(autoShopBonus.validUntil).getTime()
-          : null;
+      let autoShopExpiry = null;
+      if (autoShopBonus?.gtaPlusValidUntil) {
+        autoShopExpiry = new Date(autoShopBonus.gtaPlusValidUntil).getTime();
+      } else if (autoShopBonus?.validUntil) {
+        autoShopExpiry = new Date(autoShopBonus.validUntil).getTime();
+      }
       const expiresSoon = autoShopExpiry && isExpiringSoon(autoShopExpiry, now);
       
       // Run gatekeeper check for auto shop (if we had a task ID for it)
@@ -904,7 +910,7 @@ export const buildSmartActionPlan = (formData, results = null) => {
       
       actions.push({
         priority: 0,
-        urgency: expiresSoon ? 'URGENT' : 'URGENT',
+        urgency: 'URGENT',
         type: 'PURCHASE',
         title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate || 'this week'})`,
         why: `You have $${(cash/1000000).toFixed(1)}M. Buying this unlocks $1.3M-$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
@@ -935,7 +941,7 @@ export const buildSmartActionPlan = (formData, results = null) => {
         
         actions.push({
           priority: 0,
-          urgency: expiresSoon ? 'URGENT' : 'URGENT',
+          urgency: 'URGENT',
           type: 'MISSION',
           title: '🔥 Grind Auto Shop Robbery Contracts (2X Event)',
           why: `Zero prep, ~$540-600k per 20-25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0-1.5M/hr once practiced. Beats your ${cayoAvgTime}-min Cayo runs. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil || WEEKLY_EVENTS.meta.validUntil)}.`,

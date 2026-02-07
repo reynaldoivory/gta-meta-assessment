@@ -1,5 +1,6 @@
 // src/views/AssessmentForm.jsx
 import React, { useRef, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
 import { Activity, Zap, Briefcase, CheckCircle, Cloud, Save, Trash2, AlertCircle } from 'lucide-react';
 import StatBar from '../components/shared/StatBar';
@@ -24,6 +25,385 @@ const formatLastSaved = (date) => {
   return date.toLocaleDateString();
 };
 
+// Helper: clear a single field error
+const clearFieldError = (name, errors, setErrors) => {
+  if (errors[name]) {
+    setErrors(prev => {
+      const newErrors = { ...prev };
+      delete newErrors[name];
+      return newErrors;
+    });
+  }
+};
+
+// Helper: handle checkbox change for property toggles (has* fields) with purchase date tracking
+const handleCheckboxChange = (name, checked, setFormData, errors, setErrors) => {
+  const propertyKey = name.replace('has', '').charAt(0).toLowerCase() + name.replace('has', '').slice(1);
+
+  setFormData(prev => {
+    const currentPurchaseDates = prev.purchaseDates || {};
+    const newPurchaseDates = { ...currentPurchaseDates };
+
+    if (checked && !newPurchaseDates[propertyKey]) {
+      newPurchaseDates[propertyKey] = Date.now();
+    }
+
+    return {
+      ...prev,
+      [name]: checked,
+      purchaseDates: newPurchaseDates,
+    };
+  });
+
+  clearFieldError(name, errors, setErrors);
+};
+
+// Helper: render the save status indicator
+const renderSaveStatus = (localStorageAvailable, isSaving, lastSaved) => {
+  if (!localStorageAvailable) return (
+    <div className="flex items-center gap-2 text-red-400 text-sm">
+      <span className="text-xs">⚠️ Private Mode</span>
+    </div>
+  );
+  if (isSaving) return (
+    <div className="flex items-center gap-2 text-slate-400 text-sm">
+      <Cloud className="w-4 h-4 animate-pulse" />
+      <span className="text-xs">Saving...</span>
+    </div>
+  );
+  if (lastSaved) return (
+    <div className="flex items-center gap-2 text-green-400 text-sm">
+      <CheckCircle className="w-4 h-4" />
+      <span className="text-xs">Saved {formatLastSaved(lastSaved)}</span>
+    </div>
+  );
+  return null;
+};
+
+// Helper: get error-aware border class
+const errorBorder = (errors, field) => 
+  errors[field] ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700';
+
+// Helper: get simple error-aware border class (no ring)
+const errorBorderSimple = (errors, field) => 
+  errors[field] ? 'border-red-500' : 'border-slate-700';
+
+// Sub-component: GTA+ Vehicle Reminder
+const GTAPlusVehicleReminder = ({ formData }) => {
+  const show = formData.hasGTAPlus && !formData.claimedFreeCar && !formData.hasRaiju && !formData.hasOppressor;
+  if (!show) return null;
+  return (
+    <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/50 rounded-xl flex items-center gap-4">
+      <div className="text-3xl">🏎️</div>
+      <div className="flex-1">
+        <div className="font-bold text-white mb-1">Don&apos;t Forget: Free {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}</div>
+        <div className="text-sm text-slate-300">
+          Claim it at {WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club'}. Worth ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M for free. Perfect for early-game transport.
+        </div>
+      </div>
+    </div>
+  );
+};
+
+// Sub-component: Bunker warning
+const BunkerWarning = ({ formData }) => {
+  const show = formData.hasBunker && !formData.bunkerEquipmentUpgrade && !formData.bunkerUpgraded;
+  if (!show) return null;
+  return (
+    <div className="p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
+      🚨 <strong>PASSIVE INCOME LEAK:</strong> Your bunker is unupgraded. You&apos;re earning $20k/hr instead of $60k/hr. Equipment + Staff upgrades pay for themselves in 45 hours.
+    </div>
+  );
+};
+
+// Sub-component: Mule warning
+const MuleWarning = ({ formData }) => {
+  const show = formData.nightclubStorage?.hasMule && !formData.nightclubStorage?.hasPounder;
+  if (!show) return null;
+  return (
+    <div className="mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
+      ⚠️ <strong>Warning:</strong> The Mule is slow and buggy. You still need the Pounder for 90+ crate sales. Consider buying Pounder instead.
+    </div>
+  );
+};
+
+// Sub-component: Cayo nerf warning
+const CayoNerfWarning = ({ formData }) => {
+  const show = formData.cayoCompletions && Number(formData.cayoCompletions) > 0;
+  if (!show) return null;
+  return (
+    <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-xs text-yellow-400">
+      ⚠️ <strong>2023 Nerf Impact:</strong> Tequila (~60% drop rate) pays ~$630k total. 
+      Pink Diamond/Panther pay $1M-1.9M but are rare. Average: $700k/run.
+    </div>
+  );
+};
+
+// Sub-component: Active Bonuses & Claims section
+const BonusClaimsSection = ({ formData, setFormData }) => (
+  <section className="space-y-4">
+    <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 p-4 rounded-lg border border-purple-500/30">
+      <h3 className="text-lg font-bold text-purple-200 mb-3 flex items-center gap-2">
+        <span>🎁</span> Active Bonuses & Claims
+      </h3>
+      
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* 1. FREE CAR WASH (Weekly Event) */}
+        <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
+          formData.hasCarWash 
+            ? 'bg-slate-800 opacity-60' 
+            : 'bg-slate-800 hover:bg-slate-700 ring-2 ring-green-500/50'
+        }`}>
+          <input
+            type="checkbox"
+            checked={formData.hasCarWash}
+            onChange={(e) => setFormData({ ...formData, hasCarWash: e.target.checked })}
+            className="form-checkbox h-5 w-5 text-green-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
+          />
+          <div className="flex-1">
+            <span className={`font-medium ${formData.hasCarWash ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+              {formData.hasCarWash ? 'Claimed:' : 'Available:'} Hands-On Car Wash
+            </span>
+            <CarWashExpiryBadge claimed={formData.hasCarWash} />
+          </div>
+        </label>
+
+        {/* 2. FREE CAR (GTA+ Only) */}
+        {formData.hasGTAPlus && (
+          <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
+            formData.claimedFreeCar
+              ? 'bg-slate-800 opacity-60'
+              : 'bg-slate-800 hover:bg-slate-700'
+          }`}>
+            <input
+              type="checkbox"
+              checked={formData.claimedFreeCar}
+              onChange={(e) => setFormData({ ...formData, claimedFreeCar: e.target.checked })}
+              className="form-checkbox h-5 w-5 text-purple-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
+              aria-label="Claimed free GTA+ vehicle"
+            />
+            <div className="flex-1">
+              <span className={`font-medium ${formData.claimedFreeCar ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+                {formData.claimedFreeCar ? 'Claimed:' : 'Unclaimed:'} {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}
+              </span>
+              <div className="text-xs text-purple-400">GTA+ Monthly Benefit (Save ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M)</div>
+            </div>
+          </label>
+        )}
+
+        {/* 3. CASINO WHEEL SPIN (GTA+ Only) */}
+        {formData.hasGTAPlus && (
+          <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
+            formData.claimedWheelSpin
+              ? 'bg-slate-800 opacity-60'
+              : 'bg-slate-800 hover:bg-slate-700'
+          }`}>
+            <input
+              type="checkbox"
+              checked={formData.claimedWheelSpin}
+              onChange={(e) => setFormData({ ...formData, claimedWheelSpin: e.target.checked })}
+              className="form-checkbox h-5 w-5 text-yellow-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
+              aria-label="Casino Wheel Spin opted out"
+            />
+            <div className="flex-1">
+              <span className={`font-medium ${formData.claimedWheelSpin ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
+                {formData.claimedWheelSpin ? 'Opted Out:' : 'Available:'} Casino Wheel Spin (2X Daily)
+              </span>
+              <div className="text-xs text-yellow-400">GTA+ Benefit - Check to hide recommendation</div>
+            </div>
+          </label>
+        )}
+      </div>
+    </div>
+  </section>
+);
+
+// Sub-component: Form footer with errors, trap warnings, and submit button
+const FormFooter = ({ errors, cascadeTraps, hasCriticalTrap, criticalTraps, runAssessment, isCalculating }) => (
+  <>
+    {errors.general && (
+      <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
+        <p className="text-red-400 text-sm">{errors.general}</p>
+      </div>
+    )}
+
+    {cascadeTraps.length > 0 && (
+      <div className="space-y-3">
+        {cascadeTraps.map(trap => (
+          <TrapBlockingWarning key={trap.id} trap={trap} />
+        ))}
+      </div>
+    )}
+    
+    {hasCriticalTrap && !cascadeTraps.length && (
+      <div className="p-4 bg-red-900/30 border-2 border-red-500/50 rounded-xl">
+        <div className="flex items-start gap-3">
+          <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
+          <div>
+            <h4 className="font-bold text-red-300 mb-1">
+              ⚠️ {criticalTraps.length} Critical Issue{criticalTraps.length === 1 ? '' : 's'} Detected
+            </h4>
+            <p className="text-sm text-red-200 mb-2">
+              Your current setup has issues costing you money. Run the assessment to see detailed fixes.
+            </p>
+            <ul className="text-sm text-red-300 space-y-1">
+              {criticalTraps.map(trap => (
+                <li key={trap.id}>• {trap.title}</li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      </div>
+    )}
+
+    <button 
+      type="button"
+      onClick={runAssessment}
+      disabled={isCalculating}
+      className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition-transform active:scale-[0.98]"
+    >
+      {isCalculating ? 'Calculating...' : 'Run Assessment'}
+    </button>
+  </>
+);
+
+// PropTypes for sub-components
+GTAPlusVehicleReminder.propTypes = { formData: PropTypes.object.isRequired };
+BunkerWarning.propTypes = { formData: PropTypes.object.isRequired };
+MuleWarning.propTypes = { formData: PropTypes.object.isRequired };
+CayoNerfWarning.propTypes = { formData: PropTypes.object.isRequired };
+BonusClaimsSection.propTypes = { formData: PropTypes.object.isRequired, setFormData: PropTypes.func.isRequired };
+FormFooter.propTypes = {
+  errors: PropTypes.object.isRequired,
+  cascadeTraps: PropTypes.array.isRequired,
+  hasCriticalTrap: PropTypes.bool.isRequired,
+  criticalTraps: PropTypes.array.isRequired,
+  runAssessment: PropTypes.func.isRequired,
+  isCalculating: PropTypes.bool.isRequired,
+};
+
+// Module-level constant: quick fill presets
+const QUICK_FILL_PRESETS = {
+  'New Player': {
+    rank: '25',
+    timePlayed: '10',
+    liquidCash: '500000',
+    strength: 2,
+    flying: 2,
+    shooting: 2,
+    stealth: 1,
+    stamina: 2,
+    driving: 2,
+    hasKosatka: false,
+    hasSparrow: false,
+    hasAgency: false,
+    hasAcidLab: false,
+    hasNightclub: false,
+    hasBunker: false,
+    hasAutoShop: false,
+    hasGTAPlus: false,
+    playMode: 'invite'
+  },
+  'Mid Grinder': {
+    rank: '75',
+    timePlayed: '100',
+    liquidCash: '5000000',
+    strength: 4,
+    flying: 4,
+    shooting: 4,
+    stealth: 3,
+    stamina: 4,
+    driving: 4,
+    hasKosatka: true,
+    hasSparrow: true,
+    hasAgency: true,
+    hasAcidLab: true,
+    acidLabUpgraded: true,
+    hasNightclub: true,
+    nightclubTechs: 3,
+    nightclubSources: {
+      imports: true,   // Coke
+      cargo: true,     // Hangar/CEO
+      pharma: true,    // Meth
+      sporting: false, // Bunker
+      cash: false,
+      organic: false,
+      printing: false
+    },
+    nightclubFloors: '2',
+    nightclubEquipmentUpgrade: false,
+    nightclubStaffUpgrade: false,
+    nightclubStorage: {
+      hasPounder: false,
+      hasMule: false
+    },
+    hasBunker: true,
+    bunkerEquipmentUpgrade: true,
+    bunkerStaffUpgrade: true,
+    bunkerSecurityUpgrade: false,
+    hasAutoShop: true,
+    cayoCompletions: '25',
+    cayoAvgTime: '60',
+    dreContractDone: true,
+    payphoneUnlocked: true,
+    securityContracts: '150',
+    hasGTAPlus: false,
+    playMode: 'invite'
+  },
+  'Endgame 2026': {
+    rank: '150',
+    timePlayed: '500',
+    liquidCash: '50000000',
+    strength: 5,
+    flying: 5,
+    shooting: 5,
+    stealth: 5,
+    stamina: 5,
+    driving: 5,
+    hasKosatka: true,
+    hasSparrow: true,
+    hasAgency: true,
+    dreContractDone: true,
+    payphoneUnlocked: true,
+    securityContracts: '200',
+    hasAcidLab: true,
+    acidLabUpgraded: true,
+    hasNightclub: true,
+    nightclubTechs: 5,
+    nightclubSources: {
+      imports: true,   // Coke
+      cargo: true,     // Hangar/CEO
+      pharma: true,    // Meth
+      sporting: true,  // Bunker
+      cash: true,      // Cash
+      organic: false,  // Weed (low value)
+      printing: false  // Docs (low value)
+    },
+    nightclubFloors: '5',
+    nightclubEquipmentUpgrade: true,
+    nightclubStaffUpgrade: true,
+    nightclubStorage: {
+      hasPounder: true,
+      hasMule: false
+    },
+    hasBunker: true,
+    bunkerEquipmentUpgrade: true,
+    bunkerStaffUpgrade: true,
+    bunkerSecurityUpgrade: true,
+    hasAutoShop: true,
+    hasMansion: true,
+    hasSalvageYard: true,
+    hasTowTruck: true,
+    hasRaiju: true,
+    hasOppressor: true,
+    hasArmoredKuruma: true,
+    cayoCompletions: '100',
+    cayoAvgTime: '45',
+    hasGTAPlus: true,
+    playMode: 'invite'
+  }
+};
+
 export default function AssessmentForm() {
   const { 
     formData, setFormData, runAssessment, resetForm, setStep, hasDraft, errors, setErrors, isCalculating,
@@ -43,33 +423,7 @@ export default function AssessmentForm() {
     
     // Auto-track purchase dates when property checkboxes are toggled ON
     if (type === 'checkbox' && name.startsWith('has')) {
-      // Convert hasKosatka -> kosatka, hasNightclub -> nightclub, etc.
-      const propertyKey = name.replace('has', '').charAt(0).toLowerCase() + name.replace('has', '').slice(1);
-      
-      setFormData(prev => {
-        const currentPurchaseDates = prev.purchaseDates || {};
-        const newPurchaseDates = { ...currentPurchaseDates };
-        
-        // Only set purchase date if checkbox is being checked AND no date exists
-        if (checked && !newPurchaseDates[propertyKey]) {
-          newPurchaseDates[propertyKey] = Date.now();
-        }
-        
-        return {
-          ...prev,
-          [name]: checked,
-          purchaseDates: newPurchaseDates,
-        };
-      });
-      
-      // Clear error for this field
-      if (errors[name]) {
-        setErrors(prev => {
-          const newErrors = { ...prev };
-          delete newErrors[name];
-          return newErrors;
-        });
-      }
+      handleCheckboxChange(name, checked, setFormData, errors, setErrors);
       return;
     }
     
@@ -77,14 +431,7 @@ export default function AssessmentForm() {
       ...prev,
       [name]: type === 'checkbox' ? checked : value
     }));
-    // Clear error for this field
-    if (errors[name]) {
-      setErrors(prev => {
-        const newErrors = { ...prev };
-        delete newErrors[name];
-        return newErrors;
-      });
-    }
+    clearFieldError(name, errors, setErrors);
   };
 
   // Stat change handler
@@ -97,129 +444,8 @@ export default function AssessmentForm() {
 
   // Quick fill presets
   const quickFill = (preset) => {
-    const presets = {
-      'New Player': {
-        rank: '25',
-        timePlayed: '10',
-        liquidCash: '500000',
-        strength: 2,
-        flying: 2,
-        shooting: 2,
-        stealth: 1,
-        stamina: 2,
-        driving: 2,
-        hasKosatka: false,
-        hasSparrow: false,
-        hasAgency: false,
-        hasAcidLab: false,
-        hasNightclub: false,
-        hasBunker: false,
-        hasAutoShop: false,
-        hasGTAPlus: false,
-        playMode: 'invite'
-      },
-      'Mid Grinder': {
-        rank: '75',
-        timePlayed: '100',
-        liquidCash: '5000000',
-        strength: 4,
-        flying: 4,
-        shooting: 4,
-        stealth: 3,
-        stamina: 4,
-        driving: 4,
-        hasKosatka: true,
-        hasSparrow: true,
-        hasAgency: true,
-        hasAcidLab: true,
-        acidLabUpgraded: true,
-        hasNightclub: true,
-        nightclubTechs: 3,
-        nightclubSources: {
-          imports: true,   // Coke
-          cargo: true,     // Hangar/CEO
-          pharma: true,    // Meth
-          sporting: false, // Bunker
-          cash: false,
-          organic: false,
-          printing: false
-        },
-        nightclubFloors: '2',
-        nightclubEquipmentUpgrade: false,
-        nightclubStaffUpgrade: false,
-        nightclubStorage: {
-          hasPounder: false,
-          hasMule: false
-        },
-        hasBunker: true,
-        bunkerEquipmentUpgrade: true,
-        bunkerStaffUpgrade: true,
-        bunkerSecurityUpgrade: false,
-        hasAutoShop: true,
-        cayoCompletions: '25',
-        cayoAvgTime: '60',
-        dreContractDone: true,
-        payphoneUnlocked: true,
-        securityContracts: '150',
-        hasGTAPlus: false,
-        playMode: 'invite'
-      },
-      'Endgame 2026': {
-        rank: '150',
-        timePlayed: '500',
-        liquidCash: '50000000',
-        strength: 5,
-        flying: 5,
-        shooting: 5,
-        stealth: 5,
-        stamina: 5,
-        driving: 5,
-        hasKosatka: true,
-        hasSparrow: true,
-        hasAgency: true,
-        dreContractDone: true,
-        payphoneUnlocked: true,
-        securityContracts: '200',
-        hasAcidLab: true,
-        acidLabUpgraded: true,
-        hasNightclub: true,
-        nightclubTechs: 5,
-        nightclubSources: {
-          imports: true,   // Coke
-          cargo: true,     // Hangar/CEO
-          pharma: true,    // Meth
-          sporting: true,  // Bunker
-          cash: true,      // Cash
-          organic: false,  // Weed (low value)
-          printing: false  // Docs (low value)
-        },
-        nightclubFloors: '5',
-        nightclubEquipmentUpgrade: true,
-        nightclubStaffUpgrade: true,
-        nightclubStorage: {
-          hasPounder: true,
-          hasMule: false
-        },
-        hasBunker: true,
-        bunkerEquipmentUpgrade: true,
-        bunkerStaffUpgrade: true,
-        bunkerSecurityUpgrade: true,
-        hasAutoShop: true,
-        hasMansion: true,
-        hasSalvageYard: true,
-        hasTowTruck: true,
-        hasRaiju: true,
-        hasOppressor: true,
-        hasArmoredKuruma: true,
-        cayoCompletions: '100',
-        cayoAvgTime: '45',
-        hasGTAPlus: true,
-        playMode: 'invite'
-      }
-    };
-
-    if (presets[preset]) {
-      setFormData(prev => ({ ...prev, ...presets[preset] }));
+    if (QUICK_FILL_PRESETS[preset]) {
+      setFormData(prev => ({ ...prev, ...QUICK_FILL_PRESETS[preset] }));
     }
   };
 
@@ -234,21 +460,7 @@ export default function AssessmentForm() {
             
             {/* Save Status Indicator */}
             <div className="flex items-center gap-2">
-              {!localStorageAvailable ? (
-                <div className="flex items-center gap-2 text-red-400 text-sm">
-                  <span className="text-xs">⚠️ Private Mode</span>
-                </div>
-              ) : isSaving ? (
-                <div className="flex items-center gap-2 text-slate-400 text-sm">
-                  <Cloud className="w-4 h-4 animate-pulse" />
-                  <span className="text-xs">Saving...</span>
-                </div>
-              ) : lastSaved ? (
-                <div className="flex items-center gap-2 text-green-400 text-sm">
-                  <CheckCircle className="w-4 h-4" />
-                  <span className="text-xs">Saved {formatLastSaved(lastSaved)}</span>
-                </div>
-              ) : null}
+              {renderSaveStatus(localStorageAvailable, isSaving, lastSaved)}
             </div>
           </div>
           
@@ -294,17 +506,7 @@ export default function AssessmentForm() {
         {formData.hasGTAPlus && <WeeklyBonusBanner />}
 
         {/* Free GTA+ Vehicle Reminder */}
-        {formData.hasGTAPlus && !formData.claimedFreeCar && !formData.hasRaiju && !formData.hasOppressor && (
-          <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/50 rounded-xl flex items-center gap-4">
-            <div className="text-3xl">🏎️</div>
-            <div className="flex-1">
-              <div className="font-bold text-white mb-1">Don't Forget: Free {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}</div>
-              <div className="text-sm text-slate-300">
-                Claim it at {WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club'}. Worth ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M for free. Perfect for early-game transport.
-              </div>
-            </div>
-          </div>
-        )}
+        <GTAPlusVehicleReminder formData={formData} />
 
         {/* Quick Fill */}
         <div className="flex gap-2 overflow-x-auto pb-2">
@@ -339,9 +541,7 @@ export default function AssessmentForm() {
                   type="number" 
                   value={formData.rank} 
                   onChange={handleInputChange} 
-                  className={`w-full bg-slate-900 border rounded p-3 focus:border-blue-500 outline-none ${
-                    errors.rank ? 'border-red-500' : 'border-slate-700'
-                  }`}
+                  className={`w-full bg-slate-900 border rounded p-3 focus:border-blue-500 outline-none ${errorBorderSimple(errors, 'rank')}`}
                 />
                 {errors.rank && (
                   <p className="text-xs text-red-400 mt-1">{errors.rank}</p>
@@ -355,9 +555,7 @@ export default function AssessmentForm() {
                   type="number" 
                   value={formData.liquidCash} 
                   onChange={handleInputChange} 
-                  className={`w-full bg-slate-900 border rounded p-3 focus:border-green-500 outline-none transition-colors ${
-                    errors.liquidCash ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                  }`}
+                  className={`w-full bg-slate-900 border rounded p-3 focus:border-green-500 outline-none transition-colors ${errorBorder(errors, 'liquidCash')}`}
                 />
                 {errors.liquidCash && (
                   <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
@@ -375,6 +573,7 @@ export default function AssessmentForm() {
                   checked={formData.hasGTAPlus} 
                   onChange={handleInputChange} 
                   className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-blue-500 focus:ring-blue-500"
+                  aria-label="GTA+ Subscriber"
                 />
                 <div className="flex-1">
                   <div className="text-white font-medium">GTA+ Subscriber ($7.99/mo)</div>
@@ -390,7 +589,7 @@ export default function AssessmentForm() {
             <div>
               <label htmlFor="timePlayed" className="text-xs text-slate-500 font-bold uppercase block mb-1">
                 Total Hours Played
-                <span className="text-slate-600 ml-1 font-normal">(cumulative, for efficiency calculation)</span>
+                {' '}<span className="text-slate-600 font-normal">(cumulative, for efficiency calculation)</span>
               </label>
               <input 
                 id="timePlayed"
@@ -399,9 +598,7 @@ export default function AssessmentForm() {
                 placeholder="e.g. 150"
                 value={formData.timePlayed} 
                 onChange={handleInputChange} 
-                className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${
-                  errors.timePlayed ? 'border-red-500' : 'border-slate-700'
-                }`}
+                className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${errorBorderSimple(errors, 'timePlayed')}`}
                 min="0"
               />
               {errors.timePlayed ? (
@@ -495,9 +692,7 @@ export default function AssessmentForm() {
                       placeholder="0" 
                       value={formData.cayoCompletions} 
                       onChange={handleInputChange} 
-                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${
-                        errors.cayoCompletions ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                      }`}
+                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${errorBorder(errors, 'cayoCompletions')}`}
                     />
                     {errors.cayoCompletions && (
                       <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
@@ -515,9 +710,7 @@ export default function AssessmentForm() {
                       placeholder="e.g. 65" 
                       value={formData.cayoAvgTime} 
                       onChange={handleInputChange} 
-                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${
-                        errors.cayoAvgTime ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                      }`}
+                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${errorBorder(errors, 'cayoAvgTime')}`}
                     />
                     {errors.cayoAvgTime ? (
                       <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
@@ -527,12 +720,7 @@ export default function AssessmentForm() {
                     ) : (
                       <div className="text-xs text-slate-500 mt-1">Includes prep + heist time. Elite: &lt;50min</div>
                     )}
-                    {formData.cayoCompletions && Number(formData.cayoCompletions) > 0 && (
-                      <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-xs text-yellow-400">
-                        ⚠️ <strong>2023 Nerf Impact:</strong> Tequila (~60% drop rate) pays ~$630k total. 
-                        Pink Diamond/Panther pay $1M-1.9M but are rare. Average: $700k/run.
-                      </div>
-                    )}
+                    <CayoNerfWarning formData={formData} />
                   </div>
                 </div>
               </AssetCard>
@@ -578,9 +766,7 @@ export default function AssessmentForm() {
                     placeholder="0" 
                     value={formData.securityContracts} 
                     onChange={handleInputChange} 
-                    className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-purple-500 outline-none transition-colors ${
-                      errors.securityContracts ? 'border-red-500 ring-2 ring-red-500/20' : 'border-slate-700'
-                    }`}
+                    className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-purple-500 outline-none transition-colors ${errorBorder(errors, 'securityContracts')}`}
                   />
                   {errors.securityContracts ? (
                     <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
@@ -606,7 +792,7 @@ export default function AssessmentForm() {
                   <div>
                     <label htmlFor="nightclubFloors" className="text-xs text-slate-500 font-bold uppercase mb-1 block">
                       Warehouse Floors (1-5)
-                      <span className="text-yellow-400 ml-1 font-normal">← Affects AFK Duration</span>
+                      {' '}<span className="text-yellow-400 font-normal">← Affects AFK Duration</span>
                     </label>
                     <select
                       id="nightclubFloors"
@@ -633,6 +819,7 @@ export default function AssessmentForm() {
                         checked={formData.nightclubEquipmentUpgrade} 
                         onChange={handleInputChange} 
                         className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-purple-500"
+                        aria-label="Nightclub Equipment Upgrade"
                       />
                       <div>
                         <span className="text-sm text-slate-300">Equipment</span>
@@ -646,6 +833,7 @@ export default function AssessmentForm() {
                         checked={formData.nightclubStaffUpgrade} 
                         onChange={handleInputChange} 
                         className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-purple-500"
+                        aria-label="Nightclub Staff Upgrade"
                       />
                       <div>
                         <span className="text-sm text-slate-300">Staff</span>
@@ -656,10 +844,10 @@ export default function AssessmentForm() {
 
                   {/* Delivery Vehicles */}
                   <div>
-                    <label className="text-xs text-slate-500 font-bold uppercase mb-2 block">
+                    <div className="text-xs text-slate-500 font-bold uppercase mb-2 block">
                       Delivery Vehicles
-                      <span className="text-red-400 ml-1 font-normal">← Critical for Large Sales</span>
-                    </label>
+                      {' '}<span className="text-red-400 font-normal">← Critical for Large Sales</span>
+                    </div>
                     <div className="grid grid-cols-2 gap-2">
                       <label className="flex items-center gap-2 cursor-pointer p-2 bg-slate-800 rounded hover:bg-slate-700 transition-colors">
                         <input 
@@ -673,6 +861,7 @@ export default function AssessmentForm() {
                             }
                           }))}
                           className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-green-500"
+                          aria-label="Pounder Custom delivery vehicle"
                         />
                         <div>
                           <span className="text-sm text-slate-300">Pounder Custom</span>
@@ -691,6 +880,7 @@ export default function AssessmentForm() {
                             }
                           }))}
                           className="w-4 h-4 rounded bg-slate-900 border-slate-600 checked:bg-red-500"
+                          aria-label="Mule Custom delivery vehicle"
                         />
                         <div>
                           <span className="text-sm text-slate-300">Mule Custom</span>
@@ -698,11 +888,7 @@ export default function AssessmentForm() {
                         </div>
                       </label>
                     </div>
-                    {formData.nightclubStorage?.hasMule && !formData.nightclubStorage?.hasPounder && (
-                      <div className="mt-2 p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
-                        ⚠️ <strong>Warning:</strong> The Mule is slow and buggy. You still need the Pounder for 90+ crate sales. Consider buying Pounder instead.
-                      </div>
-                    )}
+                    <MuleWarning formData={formData} />
                   </div>
 
                   {/* Technicians & Logistics */}
@@ -761,6 +947,7 @@ export default function AssessmentForm() {
                       checked={formData.bunkerEquipmentUpgrade || formData.bunkerUpgraded} 
                       onChange={handleInputChange} 
                       className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
+                      aria-label="Bunker Equipment Upgrade"
                     />
                     <div className="flex-1">
                       <div className="text-slate-200 font-medium">Equipment Upgrade</div>
@@ -776,6 +963,7 @@ export default function AssessmentForm() {
                       checked={formData.bunkerStaffUpgrade || formData.bunkerUpgraded} 
                       onChange={handleInputChange} 
                       className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
+                      aria-label="Bunker Staff Upgrade"
                     />
                     <div className="flex-1">
                       <div className="text-slate-200 font-medium">Staff Upgrade</div>
@@ -791,6 +979,7 @@ export default function AssessmentForm() {
                       checked={formData.bunkerSecurityUpgrade} 
                       onChange={handleInputChange} 
                       className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-slate-500 focus:ring-slate-500"
+                      aria-label="Bunker Security Upgrade"
                     />
                     <div className="flex-1">
                       <div className="text-slate-200 font-medium">Security Upgrade</div>
@@ -799,11 +988,7 @@ export default function AssessmentForm() {
                   </label>
                   
                   {/* Income Warning */}
-                  {formData.hasBunker && !formData.bunkerEquipmentUpgrade && !formData.bunkerUpgraded && (
-                    <div className="p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
-                      🚨 <strong>PASSIVE INCOME LEAK:</strong> Your bunker is unupgraded. You're earning $20k/hr instead of $60k/hr. Equipment + Staff upgrades pay for themselves in 45 hours.
-                    </div>
-                  )}
+                  <BunkerWarning formData={formData} />
                 </div>
               </AssetCard>
 
@@ -845,8 +1030,9 @@ export default function AssessmentForm() {
                  >
                    {formData.hasMansion && (
                      <div className="p-2">
-                       <label className="block text-xs text-slate-400 mb-1">Mansion Location:</label>
+                       <label htmlFor="mansionType" className="block text-xs text-slate-400 mb-1">Mansion Location:</label>
                        <select
+                         id="mansionType"
                          value={formData.mansionType || ''}
                          onChange={(e) => setFormData(p => ({...p, mansionType: e.target.value}))}
                          className="w-full text-xs bg-slate-700 border border-slate-600 rounded px-2 py-1 text-slate-200"
@@ -910,124 +1096,17 @@ export default function AssessmentForm() {
           </section>
 
           {/* --- LIMITED TIME OFFERS SECTION --- */}
-          <section className="space-y-4">
-            <div className="bg-gradient-to-r from-purple-900/20 to-blue-900/20 p-4 rounded-lg border border-purple-500/30">
-              <h3 className="text-lg font-bold text-purple-200 mb-3 flex items-center gap-2">
-                <span>🎁</span> Active Bonuses & Claims
-              </h3>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* 1. FREE CAR WASH (Weekly Event) */}
-                <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
-                  formData.hasCarWash 
-                    ? 'bg-slate-800 opacity-60' 
-                    : 'bg-slate-800 hover:bg-slate-700 ring-2 ring-green-500/50'
-                }`}>
-                  <input
-                    type="checkbox"
-                    checked={formData.hasCarWash}
-                    onChange={(e) => setFormData({ ...formData, hasCarWash: e.target.checked })}
-                    className="form-checkbox h-5 w-5 text-green-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
-                  />
-                  <div className="flex-1">
-                    <span className={`font-medium ${formData.hasCarWash ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-                      {formData.hasCarWash ? 'Claimed:' : 'Available:'} Hands-On Car Wash
-                    </span>
-                    <CarWashExpiryBadge claimed={formData.hasCarWash} />
-                  </div>
-                </label>
+          <BonusClaimsSection formData={formData} setFormData={setFormData} />
 
-                {/* 2. FREE CAR (GTA+ Only) */}
-                {formData.hasGTAPlus && (
-                  <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
-                    formData.claimedFreeCar
-                      ? 'bg-slate-800 opacity-60'
-                      : 'bg-slate-800 hover:bg-slate-700'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.claimedFreeCar}
-                      onChange={(e) => setFormData({ ...formData, claimedFreeCar: e.target.checked })}
-                      className="form-checkbox h-5 w-5 text-purple-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
-                    />
-                    <div className="flex-1">
-                      <span className={`font-medium ${formData.claimedFreeCar ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-                        {formData.claimedFreeCar ? 'Claimed:' : 'Unclaimed:'} {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}
-                      </span>
-                      <div className="text-xs text-purple-400">GTA+ Monthly Benefit (Save ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M)</div>
-                    </div>
-                  </label>
-                )}
-
-                {/* 3. CASINO WHEEL SPIN (GTA+ Only) */}
-                {formData.hasGTAPlus && (
-                  <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
-                    formData.claimedWheelSpin
-                      ? 'bg-slate-800 opacity-60'
-                      : 'bg-slate-800 hover:bg-slate-700'
-                  }`}>
-                    <input
-                      type="checkbox"
-                      checked={formData.claimedWheelSpin}
-                      onChange={(e) => setFormData({ ...formData, claimedWheelSpin: e.target.checked })}
-                      className="form-checkbox h-5 w-5 text-yellow-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
-                    />
-                    <div className="flex-1">
-                      <span className={`font-medium ${formData.claimedWheelSpin ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-                        {formData.claimedWheelSpin ? 'Opted Out:' : 'Available:'} Casino Wheel Spin (2X Daily)
-                      </span>
-                      <div className="text-xs text-yellow-400">GTA+ Benefit - Check to hide recommendation</div>
-                    </div>
-                  </label>
-                )}
-              </div>
-            </div>
-          </section>
-
-          {errors.general && (
-            <div className="p-4 bg-red-900/20 border border-red-500/30 rounded-lg">
-              <p className="text-red-400 text-sm">{errors.general}</p>
-            </div>
-          )}
-
-          {/* Real-Time Trap Warnings */}
-          {cascadeTraps.length > 0 && (
-            <div className="space-y-3">
-              {cascadeTraps.map(trap => (
-                <TrapBlockingWarning key={trap.id} trap={trap} />
-              ))}
-            </div>
-          )}
-          
-          {hasCriticalTrap && !cascadeTraps.length && (
-            <div className="p-4 bg-red-900/30 border-2 border-red-500/50 rounded-xl">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-red-400 flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-red-300 mb-1">
-                    ⚠️ {criticalTraps.length} Critical Issue{criticalTraps.length !== 1 ? 's' : ''} Detected
-                  </h4>
-                  <p className="text-sm text-red-200 mb-2">
-                    Your current setup has issues costing you money. Run the assessment to see detailed fixes.
-                  </p>
-                  <ul className="text-sm text-red-300 space-y-1">
-                    {criticalTraps.map(trap => (
-                      <li key={trap.id}>• {trap.title}</li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            </div>
-          )}
-
-          <button 
-            type="button"
-            onClick={runAssessment}
-            disabled={isCalculating}
-            className="w-full py-4 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-500 hover:to-purple-500 disabled:from-slate-600 disabled:to-slate-600 disabled:cursor-not-allowed text-white font-bold rounded-xl shadow-lg transition-transform active:scale-[0.98]"
-          >
-            {isCalculating ? 'Calculating...' : 'Run Assessment'}
-          </button>
+          {/* Errors, Trap Warnings, Submit */}
+          <FormFooter
+            errors={errors}
+            cascadeTraps={cascadeTraps}
+            hasCriticalTrap={hasCriticalTrap}
+            criticalTraps={criticalTraps}
+            runAssessment={runAssessment}
+            isCalculating={isCalculating}
+          />
 
         </div>
       </div>

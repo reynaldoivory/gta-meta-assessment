@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import PropTypes from 'prop-types';
 import { WEEKLY_EVENTS } from '../../config/weeklyEvents';
 
 const CarWashExpiryBadge = ({ claimed }) => {
@@ -42,6 +43,10 @@ const CarWashExpiryBadge = ({ claimed }) => {
   const expiryDate = new Date(WEEKLY_EVENTS.bonuses?.carWash?.validUntil || WEEKLY_EVENTS.meta.validUntil);
   const expiryLabel = expiryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
   return <div className="text-xs text-green-400">Free until {expiryLabel} (Save $1.4M)</div>;
+};
+
+CarWashExpiryBadge.propTypes = {
+  claimed: PropTypes.bool,
 };
 
 export default CarWashExpiryBadge;

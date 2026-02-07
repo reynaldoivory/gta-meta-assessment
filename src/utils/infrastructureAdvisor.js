@@ -125,7 +125,7 @@ const _bunkerMax = MODEL_CONFIG.income.bunker.upgraded.perHour;  // $75,000
 export const BUNKER_INCOME = {
   unupgraded: _bunkerBase,                                       // $30k/hr
   equipmentOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.55), // ~$55k/hr
-  staffOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.40),     // ~$48k/hr
+  staffOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.4),     // ~$48k/hr
   fullyUpgraded: _bunkerMax,                                     // $75k/hr
 };
 
@@ -179,6 +179,167 @@ export const NIGHTCLUB_INCOME = {
  * @param {Object} nightclubState - { owned, floors, equipmentUpgrade, staffUpgrade, hasPounder, hasMule, techs, feeders }
  * @returns {Object} Optimization analysis
  */
+
+const checkFloorIssues = (floors, nightclubState) => {
+  if (floors >= 5) {
+    return null;
+  }
+
+  const currentAFK = NIGHTCLUB_FLOOR_AFK[floors]?.maxHours || 20;
+  const maxAFK = NIGHTCLUB_FLOOR_AFK[5].maxHours;
+
+  const issue = {
+    id: 'nc_floors_low',
+    severity: 'medium',
+    label: `Only ${floors}/5 Floors`,
+    detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).`,
+  };
+
+  // Calculate cost to max floors
+  let floorCost = 0;
+  for (let f = floors + 1; f <= 5; f++) {
+    floorCost += INFRASTRUCTURE_COSTS.nightclub.floors[f];
+  }
+
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub');
+
+  const recommendation = {
+    id: 'buy_nc_floors',
+    priority: isDiscounted ? 1 : 3,
+    label: `Buy Floors ${floors + 1}-5`,
+    cost: price,
+    originalCost: floorCost,
+    isDiscounted,
+    discountPercent,
+    benefit: `Increase AFK from ${currentAFK}hrs to ${maxAFK}hrs`,
+    why: 'Stops production cap while sleeping/working',
+  };
+
+  return { issue, recommendation };
+};
+
+const checkEquipmentIssues = (nightclubState) => {
+  if (nightclubState.equipmentUpgrade) {
+    return null;
+  }
+
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(
+    INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade, 
+    'nightclub'
+  );
+
+  const issue = {
+    id: 'nc_no_equipment',
+    severity: 'high',
+    label: 'No Equipment Upgrade',
+    detail: 'Production speed is 50% slower without this upgrade.',
+  };
+
+  const recommendation = {
+    id: 'buy_nc_equipment',
+    priority: isDiscounted ? 0 : 2,
+    label: 'Equipment Upgrade',
+    cost: price,
+    originalCost: INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
+    isDiscounted,
+    discountPercent,
+    benefit: '+100% production speed',
+    why: 'Essential for passive income',
+  };
+
+  return { issue, recommendation };
+};
+
+const checkStaffIssues = (nightclubState) => {
+  if (nightclubState.staffUpgrade) {
+    return null;
+  }
+
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(
+    INFRASTRUCTURE_COSTS.nightclub.staffUpgrade,
+    'nightclub'
+  );
+
+  const issue = {
+    id: 'nc_no_staff',
+    severity: 'medium',
+    label: 'No Staff Upgrade',
+    detail: 'Nightclub popularity decays faster.',
+  };
+
+  const recommendation = {
+    id: 'buy_nc_staff',
+    priority: isDiscounted ? 1 : 4,
+    label: 'Staff Upgrade',
+    cost: price,
+    originalCost: INFRASTRUCTURE_COSTS.nightclub.staffUpgrade,
+    isDiscounted,
+    discountPercent,
+    benefit: 'Slower popularity decay',
+    why: 'Quality of life improvement',
+  };
+
+  return { issue, recommendation };
+};
+
+const checkVehicleIssues = (nightclubState, floors, techs) => {
+  const issues = [];
+  const recommendations = [];
+
+  if (floors < 3 && techs < 3) {
+    return { issues, recommendations };
+  }
+
+  // Player is scaling up - needs delivery vehicle advice
+  if (!nightclubState.hasPounder && !nightclubState.hasMule) {
+    recommendations.push({
+      id: 'buy_nc_pounder',
+      priority: 1,
+      label: 'Buy Pounder Custom',
+      cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
+      benefit: 'Handles ALL large sales (90+ crates)',
+      why: 'Essential for full warehouse sales. DO NOT buy Mule Custom.',
+      isVehicle: true,
+      isCritical: true,
+    });
+  } else if (nightclubState.hasMule && !nightclubState.hasPounder) {
+    // THE MULE TRAP - Player made a mistake
+    issues.push({
+      id: 'nc_mule_trap',
+      severity: 'critical',
+      label: '⚠️ MULE CUSTOM TRAP',
+      detail: 'You bought the Mule Custom. It\'s slow and buggy. You still need the Pounder for large sales.',
+      isTrap: true,
+    });
+
+    recommendations.push({
+      id: 'buy_nc_pounder_recovery',
+      priority: 0,
+      label: 'Buy Pounder Custom (Recovery)',
+      cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
+      benefit: 'Fixes the Mule trap - covers all large sales',
+      why: 'The Mule cannot handle 90+ crate sales. Pounder can.',
+      isVehicle: true,
+      isCritical: true,
+    });
+  }
+
+  return { issues, recommendations };
+};
+
+const checkTechBalance = (techs, feeders) => {
+  if (techs >= feeders) {
+    return null;
+  }
+
+  return {
+    id: 'nc_tech_imbalance',
+    severity: 'medium',
+    label: 'Technician Shortage',
+    detail: `You have ${feeders} feeders but only ${techs} technicians. ${feeders - techs} businesses are idle.`,
+  };
+};
+
 export const calculateNightclubOptimization = (nightclubState) => {
   if (!nightclubState?.owned) {
     return { isOptimized: true, issues: [], recommendations: [] };
@@ -190,143 +351,39 @@ export const calculateNightclubOptimization = (nightclubState) => {
   const techs = nightclubState.techs || 0;
   const feeders = nightclubState.feeders || 0;
   
-  // Floor check - affects AFK duration
-  if (floors < 5) {
-    const currentAFK = NIGHTCLUB_FLOOR_AFK[floors]?.maxHours || 20;
-    const maxAFK = NIGHTCLUB_FLOOR_AFK[5].maxHours;
-    
-    issues.push({
-      id: 'nc_floors_low',
-      severity: 'medium',
-      label: `Only ${floors}/5 Floors`,
-      detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).`,
-    });
-    
-    // Calculate cost to max floors
-    let floorCost = 0;
-    for (let f = floors + 1; f <= 5; f++) {
-      floorCost += INFRASTRUCTURE_COSTS.nightclub.floors[f];
-    }
-    
-    const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub');
-    
-    recommendations.push({
-      id: 'buy_nc_floors',
-      priority: isDiscounted ? 1 : 3,
-      label: `Buy Floors ${floors + 1}-5`,
-      cost: price,
-      originalCost: floorCost,
-      isDiscounted,
-      discountPercent,
-      benefit: `Increase AFK from ${currentAFK}hrs to ${maxAFK}hrs`,
-      why: 'Stops production cap while sleeping/working',
-    });
+  const floorResult = checkFloorIssues(floors, nightclubState);
+  if (floorResult) {
+    issues.push(floorResult.issue);
+    recommendations.push(floorResult.recommendation);
   }
-  
-  // Upgrade check - affects production speed
-  if (!nightclubState.equipmentUpgrade) {
-    const { price, isDiscounted, discountPercent } = getDiscountedPrice(
-      INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade, 
-      'nightclub'
-    );
-    
-    issues.push({
-      id: 'nc_no_equipment',
-      severity: 'high',
-      label: 'No Equipment Upgrade',
-      detail: 'Production speed is 50% slower without this upgrade.',
-    });
-    
-    recommendations.push({
-      id: 'buy_nc_equipment',
-      priority: isDiscounted ? 0 : 2,
-      label: 'Equipment Upgrade',
-      cost: price,
-      originalCost: INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
-      isDiscounted,
-      discountPercent,
-      benefit: '+100% production speed',
-      why: 'Essential for passive income',
-    });
+
+  const equipmentResult = checkEquipmentIssues(nightclubState);
+  if (equipmentResult) {
+    issues.push(equipmentResult.issue);
+    recommendations.push(equipmentResult.recommendation);
   }
-  
-  if (!nightclubState.staffUpgrade) {
-    const { price, isDiscounted, discountPercent } = getDiscountedPrice(
-      INFRASTRUCTURE_COSTS.nightclub.staffUpgrade,
-      'nightclub'
-    );
-    
-    issues.push({
-      id: 'nc_no_staff',
-      severity: 'medium',
-      label: 'No Staff Upgrade',
-      detail: 'Nightclub popularity decays faster.',
-    });
-    
-    recommendations.push({
-      id: 'buy_nc_staff',
-      priority: isDiscounted ? 1 : 4,
-      label: 'Staff Upgrade',
-      cost: price,
-      originalCost: INFRASTRUCTURE_COSTS.nightclub.staffUpgrade,
-      isDiscounted,
-      discountPercent,
-      benefit: 'Slower popularity decay',
-      why: 'Quality of life improvement',
-    });
+
+  const staffResult = checkStaffIssues(nightclubState);
+  if (staffResult) {
+    issues.push(staffResult.issue);
+    recommendations.push(staffResult.recommendation);
   }
-  
-  // Vehicle check - THE MULE TRAP
-  if (floors >= 3 || techs >= 3) {
-    // Player is scaling up - needs delivery vehicle advice
-    if (!nightclubState.hasPounder && !nightclubState.hasMule) {
-      recommendations.push({
-        id: 'buy_nc_pounder',
-        priority: 1,
-        label: 'Buy Pounder Custom',
-        cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
-        benefit: 'Handles ALL large sales (90+ crates)',
-        why: 'Essential for full warehouse sales. DO NOT buy Mule Custom.',
-        isVehicle: true,
-        isCritical: true,
-      });
-    } else if (nightclubState.hasMule && !nightclubState.hasPounder) {
-      // THE MULE TRAP - Player made a mistake
-      issues.push({
-        id: 'nc_mule_trap',
-        severity: 'critical',
-        label: '⚠️ MULE CUSTOM TRAP',
-        detail: 'You bought the Mule Custom. It\'s slow and buggy. You still need the Pounder for large sales.',
-        isTrap: true,
-      });
-      
-      recommendations.push({
-        id: 'buy_nc_pounder_recovery',
-        priority: 0,
-        label: 'Buy Pounder Custom (Recovery)',
-        cost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
-        benefit: 'Fixes the Mule trap - covers all large sales',
-        why: 'The Mule cannot handle 90+ crate sales. Pounder can.',
-        isVehicle: true,
-        isCritical: true,
-      });
-    }
+
+  const vehicleResult = checkVehicleIssues(nightclubState, floors, techs);
+  issues.push(...vehicleResult.issues);
+  recommendations.push(...vehicleResult.recommendations);
+
+  const techIssue = checkTechBalance(techs, feeders);
+  if (techIssue) {
+    issues.push(techIssue);
   }
-  
-  // Tech/Feeder balance check
-  if (techs < feeders) {
-    issues.push({
-      id: 'nc_tech_imbalance',
-      severity: 'medium',
-      label: 'Technician Shortage',
-      detail: `You have ${feeders} feeders but only ${techs} technicians. ${feeders - techs} businesses are idle.`,
-    });
-  }
-  
+
+  recommendations.sort((a, b) => a.priority - b.priority);
+
   return {
     isOptimized: issues.length === 0,
     issues,
-    recommendations: recommendations.sort((a, b) => a.priority - b.priority),
+    recommendations,
     currentFloors: floors,
     maxAFKHours: NIGHTCLUB_FLOOR_AFK[floors]?.maxHours || 20,
   };
@@ -453,6 +510,11 @@ export const generateInfrastructureRecommendations = (formData) => {
     
     // Add all NC recommendations
     ncOptimization.recommendations.forEach(rec => {
+      let recUrgency;
+      if (rec.isDiscounted) recUrgency = 'URGENT';
+      else if (rec.isCritical) recUrgency = 'HIGH';
+      else recUrgency = 'MEDIUM';
+
       recommendations.push({
         id: rec.id,
         category: 'nightclub',
@@ -466,7 +528,7 @@ export const generateInfrastructureRecommendations = (formData) => {
         benefit: rec.benefit,
         why: rec.why,
         canAfford: cash >= rec.cost,
-        urgency: rec.isDiscounted ? 'URGENT' : (rec.isCritical ? 'HIGH' : 'MEDIUM'),
+        urgency: recUrgency,
         expiresAt: rec.isDiscounted ? new Date(WEEKLY_EVENTS.discounts?.nightclubUpgrades?.validUntil).getTime() : null,
       });
     });

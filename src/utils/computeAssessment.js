@@ -8,20 +8,8 @@ import { calculateIncome } from './calculateIncome.js';
 import { detectBottlenecks } from './detectBottlenecks.js';
 import { calculateScore } from './calculateScore.js';
 
-/**
- * Core logic engine.
- * Pure function: same formData → same result, no side effects.
- */
-export const computeAssessment = (formData) => {
-  // Validate formData exists
-  if (!formData || typeof formData !== 'object') {
-    throw new Error('Invalid formData: formData must be an object');
-  }
-
-  // Cache timestamp once at the start
-  const now = Date.now();
-
-  // ---------- 1. NORMALIZE INPUT ----------
+/** Normalize and validate form inputs into a clean params object. */
+const normalizeFormData = (formData) => {
   const rank = Number(formData.rank) || 0;
   const timePlayed = Number(formData.timePlayed) || 0; // total hours (optional)
   const liquidCash = Number(formData.liquidCash) || 0;
@@ -80,8 +68,7 @@ export const computeAssessment = (formData) => {
   const hasGTAPlus = !!formData.hasGTAPlus;
   const hasAutoShop = !!formData.hasAutoShop;
 
-  // Normalized params object for passing to modules
-  const normalizedParams = {
+  return {
     rank,
     timePlayed,
     liquidCash,
@@ -110,18 +97,12 @@ export const computeAssessment = (formData) => {
     hasGTAPlus,
     hasAutoShop,
   };
+};
 
-  // ---------- 2. INCOME CALCULATIONS ----------
-  const incomeResult = calculateIncome(normalizedParams, formData);
-  const { activeIncome, passiveIncome, gtaPlusBonusPerHour, incomePerHour, dynamicIncome } = incomeResult;
+/** Check heist leadership readiness criteria. */
+const calculateHeistReadiness = (normalizedParams) => {
+  const { rank, strength, flying, cayoCompletions, hasSparrow, hasRaiju, hasOppressor, hasAcidLab, hasNightclub, hasAgency } = normalizedParams;
 
-  // ---------- 3. GET ACTIVE EVENTS ----------
-  const activeEvents = getCurrentEvents({ hasGTAPlus, hasAutoShop, hasAgency, hasNightclub }, now);
-
-  // ---------- 4. BOTTLENECK DETECTION ----------
-  const bottlenecks = detectBottlenecks(normalizedParams, now, activeEvents, incomePerHour, formData);
-
-  // ---------- 5. HEIST LEADERSHIP READINESS ----------
   const heistReady = {
     rank50: rank >= 50,
     strength80: strength >= 80,
@@ -136,6 +117,113 @@ export const computeAssessment = (formData) => {
     heistReadyFlags.length > 0
       ? (heistReadyFlags.filter(Boolean).length / heistReadyFlags.length) * 100
       : 0;
+
+  return { heistReady, heistReadyPercent };
+};
+
+/** Estimate total net worth from properties and cash. */
+const estimateNetWorth = (normalizedParams, formData, timePlayed) => {
+  const {
+    liquidCash, hasKosatka, hasSparrow, hasAgency, hasAcidLab,
+    hasNightclub, hasBunker, hasSalvageYard, hasAutoShop, hasRaiju, hasOppressor,
+  } = normalizedParams;
+
+  const estimatedNetWorth = liquidCash + 
+    (hasKosatka ? 2200000 : 0) +
+    (hasSparrow ? 1815000 : 0) +
+    (hasAgency ? 2010000 : 0) +
+    (hasAcidLab ? 750000 : 0) +
+    (hasNightclub ? 1500000 : 0) +
+    (hasBunker ? 1150000 : 0) +
+    (hasSalvageYard ? 500000 : 0) +
+    (hasAutoShop ? 1670000 : 0) +
+    (formData.hasCarWash ? 1400000 : 0) +
+    (formData.hasMansion ? 13500000 : 0) + // Mansion value (base + upgrades)
+    (hasRaiju ? 6000000 : 0) +
+    (hasOppressor ? 3500000 : 0) +
+    0;
+
+  const netWorthPerHour = timePlayed > 0 ? estimatedNetWorth / timePlayed : 0;
+
+  return { estimatedNetWorth, netWorthPerHour };
+};
+
+/** Calculate time remaining to reach the next purchase goal. */
+const calculateTimeToGoal = (normalizedParams, formData, liquidCash, incomePerHour, dynamicIncome) => {
+  const { hasKosatka, hasAgency, hasAutoShop, hasGTAPlus, hasAcidLab, hasSparrow } = normalizedParams;
+
+  const targets = [];
+  
+  if (!hasKosatka) targets.push({ name: 'Kosatka', cost: 2200000, priority: 1 });
+  if (!hasAgency) targets.push({ name: 'Agency', cost: 2010000, priority: 2 });
+  if (!hasAutoShop && hasGTAPlus) {
+    // Auto Shop 50% off for GTA+ = ~$835k
+    targets.push({ name: 'Auto Shop (GTA+ Discount)', cost: 835000, priority: 3 });
+  } else if (!hasAutoShop) {
+    targets.push({ name: 'Auto Shop', cost: 1670000, priority: 3 });
+  }
+  if (!hasAcidLab) targets.push({ name: 'Acid Lab', cost: 750000, priority: 4 });
+  if (!hasSparrow && hasKosatka) targets.push({ name: 'Sparrow', cost: 1815000, priority: 5 });
+
+  // Sort by priority, filter affordable
+  const nextTarget = targets
+    .filter(t => liquidCash < t.cost) // Only show what they can't afford yet
+    .sort((a, b) => a.priority - b.priority)[0] || null;
+
+  if (!nextTarget) return null;
+
+  let hoursToNextTarget = 0;
+  if (incomePerHour > 0) {
+    const needed = nextTarget.cost - liquidCash;
+    hoursToNextTarget = needed / incomePerHour;
+  }
+
+  return {
+    name: nextTarget.name,
+    cost: nextTarget.cost,
+    currentCash: liquidCash,
+    needed: Math.max(0, nextTarget.cost - liquidCash),
+    hoursRemaining: Math.max(0, Number(hoursToNextTarget.toFixed(1))),
+    canAffordNow: liquidCash >= nextTarget.cost,
+    // Show which activity is fastest to grind
+    fastestGrind: dynamicIncome.bestSource, // e.g., "Auto Shop (2X)"
+  };
+};
+
+/**
+ * Core logic engine.
+ * Pure function: same formData → same result, no side effects.
+ */
+export const computeAssessment = (formData) => {
+  // Validate formData exists
+  if (!formData || typeof formData !== 'object') {
+    throw new Error('Invalid formData: formData must be an object');
+  }
+
+  // Cache timestamp once at the start
+  const now = Date.now();
+
+  // ---------- 1. NORMALIZE INPUT ----------
+  const normalizedParams = normalizeFormData(formData);
+  const {
+    timePlayed, liquidCash, strength, flying, shooting,
+    hasKosatka, hasSparrow, hasAgency, hasAcidLab, acidLabUpgraded,
+    hasNightclub, hasBunker, bunkerUpgraded, hasSalvageYard, hasTowTruck,
+    hasRaiju, hasOppressor, hasGTAPlus, hasAutoShop,
+  } = normalizedParams;
+
+  // ---------- 2. INCOME CALCULATIONS ----------
+  const incomeResult = calculateIncome(normalizedParams, formData);
+  const { activeIncome, passiveIncome, gtaPlusBonusPerHour, incomePerHour, dynamicIncome } = incomeResult;
+
+  // ---------- 3. GET ACTIVE EVENTS ----------
+  const activeEvents = getCurrentEvents({ hasGTAPlus, hasAutoShop, hasAgency, hasNightclub }, now);
+
+  // ---------- 4. BOTTLENECK DETECTION ----------
+  const bottlenecks = detectBottlenecks(normalizedParams, now, activeEvents, incomePerHour, formData);
+
+  // ---------- 5. HEIST LEADERSHIP READINESS ----------
+  const { heistReady, heistReadyPercent } = calculateHeistReadiness(normalizedParams);
 
   // ---------- 6. SCORE CALCULATION ----------
   const scoreResult = calculateScore({
@@ -159,47 +247,10 @@ export const computeAssessment = (formData) => {
   });
 
   // ---------- 7. NET WORTH ESTIMATE ----------
-  const estimatedNetWorth = liquidCash + 
-    (hasKosatka ? 2200000 : 0) +
-    (hasSparrow ? 1815000 : 0) +
-    (hasAgency ? 2010000 : 0) +
-    (hasAcidLab ? 750000 : 0) +
-    (hasNightclub ? 1500000 : 0) +
-    (hasBunker ? 1150000 : 0) +
-    (hasSalvageYard ? 500000 : 0) +
-    (formData.hasAutoShop ? 1670000 : 0) +
-    (formData.hasCarWash ? 1400000 : 0) +
-    (formData.hasMansion ? 13500000 : 0) + // Mansion value (base + upgrades)
-    (hasRaiju ? 6000000 : 0) +
-    (hasOppressor ? 3500000 : 0) +
-    0;
-
-  const netWorthPerHour = timePlayed > 0 ? estimatedNetWorth / timePlayed : 0;
+  const { estimatedNetWorth, netWorthPerHour } = estimateNetWorth(normalizedParams, formData, timePlayed);
 
   // ---------- 8. TIME TO GOAL CALCULATOR ----------
-  const targets = [];
-  
-  if (!hasKosatka) targets.push({ name: 'Kosatka', cost: 2200000, priority: 1 });
-  if (!hasAgency) targets.push({ name: 'Agency', cost: 2010000, priority: 2 });
-  if (!hasAutoShop && hasGTAPlus) {
-    // Auto Shop 50% off for GTA+ = ~$835k
-    targets.push({ name: 'Auto Shop (GTA+ Discount)', cost: 835000, priority: 3 });
-  } else if (!hasAutoShop) {
-    targets.push({ name: 'Auto Shop', cost: 1670000, priority: 3 });
-  }
-  if (!hasAcidLab) targets.push({ name: 'Acid Lab', cost: 750000, priority: 4 });
-  if (!hasSparrow && hasKosatka) targets.push({ name: 'Sparrow', cost: 1815000, priority: 5 });
-
-  // Sort by priority, filter affordable
-  const nextTarget = targets
-    .filter(t => liquidCash < t.cost) // Only show what they can't afford yet
-    .sort((a, b) => a.priority - b.priority)[0] || null;
-
-  let hoursToNextTarget = 0;
-  if (nextTarget && incomePerHour > 0) {
-    const needed = nextTarget.cost - liquidCash;
-    hoursToNextTarget = needed / incomePerHour;
-  }
+  const nextGoal = calculateTimeToGoal(normalizedParams, formData, liquidCash, incomePerHour, dynamicIncome);
 
   // ---------- 9. RETURN STRUCT ----------
   return {
@@ -228,15 +279,6 @@ export const computeAssessment = (formData) => {
       daysUntilExpiry: dynamicIncome.daysUntilExpiry,
     },
     // Time to Goal calculator
-    nextGoal: nextTarget ? {
-      name: nextTarget.name,
-      cost: nextTarget.cost,
-      currentCash: liquidCash,
-      needed: Math.max(0, nextTarget.cost - liquidCash),
-      hoursRemaining: Math.max(0, Number(hoursToNextTarget.toFixed(1))),
-      canAffordNow: liquidCash >= nextTarget.cost,
-      // Show which activity is fastest to grind
-      fastestGrind: dynamicIncome.bestSource, // e.g., "Auto Shop (2X)"
-    } : null,
+    nextGoal,
   };
 };

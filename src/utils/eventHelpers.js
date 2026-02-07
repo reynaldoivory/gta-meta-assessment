@@ -37,6 +37,106 @@ const getTimeMeta = (endDate, date) => {
 };
 
 /**
+ * Collect active weekly bonus events from config.
+ * @param {Object} bonuses - WEEKLY_EVENTS.bonuses map
+ * @param {Date} date - Current date
+ * @returns {Array} Bonus event objects
+ */
+const collectWeeklyBonuses = (bonuses, date) => {
+  const results = [];
+  for (const [key, bonus] of Object.entries(bonuses)) {
+    if (!bonus.isActive) continue;
+
+    const endDate = new Date(bonus.validUntil);
+    if (date > endDate) continue;
+
+    const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+    const expiryStr = formatExpiry(bonus.validUntil);
+
+    results.push({
+      name: key,
+      expiry: expiryStr,
+      expiryTimestamp: endDate.getTime(),
+      hoursLeft,
+      daysLeft,
+      multiplier: bonus.multiplier,
+      label: bonus.label,
+      tier: bonus.multiplier >= 3 ? 1 : 2,
+      urgent: bonus.multiplier >= 3 || hoursLeft < 48,
+      critical: isCritical,
+      hourlyRate: 0, // Consumers override per-activity
+      category: bonus.category,
+    });
+  }
+  return results;
+};
+
+/**
+ * Collect active weekly discount events from config.
+ * @param {Object} discounts - WEEKLY_EVENTS.discounts map
+ * @param {Date} date - Current date
+ * @returns {Array} Discount event objects
+ */
+const collectWeeklyDiscounts = (discounts, date) => {
+  const results = [];
+  for (const [key, discount] of Object.entries(discounts)) {
+    const endDate = new Date(discount.validUntil);
+    if (date > endDate) continue;
+
+    const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+
+    results.push({
+      name: `${key}Discount`,
+      expiry: formatExpiry(discount.validUntil),
+      expiryTimestamp: endDate.getTime(),
+      hoursLeft,
+      daysLeft,
+      discount: discount.percent / 100,
+      tier: 2,
+      urgent: hoursLeft < 48,
+      critical: isCritical,
+      category: 'discount',
+    });
+  }
+  return results;
+};
+
+/**
+ * Collect GTA+ monthly bonus events from config.
+ * @param {Object} playerData - Player form data
+ * @param {Date} date - Current date
+ * @returns {Array} GTA+ event objects
+ */
+const collectGTAPlusBonuses = (playerData, date) => {
+  if (!playerData.hasGTAPlus || !WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
+    return [];
+  }
+  const results = [];
+  for (const monthly of WEEKLY_EVENTS.gtaPlus.monthlyBonuses) {
+    const endDate = new Date(monthly.expires);
+    if (date > endDate) continue;
+
+    const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+
+    results.push({
+      name: `${monthly.activity}_gtaplus`,
+      expiry: formatExpiry(monthly.expires),
+      expiryTimestamp: endDate.getTime(),
+      hoursLeft,
+      daysLeft,
+      multiplier: monthly.multiplier,
+      label: `${monthly.multiplier}X ${monthly.activity.replaceAll('_', ' ')} (GTA+)`,
+      tier: 1,
+      urgent: daysLeft < 7,
+      critical: isCritical,
+      hourlyRate: 0,
+      category: 'gtaplus',
+    });
+  }
+  return results;
+};
+
+/**
  * Event-Aware Priority System: Detects time-limited bonuses and prioritizes them.
  * Now reads ALL dates from WEEKLY_EVENTS config — update config/weeklyEvents.js
  * every Thursday and this function automatically picks up the new data.
@@ -46,7 +146,6 @@ const getTimeMeta = (endDate, date) => {
  * @returns {Array} Active events with priority metadata
  */
 export const getActiveEvents = (playerData, currentDate = new Date()) => {
-  const events = [];
   const date = new Date(currentDate);
 
   // Read date boundaries from config
@@ -54,92 +153,15 @@ export const getActiveEvents = (playerData, currentDate = new Date()) => {
   const weekEnd = new Date(WEEKLY_EVENTS.meta.validUntil);
   const isWithinWeek = date >= weekStart && date <= weekEnd;
 
-  // ============================================
-  // WEEKLY EVENTS (data-driven from WEEKLY_EVENTS.bonuses)
-  // ============================================
+  const weeklyBonuses = isWithinWeek
+    ? collectWeeklyBonuses(WEEKLY_EVENTS.bonuses || {}, date)
+    : [];
+  const weeklyDiscounts = isWithinWeek
+    ? collectWeeklyDiscounts(WEEKLY_EVENTS.discounts || {}, date)
+    : [];
+  const gtaPlusBonuses = collectGTAPlusBonuses(playerData, date);
 
-  if (isWithinWeek) {
-    const bonuses = WEEKLY_EVENTS.bonuses || {};
-
-    // Iterate over every active bonus in the config
-    for (const [key, bonus] of Object.entries(bonuses)) {
-      if (!bonus.isActive) continue;
-
-      const endDate = new Date(bonus.validUntil);
-      if (date > endDate) continue;
-
-      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
-      const expiryStr = formatExpiry(bonus.validUntil);
-
-      // Map config keys to event objects the rest of the codebase expects
-      events.push({
-        name: key,
-        expiry: expiryStr,
-        expiryTimestamp: endDate.getTime(),
-        hoursLeft,
-        daysLeft,
-        multiplier: bonus.multiplier,
-        label: bonus.label,
-        tier: bonus.multiplier >= 3 ? 1 : 2,
-        urgent: bonus.multiplier >= 3 || hoursLeft < 48,
-        critical: isCritical,
-        hourlyRate: 0, // Consumers override per-activity
-        category: bonus.category,
-      });
-    }
-
-    // Weekly discounts
-    const discounts = WEEKLY_EVENTS.discounts || {};
-    for (const [key, discount] of Object.entries(discounts)) {
-      const endDate = new Date(discount.validUntil);
-      if (date > endDate) continue;
-
-      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
-
-      events.push({
-        name: `${key}Discount`,
-        expiry: formatExpiry(discount.validUntil),
-        expiryTimestamp: endDate.getTime(),
-        hoursLeft,
-        daysLeft,
-        discount: discount.percent / 100,
-        tier: 2,
-        urgent: hoursLeft < 48,
-        critical: isCritical,
-        category: 'discount',
-      });
-    }
-  }
-
-  // ============================================
-  // GTA+ MONTHLY EVENTS (data-driven from WEEKLY_EVENTS.gtaPlus)
-  // ============================================
-
-  if (playerData.hasGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
-    for (const monthly of WEEKLY_EVENTS.gtaPlus.monthlyBonuses) {
-      const endDate = new Date(monthly.expires);
-      if (date > endDate) continue;
-
-      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
-
-      events.push({
-        name: `${monthly.activity}_gtaplus`,
-        expiry: formatExpiry(monthly.expires),
-        expiryTimestamp: endDate.getTime(),
-        hoursLeft,
-        daysLeft,
-        multiplier: monthly.multiplier,
-        label: `${monthly.multiplier}X ${monthly.activity.replace(/_/g, ' ')} (GTA+)`,
-        tier: 1,
-        urgent: daysLeft < 7,
-        critical: isCritical,
-        hourlyRate: 0,
-        category: 'gtaplus',
-      });
-    }
-  }
-
-  return events;
+  return [...weeklyBonuses, ...weeklyDiscounts, ...gtaPlusBonuses];
 };
 
 // Cache for getCurrentEvents
@@ -155,7 +177,7 @@ let eventsCache = {
  * @returns {string} Hash string
  */
 const hashPlayerData = (playerData) => {
-  return `${playerData.hasGTAPlus || false}_${playerData.hasAutoShop || false}_${playerData.hasAgency || false}_${playerData.hasNightclub || false}`;
+  return `${playerData.hasGTAPlus || false}_${playerData.hasAutoShop || false}_${playerData.hasAgency || false}_${playerData.hasNightclub || false}_${playerData.hasBunker || false}_${playerData.hasKosatka || false}_${playerData.hasSalvageYard || false}`;
 };
 
 /**

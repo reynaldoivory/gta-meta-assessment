@@ -1,5 +1,6 @@
 // src/views/AssessmentResults.jsx
 import React, { useState, useEffect, useRef } from 'react';
+import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
 import { useToast } from '../context/ToastContext';
 import { soundEffects } from '../utils/soundEffects';
@@ -23,6 +24,13 @@ import { getCommunityAverages, compareToCommunity, exportCommunityStatsCSV, getP
 import { downloadCSV } from '../utils/csvExport';
 import { WEEKLY_EVENTS } from '../config/weeklyEvents';
 import { detectTraps, checkForFixedTraps, getTrapSummary } from '../utils/trapDetector';
+
+/** Helper: map heist readiness percent to Tailwind color class */
+const getHeistReadyColor = (percent) => {
+  if (percent === 100) return 'text-emerald-400';
+  if (percent > 50) return 'text-yellow-400';
+  return 'text-red-400';
+};
 
 const AssessmentResults = () => {
   const { formData, results, setStep } = useAssessment();
@@ -209,13 +217,7 @@ const AssessmentResults = () => {
               <Target className="w-6 h-6 text-blue-400" />
               Heist Leadership Readiness
             </h3>
-            <div className={`text-4xl font-bold ${
-              results.heistReadyPercent === 100 
-                ? 'text-emerald-400' 
-                : results.heistReadyPercent > 50 
-                  ? 'text-yellow-400' 
-                  : 'text-red-400'
-            }`}>
+            <div className={`text-4xl font-bold ${getHeistReadyColor(results.heistReadyPercent)}`}>
               {results.heistReadyPercent.toFixed(0)}%
             </div>
           </div>
@@ -406,7 +408,7 @@ const AssessmentResults = () => {
         )}
 
         {/* Income Comparison Card */}
-        <IncomeComparison hasAutoShop={formData.hasAutoShop} hasKosatka={formData.hasKosatka} />
+        <IncomeComparison hasAutoShop={formData.hasAutoShop} />
 
         {/* Time to Goal Calculator */}
         {results.nextGoal && (
@@ -482,13 +484,13 @@ const AssessmentResults = () => {
 };
 
 // Income Comparison Component - Clean, focused on meta opportunities
-const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
+const IncomeComparison = ({ hasAutoShop }) => {
   // Calculate Auto Shop income: $300k base * 2.4 contracts/hr * multiplier
   const baseContractPayout = 300000;
   const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
   const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
   const isAutoShopEvent = autoShopBonus?.isActive === true;
-  const autoShopMultiplier = isAutoShopEvent ? (autoShopBonus.multiplier || 2.0) : 1.0;
+  const autoShopMultiplier = isAutoShopEvent ? (autoShopBonus.multiplier || 2) : 1;
   const autoShopRate = baseContractPayout * contractsPerHour * autoShopMultiplier;
   const cayoRate = 466000; // Nerfed solo rate/hr
 
@@ -544,6 +546,10 @@ const IncomeComparison = ({ hasAutoShop, hasKosatka }) => {
   );
 };
 
+IncomeComparison.propTypes = {
+  hasAutoShop: PropTypes.bool,
+};
+
 // Strength Training Calculator Component
 const StrengthCalc = ({ currentPct, hasMansion }) => {
   const impactsNeeded = Math.ceil((60 - currentPct) * 20);
@@ -596,6 +602,11 @@ const StrengthCalc = ({ currentPct, hasMansion }) => {
       </div>
     </div>
   );
+};
+
+StrengthCalc.propTypes = {
+  currentPct: PropTypes.number.isRequired,
+  hasMansion: PropTypes.bool,
 };
 
 export default AssessmentResults;

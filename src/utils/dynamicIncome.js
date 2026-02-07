@@ -14,13 +14,175 @@ const parseMultiplier = (multiplierStr) => {
 };
 
 /**
+ * Calculate Auto Shop income with event multipliers
+ * @param {Object} formData - Form data
+ * @param {Array} events - Weekly bonus events array
+ * @param {boolean} isEventActive - Whether current weekly event is active
+ * @returns {{ income: number, multiplier: number, event: Object|null }}
+ */
+const calculateAutoShopIncome = (formData, events, isEventActive) => {
+  let income = 0;
+  let multiplier = 1;
+  let event = null;
+
+  const now = Date.now();
+  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
+  const autoShopEventMatch = events.find(e => 
+    e.activity.toLowerCase().includes('auto shop') || 
+    e.activity.toLowerCase().includes('robbery contract')
+  );
+
+  // GTA+ members get boosted rates on monthly benefits
+  if (formData.hasGTAPlus) {
+    // Only apply Auto Shop multiplier if a matching monthly bonus exists in config
+    const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
+    const autoShopMonthly = monthlyBonuses.find(b => b.activity.includes('auto_shop'));
+
+    if (autoShopMonthly) {
+      const monthlyBenefitEnd = new Date(autoShopMonthly.expires).getTime();
+      const monthlyBenefitExpiry = formatExpiry(autoShopMonthly.expires);
+
+      if (monthlyBenefitEnd && now < monthlyBenefitEnd) {
+        multiplier = autoShopBonus?.multiplier ?? autoShopMonthly.multiplier ?? 2;
+        event = {
+          activity: 'Auto Shop Robbery Contracts (GTA+)',
+          multiplier: `${multiplier}X`,
+          note: autoShopBonus?.expiresLabel || `Through ${monthlyBenefitExpiry} (Monthly Benefit)`,
+          isGTAPlus: true,
+        };
+      }
+    }
+    // No auto_shop monthly bonus this month — skip GTA+ Auto Shop boost
+  } else if (autoShopBonus?.isActive && isEventActive) {
+    // Weekly event for non-GTA+ members (use new structure)
+    multiplier = autoShopBonus.multiplier || 2;
+    event = {
+      activity: 'Auto Shop Robbery Contracts',
+      multiplier: `${multiplier}X`,
+      note: autoShopBonus.label || '2X GTA$ Auto Shop Contracts',
+      isGTAPlus: false,
+    };
+  } else if (autoShopEventMatch && isEventActive) {
+    // Fallback to array format for backward compatibility
+    event = autoShopEventMatch;
+    multiplier = parseMultiplier(autoShopEventMatch.multiplier);
+  }
+
+  if (formData.hasAutoShop) {
+    // Base Auto Shop income: ~$300k per contract, ~25 minutes per contract
+    const baseContractPayout = 300000;
+    const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
+    income = (baseContractPayout * contractsPerHour * multiplier);
+  }
+
+  return { income, multiplier, event };
+};
+
+/**
+ * Calculate Cayo Perico income with event multipliers
+ * @param {Object} formData - Form data
+ * @param {Array} events - Weekly bonus events array
+ * @param {boolean} isEventActive - Whether current weekly event is active
+ * @returns {{ income: number, multiplier: number, event: Object|null }}
+ */
+const calculateCayoIncome = (formData, events, isEventActive) => {
+  let income = 0;
+  let multiplier = 1;
+  let event = null;
+
+  if (formData.hasKosatka) {
+    const cayoEventMatch = events.find(e => 
+      e.activity.toLowerCase().includes('cayo') || 
+      e.activity.toLowerCase().includes('perico')
+    );
+
+    if (cayoEventMatch && isEventActive) {
+      event = cayoEventMatch;
+      multiplier = parseMultiplier(cayoEventMatch.multiplier);
+    }
+
+    const config = MODEL_CONFIG.income?.cayo || {};
+    const basePayout = config.basePayout ?? 700000;
+    const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
+    const cayoCompletions = Number(formData.cayoCompletions) || 0;
+    const masteryRuns = config.masteryThreshold ?? 10;
+    const masteryBonus = config.masteryBonus ?? 1.1;
+
+    const runsPerHour = 60 / cayoAvgTime;
+    const mastered = cayoCompletions >= masteryRuns;
+    const masteryMult = mastered ? masteryBonus : 1;
+
+    income = basePayout * runsPerHour * masteryMult * multiplier;
+  }
+
+  return { income, multiplier, event };
+};
+
+/**
+ * Calculate Agency/Payphone income with event multipliers
+ * @param {Object} formData - Form data
+ * @param {boolean} isEventActive - Whether current weekly event is active
+ * @returns {{ income: number, multiplier: number, event: Object|null }}
+ */
+const calculateAgencyIncome = (formData, isEventActive) => {
+  const noIncome = { income: 0, multiplier: 1, event: null };
+
+  if (!formData.hasAgency) {
+    return noIncome;
+  }
+
+  // Check for Paper Trail event
+  const paperTrailBonus = WEEKLY_EVENTS.bonuses?.paperTrail;
+  const isPaperTrailActive = paperTrailBonus?.isActive && isEventActive;
+
+  if (!isPaperTrailActive) {
+    // No event: Standard Payphone Hits (only if Dre done)
+    const income = formData.payphoneUnlocked ? 85000 * 3 : 0;
+    return { income, multiplier: 1, event: null };
+  }
+
+  // GTA+ stacking: Base 2X + GTA+ bonus = 4X total
+  const paperTrailMultiplier = formData.hasGTAPlus 
+    ? paperTrailBonus.gtaPlusMultiplier 
+    : paperTrailBonus.baseMultiplier;
+
+  // Paper Trail: ~$40k base per mission, ~3 runs/hr
+  // GTA+ (4X): $40k * 4 * 3 = $480k/hr (Still lower than Auto Shop 2X, but good RP)
+  const paperTrailIncome = 40000 * 3 * paperTrailMultiplier;
+
+  // Payphone Hits: $85k per hit, ~3 hits/hr (only if Dre done)
+  const payphoneIncome = formData.payphoneUnlocked ? 85000 * 3 : 0;
+
+  // Use whichever pays more THIS WEEK
+  if (paperTrailIncome <= payphoneIncome) {
+    return { income: payphoneIncome, multiplier: 1, event: null };
+  }
+
+  const paperTrailExpiry = formatExpiry(paperTrailBonus.validUntil || WEEKLY_EVENTS.meta.validUntil);
+  const note = formData.hasGTAPlus 
+    ? `${paperTrailMultiplier}X GTA+ Super Boost (Expires ${paperTrailExpiry})` 
+    : `${paperTrailMultiplier}X Weekly Event (Expires ${paperTrailExpiry})`;
+
+  return {
+    income: paperTrailIncome,
+    multiplier: paperTrailMultiplier,
+    event: {
+      activity: 'Operation Paper Trail',
+      multiplier: `${paperTrailMultiplier}X`,
+      note,
+      isGTAPlus: formData.hasGTAPlus,
+    },
+  };
+};
+
+/**
  * Calculate dynamic income with event multipliers
  * @param {Object} formData - Form data
  * @returns {Object} Dynamic income breakdown
  */
 export const calculateDynamicIncome = (formData) => {
   // Safety check for WEEKLY_EVENTS
-  if (!WEEKLY_EVENTS || !WEEKLY_EVENTS.meta) {
+  if (!WEEKLY_EVENTS?.meta) {
     console.warn('WEEKLY_EVENTS not loaded, using default values');
     return {
       autoShopIncome: 0,
@@ -45,135 +207,10 @@ export const calculateDynamicIncome = (formData) => {
   const eventEnd = new Date(WEEKLY_EVENTS.meta.validUntil).getTime();
   const isEventActive = now < eventEnd;
   
-  // --- Auto Shop Income ---
-  let autoShopIncome = 0;
-  let autoShopMultiplier = 1;
-  let autoShopEvent = null;
-  
-  // Check for Auto Shop event (use new structure or fallback to array)
-  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
-  const autoShopEventMatch = events.find(e => 
-    e.activity.toLowerCase().includes('auto shop') || 
-    e.activity.toLowerCase().includes('robbery contract')
-  );
-  
-  // GTA+ members get boosted rates on monthly benefits
-  if (formData.hasGTAPlus) {
-    // Only apply Auto Shop multiplier if a matching monthly bonus exists in config
-    const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
-    const autoShopMonthly = monthlyBonuses.find(b => b.activity.includes('auto_shop'));
-
-    if (autoShopMonthly) {
-      const monthlyBenefitEnd = new Date(autoShopMonthly.expires).getTime();
-      const monthlyBenefitExpiry = formatExpiry(autoShopMonthly.expires);
-
-      if (monthlyBenefitEnd && now < monthlyBenefitEnd) {
-        autoShopMultiplier = autoShopBonus?.multiplier || autoShopMonthly.multiplier || 2.0;
-        autoShopEvent = {
-          activity: 'Auto Shop Robbery Contracts (GTA+)',
-          multiplier: `${autoShopMultiplier}X`,
-          note: autoShopBonus?.expiresLabel || `Through ${monthlyBenefitExpiry} (Monthly Benefit)`,
-          isGTAPlus: true,
-        };
-      }
-    }
-    // No auto_shop monthly bonus this month — skip GTA+ Auto Shop boost
-  } else if (autoShopBonus?.isActive && isEventActive) {
-    // Weekly event for non-GTA+ members (use new structure)
-    autoShopMultiplier = autoShopBonus.multiplier || 2;
-    autoShopEvent = {
-      activity: 'Auto Shop Robbery Contracts',
-      multiplier: `${autoShopMultiplier}X`,
-      note: autoShopBonus.label || '2X GTA$ Auto Shop Contracts',
-      isGTAPlus: false,
-    };
-  } else if (autoShopEventMatch && isEventActive) {
-    // Fallback to array format for backward compatibility
-    autoShopEvent = autoShopEventMatch;
-    autoShopMultiplier = parseMultiplier(autoShopEventMatch.multiplier);
-  }
-  
-  if (formData.hasAutoShop) {
-    // Base Auto Shop income: ~$300k per contract, ~25 minutes per contract
-    const baseContractPayout = 300000;
-    const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
-    autoShopIncome = (baseContractPayout * contractsPerHour * autoShopMultiplier);
-  }
-  
-  // --- Cayo Perico Income ---
-  let cayoIncome = 0;
-  let cayoMultiplier = 1;
-  let cayoEvent = null;
-  
-  if (formData.hasKosatka) {
-    const cayoEventMatch = events.find(e => 
-      e.activity.toLowerCase().includes('cayo') || 
-      e.activity.toLowerCase().includes('perico')
-    );
-    
-    if (cayoEventMatch && isEventActive) {
-      cayoEvent = cayoEventMatch;
-      cayoMultiplier = parseMultiplier(cayoEventMatch.multiplier);
-    }
-    
-    const config = MODEL_CONFIG.income?.cayo || {};
-    const basePayout = config.basePayout ?? 700000;
-    const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
-    const cayoCompletions = Number(formData.cayoCompletions) || 0;
-    const masteryRuns = config.masteryThreshold ?? 10;
-    const masteryBonus = config.masteryBonus ?? 1.1;
-    
-    const runsPerHour = 60 / cayoAvgTime;
-    const mastered = cayoCompletions >= masteryRuns;
-    const multiplier = mastered ? masteryBonus : 1;
-    
-    cayoIncome = basePayout * runsPerHour * multiplier * cayoMultiplier;
-  }
-  
-  // --- Agency/Payphone Income ---
-  let agencyIncome = 0;
-  let agencyMultiplier = 1;
-  let agencyEvent = null;
-  
-  if (formData.hasAgency) {
-    // Check for Paper Trail event
-    const paperTrailBonus = WEEKLY_EVENTS.bonuses?.paperTrail;
-    const isPaperTrailActive = paperTrailBonus?.isActive && isEventActive;
-    
-    if (isPaperTrailActive) {
-      // GTA+ stacking: Base 2X + GTA+ bonus = 4X total
-      const paperTrailMultiplier = formData.hasGTAPlus 
-        ? paperTrailBonus.gtaPlusMultiplier 
-        : paperTrailBonus.baseMultiplier;
-      
-      // Paper Trail: ~$40k base per mission, ~3 runs/hr
-      // GTA+ (4X): $40k * 4 * 3 = $480k/hr (Still lower than Auto Shop 2X, but good RP)
-      const paperTrailIncome = 40000 * 3 * paperTrailMultiplier;
-      
-      // Payphone Hits: $85k per hit, ~3 hits/hr (only if Dre done)
-      const payphoneIncome = formData.payphoneUnlocked ? 85000 * 3 : 0;
-      
-      // Use whichever pays more THIS WEEK
-      if (paperTrailIncome > payphoneIncome) {
-        agencyIncome = paperTrailIncome;
-        agencyMultiplier = paperTrailMultiplier;
-        const paperTrailExpiry = formatExpiry(paperTrailBonus.validUntil || WEEKLY_EVENTS.meta.validUntil);
-        agencyEvent = {
-          activity: 'Operation Paper Trail',
-          multiplier: `${paperTrailMultiplier}X`,
-          note: formData.hasGTAPlus 
-            ? `${paperTrailMultiplier}X GTA+ Super Boost (Expires ${paperTrailExpiry})` 
-            : `${paperTrailMultiplier}X Weekly Event (Expires ${paperTrailExpiry})`,
-          isGTAPlus: formData.hasGTAPlus,
-        };
-      } else {
-        agencyIncome = payphoneIncome;
-      }
-    } else if (formData.payphoneUnlocked) {
-      // No event: Standard Payphone Hits
-      agencyIncome = 85000 * 3;
-    }
-  }
+  // Calculate income from each source using helpers
+  const { income: autoShopIncome, multiplier: autoShopMultiplier, event: autoShopEvent } = calculateAutoShopIncome(formData, events, isEventActive);
+  const { income: cayoIncome, multiplier: cayoMultiplier, event: cayoEvent } = calculateCayoIncome(formData, events, isEventActive);
+  const { income: agencyIncome, multiplier: agencyMultiplier, event: agencyEvent } = calculateAgencyIncome(formData, isEventActive);
   
   // --- Legal Money Fronts (3X this week) ---
   // Note: This is passive income from businesses like Hands-On Car Wash
@@ -195,7 +232,7 @@ export const calculateDynamicIncome = (formData) => {
   const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
   const latestMonthlyExpiry = monthlyBonuses.reduce((latest, b) => {
     const t = new Date(b.expires).getTime();
-    return t > latest ? t : latest;
+    return Math.max(t, latest);
   }, 0);
   const weeklyEventEnd = new Date(WEEKLY_EVENTS.meta.validUntil).getTime();
   

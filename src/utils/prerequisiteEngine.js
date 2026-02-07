@@ -343,12 +343,12 @@ const checkNightclubPrereqs = (formData, assessment) => {
     return {
       status: PREREQ_STATUS.WARNING,
       property,
-      warning: `With ${feeders} feeder business${feeders !== 1 ? 'es' : ''}, Nightclub will only earn $${projectedIncome.toLocaleString()}/hr (${efficiency.toFixed(0)}% efficiency)`,
+      warning: `With ${feeders} feeder business${feeders === 1 ? '' : 'es'}, Nightclub will only earn $${projectedIncome.toLocaleString()}/hr (${efficiency.toFixed(0)}% efficiency)`,
       recommendation: 'Buy 1-2 more MC businesses first for better ROI',
       missing: feeders === 1 
         ? ['Cocaine OR Meth Lab']
         : ['One more MC business'],
-      whyMoreFeeders: `Each additional feeder business unlocks another technician slot. 3+ feeders hits the sweet spot where passive income justifies the investment. At ${feeders} feeder${feeders !== 1 ? 's' : ''}, you're only using ${Math.round(efficiency)}% of the nightclub's potential.`,
+      whyMoreFeeders: `Each additional feeder business unlocks another technician slot. 3+ feeders hits the sweet spot where passive income justifies the investment. At ${feeders} feeder${feeders === 1 ? '' : 's'}, you're only using ${Math.round(efficiency)}% of the nightclub's potential.`,
     };
   }
   
@@ -377,7 +377,7 @@ const checkNightclubPrereqs = (formData, assessment) => {
     property,
     warning: `You need $${(property.cost - liquidCash).toLocaleString()} more`,
     recommendation: 'Save up. Nightclub is worth it with your feeder businesses.',
-    whySaveUp: `With ${feeders} feeders already owned, you\'ll hit ~60%+ efficiency immediately. This is one of the better passive income investments once you have the prerequisites.`,
+    whySaveUp: `With ${feeders} feeders already owned, you'll hit ~60%+ efficiency immediately. This is one of the better passive income investments once you have the prerequisites.`,
   };
 };
 

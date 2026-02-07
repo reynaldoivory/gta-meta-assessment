@@ -1,5 +1,6 @@
 // src/context/AssessmentContext.jsx
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import PropTypes from 'prop-types';
 import { useDebounce } from '../utils/useDebounce';
 import { computeAssessment } from '../utils/computeAssessment';
 import { submitAnonymousStats, submitTrapStats } from '../utils/communityStats';
@@ -11,15 +12,12 @@ import { recordAssessment } from '../utils/streakTracker';
 const AssessmentContext = createContext(null);
 
 /**
- * Migration helper to upgrade old data formats to current version
- * Handles: nightclubFeeders (Number) -> nightclubSources (Object)
- * @param {Object} data - Raw data from localStorage
- * @returns {Object} Migrated data with current structure
+ * Migration helpers to upgrade old data formats to current version.
+ * Each helper mutates and returns the data object for a single migration concern.
  */
-const migrateUserData = (data) => {
-  let migrated = { ...data };
-  
-  // MIGRATION: Nightclub Feeders (Number) -> Sources (Object)
+
+/** MIGRATION: Nightclub Feeders (Number) -> Sources (Object) */
+const migrateNightclubSources = (migrated) => {
   // If we have a number/string for feeders but no sources object, convert it
   if ((migrated.nightclubFeeders !== undefined && migrated.nightclubFeeders !== '') && 
       (!migrated.nightclubSources || Object.values(migrated.nightclubSources).every(v => v === false))) {
@@ -51,8 +49,11 @@ const migrateUserData = (data) => {
       cash: false, organic: false, printing: false
     };
   }
-  
-  // MIGRATION: hasPounderCustom/hasMuleCustom -> nightclubStorage
+  return migrated;
+};
+
+/** MIGRATION: hasPounderCustom/hasMuleCustom -> nightclubStorage */
+const migrateNightclubStorage = (migrated) => {
   if (!migrated.nightclubStorage) {
     migrated.nightclubStorage = {
       hasPounder: migrated.hasPounderCustom || false,
@@ -62,15 +63,21 @@ const migrateUserData = (data) => {
       console.log('✅ Migrated Nightclub delivery vehicles to nightclubStorage');
     }
   }
+  return migrated;
+};
 
-  // MIGRATION: lungCapacity -> stamina
+/** MIGRATION: lungCapacity -> stamina */
+const migrateStamina = (migrated) => {
   if (migrated.lungCapacity !== undefined && migrated.stamina === undefined) {
     migrated.stamina = migrated.lungCapacity;
     delete migrated.lungCapacity;
     console.log('✅ Migrated Lung Capacity → Stamina');
   }
+  return migrated;
+};
 
-  // MIGRATION: bunkerUpgraded (boolean) -> individual upgrade fields
+/** MIGRATION: bunkerUpgraded (boolean) -> individual upgrade fields */
+const migrateBunkerUpgrades = (migrated) => {
   // If user had bunkerUpgraded=true, populate the new granular fields
   if (migrated.bunkerUpgraded && 
       migrated.bunkerEquipmentUpgrade === undefined && 
@@ -92,8 +99,11 @@ const migrateUserData = (data) => {
   if (migrated.bunkerSecurityUpgrade === undefined) {
     migrated.bunkerSecurityUpgrade = false;
   }
+  return migrated;
+};
 
-  // Ensure purchaseDates object exists (prevents TypeError on deep merge)
+/** Ensure default fields exist (prevents TypeErrors on deep merge / missing arrays) */
+const ensureDefaults = (migrated) => {
   if (!migrated.purchaseDates || typeof migrated.purchaseDates !== 'object') {
     migrated.purchaseDates = {
       kosatka: null,
@@ -107,11 +117,24 @@ const migrateUserData = (data) => {
     };
   }
 
-  // Ensure cayoHistory array exists
   if (!Array.isArray(migrated.cayoHistory)) {
     migrated.cayoHistory = [];
   }
+  return migrated;
+};
 
+/**
+ * Migration pipeline to upgrade old data formats to current version.
+ * @param {Object} data - Raw data from localStorage
+ * @returns {Object} Migrated data with current structure
+ */
+const migrateUserData = (data) => {
+  let migrated = { ...data };
+  migrated = migrateNightclubSources(migrated);
+  migrated = migrateNightclubStorage(migrated);
+  migrated = migrateStamina(migrated);
+  migrated = migrateBunkerUpgrades(migrated);
+  migrated = ensureDefaults(migrated);
   return migrated;
 };
 
@@ -207,7 +230,7 @@ export const AssessmentProvider = ({ children }) => {
           console.log(`✅ Migrated data from ${key}`);
         }
       } catch (e) {
-        // Ignore migration errors
+        console.warn(`Migration from ${key} failed:`, e);
       }
     });
   }, []);
@@ -241,9 +264,9 @@ export const AssessmentProvider = ({ children }) => {
             ...prev, 
             ...upgradedData,
             // Deep merge nested objects (with fallbacks to prevent spread errors)
-            nightclubSources: { ...prev.nightclubSources, ...(upgradedData.nightclubSources || {}) },
-            nightclubStorage: { ...prev.nightclubStorage, ...(upgradedData.nightclubStorage || {}) },
-            purchaseDates: { ...prev.purchaseDates, ...(upgradedData.purchaseDates || {}) },
+            nightclubSources: { ...prev.nightclubSources, ...upgradedData.nightclubSources },
+            nightclubStorage: { ...prev.nightclubStorage, ...upgradedData.nightclubStorage },
+            purchaseDates: { ...prev.purchaseDates, ...upgradedData.purchaseDates },
             cayoHistory: upgradedData.cayoHistory || prev.cayoHistory || []
           }));
           setHasDraft(true);
@@ -402,10 +425,10 @@ export const AssessmentProvider = ({ children }) => {
         try {
           localStorage.removeItem(key);
         } catch (e) {
-          // Ignore
+          console.warn(`Failed to remove ${key}:`, e);
         }
       });
-      window.location.reload();
+      globalThis.location.reload();
     }
   };
 
@@ -413,7 +436,7 @@ export const AssessmentProvider = ({ children }) => {
   const updateCayoHistory = (runTime) => {
     setFormData(prev => {
       const newEntry = {
-        time: parseFloat(runTime),
+        time: Number.parseFloat(runTime),
         timestamp: Date.now(),
       };
       
@@ -436,26 +459,32 @@ export const AssessmentProvider = ({ children }) => {
     });
   };
 
+  const contextValue = useMemo(() => ({
+    formData, setFormData,
+    results, setResults,
+    step, setStep,
+    hasDraft,
+    errors, setErrors,
+    whatIfText, setWhatIfText,
+    isCalculating,
+    isSaving,
+    updateCayoHistory,
+    lastSaved,
+    localStorageAvailable,
+    runAssessment, resetForm, manualSave, clearSavedData,
+    // Version for migration support
+    version: 'v5'
+  }), [formData, results, step, hasDraft, errors, whatIfText, isCalculating, isSaving, lastSaved, localStorageAvailable, updateCayoHistory, runAssessment, resetForm, manualSave, clearSavedData]);
+
   return (
-    <AssessmentContext.Provider value={{
-      formData, setFormData,
-      results, setResults,
-      step, setStep,
-      hasDraft,
-      errors, setErrors,
-      whatIfText, setWhatIfText,
-      isCalculating,
-      isSaving,
-      updateCayoHistory,
-      lastSaved,
-      localStorageAvailable,
-      runAssessment, resetForm, manualSave, clearSavedData,
-      // Version for migration support
-      version: 'v5'
-    }}>
+    <AssessmentContext.Provider value={contextValue}>
       {children}
     </AssessmentContext.Provider>
   );
+};
+
+AssessmentProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 // Function declaration for React Fast Refresh compatibility

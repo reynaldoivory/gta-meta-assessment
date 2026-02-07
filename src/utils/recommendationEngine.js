@@ -2,7 +2,6 @@
 // Generate prioritized recommendations combining opportunities, efficiency, and ROI
 
 import { WEEKLY_EVENTS } from '../config/weeklyEvents.js';
-import { CURRENT_WEEKLY_EVENTS } from '../data/weeklyEvents.js';
 import { detectCriticalOpportunities } from './priorityDetector.js';
 import { calculateCompoundEfficiency } from './actionPlanBuilder.js';
 import { calculateTaskMetrics } from './taskMetrics.js';
@@ -16,10 +15,8 @@ import { getNightclubTechnicianCost } from './infrastructureAdvisor.js';
  * Falls back to config/weeklyEvents.js if needed
  * @returns {Promise<Object>} Weekly events object
  */
-export const getWeeklyEvents = async () => {
-  // Use the current weekly events data (updated every Thursday)
-  // Falls back to config if data file has issues
-  return CURRENT_WEEKLY_EVENTS || WEEKLY_EVENTS;
+export const getWeeklyEvents = () => {
+  return WEEKLY_EVENTS;
 };
 
 /**
@@ -33,7 +30,6 @@ export const getWeeklyEvents = async () => {
 export const calculateTrainingROI = (skill, currentBars, targetBars, user) => {
   if (currentBars >= targetBars) return null;
   
-  const formData = user.formData || user;
   const currentPercent = validateStat(currentBars);
   const targetPercent = validateStat(targetBars);
   const gap = targetPercent - currentPercent;
@@ -53,7 +49,6 @@ export const calculateTrainingROI = (skill, currentBars, targetBars, user) => {
   // Calculate value gain from improved efficiency
   // Find tasks that benefit from this skill
   let weeklyValueGain = 0;
-  const tasksPerWeek = 10; // Estimate user does ~10 tasks per week
   
   Object.entries(TASK_REQUIREMENTS).forEach(([taskId, requirements]) => {
     const relevantGate = requirements.soft_gates?.find(g => g.stat === skill);
@@ -64,9 +59,8 @@ export const calculateTrainingROI = (skill, currentBars, targetBars, user) => {
       if (currentGap > 0 && targetGap < currentGap) {
         // Skill improvement reduces failure rate
         const failureReduction = (currentGap - targetGap) / 20; // Convert to bars
-        const penaltyPerBar = relevantGate.penalty === 'critical' ? 0.20 :
-                              relevantGate.penalty === 'high' ? 0.15 :
-                              relevantGate.penalty === 'medium' ? 0.10 : 0.05;
+        const penaltyMap = { critical: 0.2, high: 0.15, medium: 0.1 };
+        const penaltyPerBar = penaltyMap[relevantGate.penalty] || 0.05;
         
         // Estimate task value (rough average)
         const avgTaskValue = 500000; // $500k average task
@@ -311,7 +305,7 @@ const detectAssetSynergies = (user, weeklyEvents, tasks) => {
  */
 export const generateRecommendations = async (user = {}, gameState = {}) => {
   // 1. Load current weekly events
-  const weeklyEvents = await getWeeklyEvents();
+  const weeklyEvents = getWeeklyEvents();
   
   // 2. Detect time-sensitive opportunities
   // Create user object compatible with priorityDetector
@@ -424,17 +418,22 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
     // ONE-TIME BONUSES FIRST (expiring soon = CRITICAL)
     ...criticalOpportunities
       .filter(opp => opp.type === 'one_time_bonus')
-      .map(opp => ({
-        ...opp,
-        effectiveValue: opp.task.reward || 0,
-        timeInvestment: opp.task.duration || 20,
-        // Expiring bonuses = FREE MONEY, always highest priority
-        score: opp.task.timeLeft && opp.task.timeLeft < 48 ? 60000 : 
-               opp.task.timeLeft && opp.task.timeLeft < 72 ? 55000 : 
-               opp.task.timeLeft && opp.task.timeLeft < 120 ? 45000 : 20000,
-        // Any expiring bonus < 5 days = CRITICAL (free money shouldn't be missed)
-        priority: opp.task.timeLeft && opp.task.timeLeft < 120 ? 'critical' : 'high',
-      })),
+      .map(opp => {
+        const timeLeft = opp.task.timeLeft;
+        let bonusScore;
+        if (timeLeft && timeLeft < 48) bonusScore = 60000;
+        else if (timeLeft && timeLeft < 72) bonusScore = 55000;
+        else if (timeLeft && timeLeft < 120) bonusScore = 45000;
+        else bonusScore = 20000;
+
+        return {
+          ...opp,
+          effectiveValue: opp.task.reward || 0,
+          timeInvestment: opp.task.duration || 20,
+          score: bonusScore,
+          priority: timeLeft && timeLeft < 120 ? 'critical' : 'high',
+        };
+      }),
     
     // SKILL TRAINING (foundational fixes - boost if critically low)
     ...skillImprovements.map(roi => {
@@ -442,12 +441,26 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
       const isCriticalSkill = (roi.skill === 'flying' && roi.currentBars < 3) ||
                               (roi.skill === 'stealth' && roi.currentBars < 3);
       // Base weekly value gain - if ROI calculation returned 0, estimate conservatively
-      const weeklyGain = roi.weeklyValueGain > 0 ? roi.weeklyValueGain : 
-                         (roi.skill === 'flying' ? 250000 : 100000); // Flying saves time = money
+      let weeklyGain = roi.weeklyValueGain;
+      if (weeklyGain <= 0) {
+        weeklyGain = roi.skill === 'flying' ? 250000 : 100000;
+      }
+
+      // Determine priority
+      let skillPriority;
+      if (isCriticalSkill) skillPriority = 'critical';
+      else if (roi.recommendation === 'DO IMMEDIATELY') skillPriority = 'high';
+      else skillPriority = 'medium';
+
+      // Determine score
+      let skillScore;
+      if (isCriticalSkill) skillScore = 25000;
+      else if (roi.recommendation === 'DO IMMEDIATELY') skillScore = 8000;
+      else skillScore = 4000;
+
       return {
         type: 'skill_training',
-        priority: isCriticalSkill ? 'critical' : 
-                  roi.recommendation === 'DO IMMEDIATELY' ? 'high' : 'medium',
+        priority: skillPriority,
         task: {
           id: `train_${roi.skill}`,
           name: roi.skill === 'flying' ? 'San Andreas Flight School' : 
@@ -461,8 +474,7 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
         effectiveValue: weeklyGain * 4,
         timeInvestment: roi.trainingTime,
         // Critical skills get score 25000 to appear right after one-time bonuses
-        score: isCriticalSkill ? 25000 : 
-               roi.recommendation === 'DO IMMEDIATELY' ? 8000 : 4000,
+        score: skillScore,
         metrics: {
           payoutPerHour: (weeklyGain * 4) / (roi.trainingTime / 60),
           effectiveDuration: roi.trainingTime,
@@ -477,12 +489,17 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
         // Check for asset synergy (e.g., own nightclub + 4x Business Battles)
         const synergy = synergyBoosts.find(s => s.activity === opp.task.activity);
         const synergyBoost = synergy ? synergy.bonus : 0;
+
+        let eventScore;
+        if (opp.task.multiplier >= 4) eventScore = 12000 + synergyBoost;
+        else if (opp.task.multiplier >= 3) eventScore = 9000 + synergyBoost;
+        else eventScore = 6000;
+
         return {
           ...opp,
           effectiveValue: (opp.task.multiplier || 1) * 30000 + synergyBoost,
           timeInvestment: opp.task.duration || 15,
-          score: opp.task.multiplier >= 4 ? 12000 + synergyBoost : 
-                 opp.task.multiplier >= 3 ? 9000 + synergyBoost : 6000,
+          score: eventScore,
           reasoning: synergy 
             ? `${opp.reasoning} + ${synergy.reason}`
             : opp.reasoning,
@@ -490,22 +507,27 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
       }),
     
     // MISSING UPGRADES (opportunity cost - bleeding money every hour!)
-    ...upgradeOpportunities.map(upgrade => ({
-      type: 'upgrade_needed',
-      priority: upgrade.hourlyLoss >= 40000 ? 'high' : 'medium',
-      task: {
-        id: upgrade.id,
-        name: upgrade.name,
-        duration: 5, // Upgrades are instant after purchase
-      },
-      reasoning: `⚠️ Losing $${Math.round(upgrade.hourlyLoss / 1000)}k/hour = $${Math.round(upgrade.hourlyLoss * 24 / 1000)}k/day without upgrades. ROI: ${upgrade.roiHours} hours`,
-      effectiveValue: upgrade.hourlyLoss * 24, // Daily value
-      timeInvestment: 5,
-      // Bunker losing $40k/hr gets score 15000 to show importance
-      score: upgrade.hourlyLoss >= 40000 ? 15000 : 
-             upgrade.hourlyLoss >= 20000 ? 10000 : 5000,
-      cost: upgrade.cost,
-    })),
+    ...upgradeOpportunities.map(upgrade => {
+      let upgradeScore;
+      if (upgrade.hourlyLoss >= 40000) upgradeScore = 15000;
+      else if (upgrade.hourlyLoss >= 20000) upgradeScore = 10000;
+      else upgradeScore = 5000;
+
+      return {
+        type: 'upgrade_needed',
+        priority: upgrade.hourlyLoss >= 40000 ? 'high' : 'medium',
+        task: {
+          id: upgrade.id,
+          name: upgrade.name,
+          duration: 5, // Upgrades are instant after purchase
+        },
+        reasoning: `⚠️ Losing $${Math.round(upgrade.hourlyLoss / 1000)}k/hour = $${Math.round(upgrade.hourlyLoss * 24 / 1000)}k/day without upgrades. ROI: ${upgrade.roiHours} hours`,
+        effectiveValue: upgrade.hourlyLoss * 24, // Daily value
+        timeInvestment: 5,
+        score: upgradeScore,
+        cost: upgrade.cost,
+      };
+    }),
     
     // TOP MONEY-MAKING TASKS
     ...allTasks
@@ -515,19 +537,29 @@ export const generateRecommendations = async (user = {}, gameState = {}) => {
       .map(task => {
         // Check for event boost
         const hasEventBoost = task.multiplier && task.multiplier > 1;
+
+        // Determine priority
+        let grindPriority;
+        if (hasEventBoost) grindPriority = 'high';
+        else if (task.category === 'passive' && task.urgency === 'URGENT') grindPriority = 'critical';
+        else grindPriority = 'medium';
+
+        // Format reasoning text
+        const reasoningText = Array.isArray(task.reasoning) ? task.reasoning.join('; ') : (task.reasoning || '');
+        const formattedReasoning = hasEventBoost 
+          ? `${task.multiplier}x Event! ${reasoningText}`
+          : reasoningText;
+
         return {
           type: 'money_grind',
-          priority: hasEventBoost ? 'high' : 
-                    task.category === 'passive' && task.urgency === 'URGENT' ? 'critical' : 'medium',
+          priority: grindPriority,
           task: {
             id: task.id,
             name: task.name,
             timeLeft: task.timeRemaining ? task.timeRemaining / (1000 * 60 * 60) : null,
             duration: task.metrics?.effectiveDuration || task.baseDuration || 60,
           },
-          reasoning: hasEventBoost 
-            ? `${task.multiplier}x Event! ${Array.isArray(task.reasoning) ? task.reasoning.join('; ') : (task.reasoning || '')}`
-            : Array.isArray(task.reasoning) ? task.reasoning.join('; ') : (task.reasoning || ''),
+          reasoning: formattedReasoning,
           // Use task.score (actual payout with multiplier) for effectiveValue
           effectiveValue: task.score || task.metrics?.adjustedPayout || 0,
           timeInvestment: task.metrics?.effectiveDuration || task.baseDuration || 60,

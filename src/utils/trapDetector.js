@@ -121,6 +121,7 @@ export const getTrapFixes = () => {
   try {
     return JSON.parse(localStorage.getItem(TRAP_FIXES_KEY) || '[]');
   } catch (e) {
+    console.warn('Failed to parse trap fixes from localStorage:', e);
     return [];
   }
 };
@@ -221,115 +222,120 @@ const calculateAverageFixTime = (history) => {
 };
 
 /**
+ * Helper: Detect Mule without Pounder trap (Scenario A)
+ */
+const detectMuleWithoutPounderTrap = (formData, floors, hasMule, hasPounder) => {
+  if (!hasMule || hasPounder) return null;
+
+  const isCurrentlyAffected = floors > 1; // 2+ floors can exceed 90 crates
+  return {
+    id: 'nc_mule_missing_pounder',
+    severity: isCurrentlyAffected ? TRAP_SEVERITY.CRITICAL : TRAP_SEVERITY.MEDIUM,
+    title: '🚫 Delivery Vehicle Trap (Mule)',
+    icon: '🚛',
+    problem: isCurrentlyAffected 
+      ? 'You own the Mule Custom but NOT the Pounder Custom. The Mule is slow, buggy, and gets stuck easily.'
+      : 'You own the Mule Custom but NOT the Pounder Custom. Currently safe with 1 floor (72 max crates), but if you expand floors, you\'ll be forced to use the slow Mule.',
+    cost: isCurrentlyAffected 
+      ? 'For any sale over 90 crates, you will struggle with deliveries'
+      : 'Future floor expansion will force slow Mule deliveries (90-180 crates)',
+    lostPerHour: 0,
+    solution: 'Buy Pounder Custom ($1.9M) - handles large sales efficiently',
+    reasoning: 'The Mule Custom is a trap vehicle. It\'s slow and prone to getting stuck. The Pounder handles everything >90 crates much better. Buy the Pounder before you ever need the Mule.',
+    timeToFix: '5 minutes (purchase from Nightclub computer)',
+    requiredSteps: [
+      { step: 'Go to Nightclub computer', reason: 'Access vehicle purchases' },
+      { step: 'Buy Pounder Custom ($1.9M)', reason: 'Handles large deliveries reliably' },
+    ],
+    fixCost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
+  };
+};
+
+/**
+ * Helper: Detect Mule with Pounder trap (Scenario B)
+ */
+const detectMuleWithPounderTrap = (formData, floors, hasMule, hasPounder) => {
+  if (floors < 2 || !hasMule || !hasPounder) return null;
+
+  return {
+    id: 'nc_mule_avoidance',
+    severity: TRAP_SEVERITY.MEDIUM,
+    title: '⚠️ Avoid the Mule Custom',
+    icon: '🚛',
+    problem: 'You own the Mule Custom. The game will force you to use it for medium sales (90-180 crates).',
+    cost: 'Slower deliveries when stock is between 90-180',
+    lostPerHour: 0,
+    solution: 'Only sell when stock exceeds 180 crates to force Pounder usage',
+    reasoning: 'Since you can\'t sell the Mule, the workaround is to always sell above the Mule threshold. Wait for >180 crates.',
+    timeToFix: 'Strategy adjustment (no cost)',
+    requiredSteps: [
+      { step: 'Monitor stock levels', reason: 'Know when you hit 180+ crates' },
+      { step: 'Only sell when stock > 180', reason: 'Forces the game to use Pounder' },
+    ],
+    fixCost: 0,
+  };
+};
+
+/**
+ * Helper: Detect low-value nightclub assignment trap (Weed/Doc)
+ */
+const detectLowValueAssignmentTrap = (formData) => {
+  if (!formData.nightclubSources || !formData.nightclubTechs) return null;
+
+  const sources = formData.nightclubSources;
+  const techs = Number(formData.nightclubTechs);
+  
+  // Check if they are running trash businesses
+  const isRunningTrash = (sources.organic || sources.printing);
+  
+  // Check if they are MISSING top tier businesses (the top 5)
+  const ownedCount = Object.values(sources).filter(Boolean).length;
+  const missingTopTier = (!sources.imports || !sources.cargo || !sources.pharma || !sources.sporting || !sources.cash);
+  
+  // If running trash AND missing gold AND have techs = TRAP
+  // Only flag if they have room for improvement (techs < owned high-value businesses)
+  if (!isRunningTrash || !missingTopTier || techs <= 0 || ownedCount >= 5) return null;
+
+  const trashValue = (sources.organic ? 4500 : 0) + (sources.printing ? 1500 : 0);
+  const potentialGain = 8000 - (trashValue / (sources.organic && sources.printing ? 2 : 1)); // Avg high-tier vs trash
+  
+  return {
+    id: 'nc_inefficient_assignment',
+    severity: TRAP_SEVERITY.HIGH,
+    title: '📉 Low-Value Nightclub Assignment',
+    icon: '📉',
+    problem: 'You have technicians assigned to Weed or Documents (Low Value) while missing High Value businesses.',
+    cost: `Losing ~$${Math.round(potentialGain).toLocaleString()}/hr per low-value assignment`,
+    lostPerHour: Math.round(potentialGain),
+    solution: 'Buy Coke/Meth/Bunker/Cash businesses to replace low-value sources',
+    reasoning: 'Weed produces $4.5k/hr, Docs produce $1.5k/hr. Cocaine produces $10k/hr. That\'s a 2-6x difference per technician.',
+    timeToFix: '1-2 hours (purchase businesses)',
+    requiredSteps: [
+      { step: 'Check which top-tier you\'re missing', reason: 'Coke > Cargo > Meth > Bunker > Cash' },
+      { step: 'Buy the missing business', reason: 'Replace low-value technician slot' },
+      { step: 'Reassign tech in Nightclub', reason: 'Move tech from Weed/Docs to new business' },
+    ],
+    fixCost: 0, // Variable based on what they need
+  };
+};
+
+/**
  * NIGHTCLUB-SPECIFIC TRAP DETECTORS
  * Detects delivery vehicle issues and inefficient technician assignments
  */
 export const detectNightclubTraps = (formData) => {
-  const traps = [];
+  if (!formData.hasNightclub) return [];
   
-  if (!formData.hasNightclub) return traps;
-  
-  // --- TRAP 1: The Mule Custom Trap ---
-  // Context: The Mule is slower than the Pounder. If you own the Mule, 
-  // the game FORCES you to use it for medium sales (90-180 crates).
-  // If you own the Pounder but NOT the Mule, the Pounder covers everything >90.
   const floors = Number(formData.nightclubFloors) || 1;
   const storage = formData.nightclubStorage || {};
   const hasMule = storage.hasMule || formData.hasMuleCustom;     // Handle new & old state
   const hasPounder = storage.hasPounder || formData.hasPounderCustom;
 
-  // Scenario A: Owns Mule but NO Pounder (Worst Case)
-  // Warn even with 1 floor - player may expand storage later, and the Mule is always a trap.
-  // With 1 floor (72 crate max), they're safe now, but expanding to 2+ floors triggers Mule usage.
-  if (hasMule && !hasPounder) {
-    const isCurrentlyAffected = floors > 1; // 2+ floors can exceed 90 crates
-    traps.push({
-      id: 'nc_mule_missing_pounder',
-      severity: isCurrentlyAffected ? TRAP_SEVERITY.CRITICAL : TRAP_SEVERITY.MEDIUM,
-      title: '🚫 Delivery Vehicle Trap (Mule)',
-      icon: '🚛',
-      problem: isCurrentlyAffected 
-        ? 'You own the Mule Custom but NOT the Pounder Custom. The Mule is slow, buggy, and gets stuck easily.'
-        : 'You own the Mule Custom but NOT the Pounder Custom. Currently safe with 1 floor (72 max crates), but if you expand floors, you\'ll be forced to use the slow Mule.',
-      cost: isCurrentlyAffected 
-        ? 'For any sale over 90 crates, you will struggle with deliveries'
-        : 'Future floor expansion will force slow Mule deliveries (90-180 crates)',
-      lostPerHour: 0,
-      solution: 'Buy Pounder Custom ($1.9M) - handles large sales efficiently',
-      reasoning: 'The Mule Custom is a trap vehicle. It\'s slow and prone to getting stuck. The Pounder handles everything >90 crates much better. Buy the Pounder before you ever need the Mule.',
-      timeToFix: '5 minutes (purchase from Nightclub computer)',
-      requiredSteps: [
-        { step: 'Go to Nightclub computer', reason: 'Access vehicle purchases' },
-        { step: 'Buy Pounder Custom ($1.9M)', reason: 'Handles large deliveries reliably' },
-      ],
-      fixCost: INFRASTRUCTURE_COSTS.nightclub.pounderCustom,
-    });
-  }
-
-  // Scenario B: Owns Mule AND Pounder (Annoyance Case)
-  // They can't sell the Mule, so they are stuck using it for 90-180 crate sales.
-  // Only relevant if floors >= 2 (can exceed 90 crates) - with 1 floor, Mule is never triggered
-  if (floors >= 2 && hasMule && hasPounder) {
-    traps.push({
-      id: 'nc_mule_avoidance',
-      severity: TRAP_SEVERITY.MEDIUM,
-      title: '⚠️ Avoid the Mule Custom',
-      icon: '🚛',
-      problem: 'You own the Mule Custom. The game will force you to use it for medium sales (90-180 crates).',
-      cost: 'Slower deliveries when stock is between 90-180',
-      lostPerHour: 0,
-      solution: 'Only sell when stock exceeds 180 crates to force Pounder usage',
-      reasoning: 'Since you can\'t sell the Mule, the workaround is to always sell above the Mule threshold. Wait for >180 crates.',
-      timeToFix: 'Strategy adjustment (no cost)',
-      requiredSteps: [
-        { step: 'Monitor stock levels', reason: 'Know when you hit 180+ crates' },
-        { step: 'Only sell when stock > 180', reason: 'Forces the game to use Pounder' },
-      ],
-      fixCost: 0,
-    });
-  }
-
-  // --- TRAP 2: The "Weed/Doc" Trap ---
-  // Using a technician on a low-value business while a high-value one sits idle.
-  if (formData.nightclubSources && formData.nightclubTechs) {
-    const sources = formData.nightclubSources;
-    const techs = Number(formData.nightclubTechs);
-    
-    // Check if they are running trash businesses
-    const isRunningTrash = (sources.organic || sources.printing);
-    
-    // Check if they are MISSING top tier businesses (the top 5)
-    const ownedCount = Object.values(sources).filter(Boolean).length;
-    const missingTopTier = (!sources.imports || !sources.cargo || !sources.pharma || !sources.sporting || !sources.cash);
-    
-    // If running trash AND missing gold AND have techs = TRAP
-    // Only flag if they have room for improvement (techs < owned high-value businesses)
-    if (isRunningTrash && missingTopTier && techs > 0 && ownedCount < 5) {
-      const trashValue = (sources.organic ? 4500 : 0) + (sources.printing ? 1500 : 0);
-      const potentialGain = 8000 - (trashValue / (sources.organic && sources.printing ? 2 : 1)); // Avg high-tier vs trash
-      
-      traps.push({
-        id: 'nc_inefficient_assignment',
-        severity: TRAP_SEVERITY.HIGH,
-        title: '📉 Low-Value Nightclub Assignment',
-        icon: '📉',
-        problem: 'You have technicians assigned to Weed or Documents (Low Value) while missing High Value businesses.',
-        cost: `Losing ~$${Math.round(potentialGain).toLocaleString()}/hr per low-value assignment`,
-        lostPerHour: Math.round(potentialGain),
-        solution: 'Buy Coke/Meth/Bunker/Cash businesses to replace low-value sources',
-        reasoning: 'Weed produces $4.5k/hr, Docs produce $1.5k/hr. Cocaine produces $10k/hr. That\'s a 2-6x difference per technician.',
-        timeToFix: '1-2 hours (purchase businesses)',
-        requiredSteps: [
-          { step: 'Check which top-tier you\'re missing', reason: 'Coke > Cargo > Meth > Bunker > Cash' },
-          { step: 'Buy the missing business', reason: 'Replace low-value technician slot' },
-          { step: 'Reassign tech in Nightclub', reason: 'Move tech from Weed/Docs to new business' },
-        ],
-        fixCost: 0, // Variable based on what they need
-      });
-    }
-  }
-
-  return traps;
+  return [
+    detectMuleWithoutPounderTrap(formData, floors, hasMule, hasPounder),
+    detectMuleWithPounderTrap(formData, floors, hasMule, hasPounder),
+    detectLowValueAssignmentTrap(formData),
+  ].filter(Boolean);
 };
 
 /**
@@ -376,6 +382,129 @@ export const detectTraps = (formData, assessment = null) => {
 };
 
 /**
+ * Helper: Detect cascade trap (techs but NO feeders = double waste)
+ */
+const detectCascadeTrap = (formData, techs, feeders, maxIncome) => {
+  if (feeders !== 0 || techs <= 0) return null;
+
+  const nightclubBaseCost = 1500000;
+  const wastedOnTechs = getNightclubTechnicianCost(0, techs);
+  const totalWaste = nightclubBaseCost + wastedOnTechs;
+  
+  return {
+    id: 'nightclub_cascade_trap',
+    severity: TRAP_SEVERITY.CRITICAL,
+    title: '🚨 DOUBLE Nightclub Trap',
+    icon: '🏢',
+    isCascadeTrap: true, // Flag for extra prominence in UI
+    problem: `You spent $${totalWaste.toLocaleString()} on Nightclub + ${techs} technician${techs === 1 ? '' : 's'}, but have 0 feeder businesses`,
+    cost: `Wasted $${wastedOnTechs.toLocaleString()} on technicians that CANNOT WORK`,
+    lostPerHour: maxIncome,
+    wastedInvestment: wastedOnTechs,
+    totalInvestment: totalWaste,
+    solution: 'Your technicians are idle. Buy feeder businesses NOW or your $1.9M+ investment earns $0.',
+    reasoning: 'Technicians produce goods FROM linked businesses. Without feeders, they sit idle 24/7. This is a $1.9M+ mistake that needs immediate correction.',
+    urgency: 'IMMEDIATE - Every hour you wait is $' + maxIncome.toLocaleString() + ' lost',
+    timeToFix: '3-4 hours (business setup)',
+    requiredSteps: [
+      { step: 'Buy Cocaine Lockup ($975k)', reason: 'Cocaine is highest-earning nightclub product ($10k/hr)' },
+      { step: 'Buy Meth Lab ($910k)', reason: 'Meth is second-highest earner ($8.5k/hr)' },
+      { step: 'Buy Counterfeit Cash ($845k)', reason: 'Solid third feeder for balanced production' },
+      { step: 'Assign technicians to each business', reason: 'Techs will finally start producing!' },
+    ],
+    fixCost: 975000 + 910000 + 845000,
+    recoveryCalculation: {
+      currentIncome: 0,
+      potentialIncome: maxIncome,
+      hoursToRecoverWaste: Math.ceil((totalWaste + 2730000) / maxIncome), // Total recovery time
+    },
+  };
+};
+
+/**
+ * Helper: Detect no feeders trap (no techs either, slightly less severe)
+ */
+const detectNoFeedersTrap = (formData, feeders, maxIncome) => {
+  if (feeders !== 0) return null;
+
+  return {
+    id: 'nightclub_no_feeders',
+    severity: TRAP_SEVERITY.CRITICAL,
+    title: '🚨 Nightclub Trap: Zero Income',
+    icon: '🏢',
+    problem: `Your Nightclub earns $0/hr because you have no feeder businesses connected`,
+    cost: `Losing $${maxIncome.toLocaleString()}/hr in potential income`,
+    lostPerHour: maxIncome,
+    solution: 'Buy MC businesses FIRST: Cocaine ($975k) → Meth ($910k) → Cash ($845k). Then assign technicians.',
+    reasoning: 'Nightclub technicians produce goods from linked businesses. No businesses = no production = no income.',
+    timeToFix: '3-4 hours (business setup + Nightclub assignment)',
+    requiredSteps: [
+      { step: 'Buy Cocaine Lockup ($975k)', reason: 'Cocaine is highest-earning nightclub product ($10k/hr)' },
+      { step: 'Buy Meth Lab ($910k)', reason: 'Meth is second-highest earner ($8.5k/hr)' },
+      { step: 'Buy Counterfeit Cash Factory ($845k)', reason: 'Solid third feeder for balanced production' },
+      { step: 'Return to Nightclub → Assign technicians', reason: 'Each tech works one business passively' },
+    ],
+    fixCost: 975000 + 910000 + 845000, // ~$2.7M for 3 MC businesses
+  };
+};
+
+/**
+ * Helper: Detect low feeders trap (has some feeders but not enough)
+ */
+const detectLowFeedersTrap = (formData, techs, feeders, currentIncome, efficiency, lostIncome) => {
+  if (feeders >= 3) return null;
+
+  return {
+    id: 'nightclub_low_feeders',
+    severity: TRAP_SEVERITY.HIGH,
+    title: '⚠️ Nightclub Under-Optimized',
+    icon: '🏢',
+    problem: `Nightclub earning $${currentIncome.toLocaleString()}/hr (${efficiency.toFixed(0)}% efficiency) with only ${feeders} feeder business${feeders === 1 ? '' : 'es'}`,
+    cost: `Losing $${lostIncome.toLocaleString()}/hr vs full setup`,
+    lostPerHour: lostIncome,
+    solution: `Buy ${3 - feeders} more MC business${3 - feeders === 1 ? '' : 'es'} to reach 60% efficiency`,
+    reasoning: 'Each feeder business unlocks a technician slot. 3+ businesses reaches the efficiency sweet spot.',
+    timeToFix: `${3 - feeders} hours (business setup)`,
+    requiredSteps: feeders === 1
+      ? [
+          { step: 'Buy Cocaine Lockup ($975k)', reason: 'Highest passive income per tech hour' },
+          { step: 'Buy Meth Lab ($910k)', reason: 'Second-best ROI for nightclub feeding' }
+        ]
+      : [
+          { step: 'Buy Cocaine OR Meth Lab (~$900k)', reason: 'Either one will boost you to 60% efficiency' }
+        ],
+    fixCost: feeders === 1 ? 1885000 : 900000,
+  };
+};
+
+/**
+ * Helper: Detect low techs trap (has feeders but not enough techs)
+ */
+const detectLowTechsTrap = (formData, techs, feeders, lostIncome, techCost) => {
+  if (techs >= 3 || feeders < 3) return null;
+
+  return {
+    id: 'nightclub_low_techs',
+    severity: TRAP_SEVERITY.HIGH,
+    title: '⚠️ Nightclub Missing Technicians',
+    icon: '🏢',
+    problem: `You have ${feeders} feeder businesses but only ${techs} technician${techs === 1 ? '' : 's'} hired`,
+    cost: `Losing $${lostIncome.toLocaleString()}/hr - technicians aren't assigned!`,
+    lostPerHour: lostIncome,
+    solution: `Hire ${5 - techs} more technicians ($${techCost.toLocaleString()} total)`,
+    reasoning: `Technician costs scale by tier (total $${INFRASTRUCTURE_COSTS.nightclub.technicianTotal.toLocaleString()} for all 5). ROI is typically under 10 hours.`,
+    timeToFix: '5 minutes (menu purchase)',
+    requiredSteps: [
+      { step: 'Go to Nightclub computer', reason: 'Management terminal for all nightclub operations' },
+      { step: 'Select "Staff" tab', reason: 'Where you hire and assign technicians' },
+      { step: `Hire ${5 - techs} technicians (total $${techCost.toLocaleString()})`, reason: `Each tech adds ~$${Math.round(lostIncome / (5 - techs)).toLocaleString()}/hr` },
+      { step: 'Assign each technician to a business', reason: 'Unassigned techs don\'t produce anything' },
+    ],
+    fixCost: techCost,
+  };
+};
+
+/**
  * TRAP 1: Nightclub with insufficient feeders/techs
  * The classic "I bought a nightclub but it makes no money" trap
  */
@@ -397,115 +526,11 @@ const detectNightclubTrap = (formData) => {
   const lostIncome = maxIncome - currentIncome;
   const techCost = getNightclubTechnicianCost(techs, 5);
   
-  // CRITICAL CASCADE TRAP: Has techs but NO feeders = Double waste
-  // They spent money on techs that literally cannot work
-  if (feeders === 0 && techs > 0) {
-    const nightclubBaseCost = 1500000;
-    const wastedOnTechs = getNightclubTechnicianCost(0, techs);
-    const totalWaste = nightclubBaseCost + wastedOnTechs;
-    
-    return {
-      id: 'nightclub_cascade_trap',
-      severity: TRAP_SEVERITY.CRITICAL,
-      title: '🚨 DOUBLE Nightclub Trap',
-      icon: '🏢',
-      isCascadeTrap: true, // Flag for extra prominence in UI
-      problem: `You spent $${totalWaste.toLocaleString()} on Nightclub + ${techs} technician${techs !== 1 ? 's' : ''}, but have 0 feeder businesses`,
-      cost: `Wasted $${wastedOnTechs.toLocaleString()} on technicians that CANNOT WORK`,
-      lostPerHour: maxIncome,
-      wastedInvestment: wastedOnTechs,
-      totalInvestment: totalWaste,
-      solution: 'Your technicians are idle. Buy feeder businesses NOW or your $1.9M+ investment earns $0.',
-      reasoning: 'Technicians produce goods FROM linked businesses. Without feeders, they sit idle 24/7. This is a $1.9M+ mistake that needs immediate correction.',
-      urgency: 'IMMEDIATE - Every hour you wait is $' + maxIncome.toLocaleString() + ' lost',
-      timeToFix: '3-4 hours (business setup)',
-      requiredSteps: [
-        { step: 'Buy Cocaine Lockup ($975k)', reason: 'Cocaine is highest-earning nightclub product ($10k/hr)' },
-        { step: 'Buy Meth Lab ($910k)', reason: 'Meth is second-highest earner ($8.5k/hr)' },
-        { step: 'Buy Counterfeit Cash ($845k)', reason: 'Solid third feeder for balanced production' },
-        { step: 'Assign technicians to each business', reason: 'Techs will finally start producing!' },
-      ],
-      fixCost: 975000 + 910000 + 845000,
-      recoveryCalculation: {
-        currentIncome: 0,
-        potentialIncome: maxIncome,
-        hoursToRecoverWaste: Math.ceil((totalWaste + 2730000) / maxIncome), // Total recovery time
-      },
-    };
-  }
-  
-  if (feeders === 0) {
-    // CRITICAL: No feeders at all = $0/hr (no techs yet, so slightly less severe)
-    return {
-      id: 'nightclub_no_feeders',
-      severity: TRAP_SEVERITY.CRITICAL,
-      title: '🚨 Nightclub Trap: Zero Income',
-      icon: '🏢',
-      problem: `Your Nightclub earns $0/hr because you have no feeder businesses connected`,
-      cost: `Losing $${maxIncome.toLocaleString()}/hr in potential income`,
-      lostPerHour: maxIncome,
-      solution: 'Buy MC businesses FIRST: Cocaine ($975k) → Meth ($910k) → Cash ($845k). Then assign technicians.',
-      reasoning: 'Nightclub technicians produce goods from linked businesses. No businesses = no production = no income.',
-      timeToFix: '3-4 hours (business setup + Nightclub assignment)',
-      requiredSteps: [
-        { step: 'Buy Cocaine Lockup ($975k)', reason: 'Cocaine is highest-earning nightclub product ($10k/hr)' },
-        { step: 'Buy Meth Lab ($910k)', reason: 'Meth is second-highest earner ($8.5k/hr)' },
-        { step: 'Buy Counterfeit Cash Factory ($845k)', reason: 'Solid third feeder for balanced production' },
-        { step: 'Return to Nightclub → Assign technicians', reason: 'Each tech works one business passively' },
-      ],
-      fixCost: 975000 + 910000 + 845000, // ~$2.7M for 3 MC businesses
-    };
-  }
-  
-  if (feeders < 3) {
-    // HIGH: Has some feeders but not enough
-    return {
-      id: 'nightclub_low_feeders',
-      severity: TRAP_SEVERITY.HIGH,
-      title: '⚠️ Nightclub Under-Optimized',
-      icon: '🏢',
-      problem: `Nightclub earning $${currentIncome.toLocaleString()}/hr (${efficiency.toFixed(0)}% efficiency) with only ${feeders} feeder business${feeders !== 1 ? 'es' : ''}`,
-      cost: `Losing $${lostIncome.toLocaleString()}/hr vs full setup`,
-      lostPerHour: lostIncome,
-      solution: `Buy ${3 - feeders} more MC business${3 - feeders !== 1 ? 'es' : ''} to reach 60% efficiency`,
-      reasoning: 'Each feeder business unlocks a technician slot. 3+ businesses reaches the efficiency sweet spot.',
-      timeToFix: `${3 - feeders} hours (business setup)`,
-      requiredSteps: feeders === 1
-        ? [
-            { step: 'Buy Cocaine Lockup ($975k)', reason: 'Highest passive income per tech hour' },
-            { step: 'Buy Meth Lab ($910k)', reason: 'Second-best ROI for nightclub feeding' }
-          ]
-        : [
-            { step: 'Buy Cocaine OR Meth Lab (~$900k)', reason: 'Either one will boost you to 60% efficiency' }
-          ],
-      fixCost: feeders === 1 ? 1885000 : 900000,
-    };
-  }
-  
-  if (techs < 3 && feeders >= 3) {
-    // HIGH: Has feeders but not enough techs
-    return {
-      id: 'nightclub_low_techs',
-      severity: TRAP_SEVERITY.HIGH,
-      title: '⚠️ Nightclub Missing Technicians',
-      icon: '🏢',
-      problem: `You have ${feeders} feeder businesses but only ${techs} technician${techs !== 1 ? 's' : ''} hired`,
-      cost: `Losing $${lostIncome.toLocaleString()}/hr - technicians aren't assigned!`,
-      lostPerHour: lostIncome,
-      solution: `Hire ${5 - techs} more technicians ($${techCost.toLocaleString()} total)`,
-      reasoning: `Technician costs scale by tier (total $${INFRASTRUCTURE_COSTS.nightclub.technicianTotal.toLocaleString()} for all 5). ROI is typically under 10 hours.`,
-      timeToFix: '5 minutes (menu purchase)',
-      requiredSteps: [
-        { step: 'Go to Nightclub computer', reason: 'Management terminal for all nightclub operations' },
-        { step: 'Select "Staff" tab', reason: 'Where you hire and assign technicians' },
-        { step: `Hire ${5 - techs} technicians (total $${techCost.toLocaleString()})`, reason: `Each tech adds ~$${Math.round(lostIncome / (5 - techs)).toLocaleString()}/hr` },
-        { step: 'Assign each technician to a business', reason: 'Unassigned techs don\'t produce anything' },
-      ],
-      fixCost: techCost,
-    };
-  }
-  
-  return null;
+  return detectCascadeTrap(formData, techs, feeders, maxIncome)
+    || detectNoFeedersTrap(formData, feeders, maxIncome)
+    || detectLowFeedersTrap(formData, techs, feeders, currentIncome, efficiency, lostIncome)
+    || detectLowTechsTrap(formData, techs, feeders, lostIncome, techCost)
+    || null;
 };
 
 /**
@@ -726,7 +751,7 @@ const detectCayoBurnoutTrap = (formData) => {
     cost: completions > 75 
       ? `~$${lostIncome.toLocaleString()}/hr lost vs optimal ${optimalTime}min runs`
       : 'Diminishing returns from repetitive grinding',
-    lostPerHour: lostIncome > 0 ? lostIncome : 0,
+    lostPerHour: Math.max(0, lostIncome),
     solution: 'Diversify: Mix in Payphone Hits, Salvage Yard, or Auto Shop contracts during cooldowns',
     reasoning: '2026 meta: Variety keeps you engaged. Agency payphone hits ($255k/hr) + Auto Shop (2X right now!) maintain income while reducing monotony. Fresh eyes = faster runs.',
     timeToFix: 'Strategy change (no cost)',

@@ -9,7 +9,7 @@ const CarWashExpiryBadge = ({ claimed }) => {
     
     const updateCountdown = () => {
       const now = Date.now();
-      const expiryDate = new Date(WEEKLY_EVENTS.bonuses?.carWash?.validUntil || '2026-01-15T09:00:00Z').getTime();
+      const expiryDate = new Date(WEEKLY_EVENTS.bonuses?.carWash?.validUntil || WEEKLY_EVENTS.meta.validUntil).getTime();
       const hours = Math.max(0, Math.ceil((expiryDate - now) / (1000 * 60 * 60)));
       setHoursLeft(hours);
     };
@@ -39,7 +39,9 @@ const CarWashExpiryBadge = ({ claimed }) => {
     return <div className="text-xs text-yellow-400">🕐 Expires in {Math.ceil(hoursLeft / 24)} days</div>;
   }
   
-  return <div className="text-xs text-green-400">Free until Jan 14 (Save $1.4M)</div>;
+  const expiryDate = new Date(WEEKLY_EVENTS.bonuses?.carWash?.validUntil || WEEKLY_EVENTS.meta.validUntil);
+  const expiryLabel = expiryDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+  return <div className="text-xs text-green-400">Free until {expiryLabel} (Save $1.4M)</div>;
 };
 
 export default CarWashExpiryBadge;

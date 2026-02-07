@@ -1,5 +1,8 @@
 // src/utils/eventHelpers.js
 // Event detection logic extracted from computeAssessment.js and actionPlanBuilder.js
+// Now data-driven from config/weeklyEvents.js — no more hardcoded dates!
+
+import { WEEKLY_EVENTS, formatExpiry } from '../config/weeklyEvents.js';
 
 /**
  * Check if event expires within 48 hours
@@ -24,7 +27,20 @@ export const isExpiringCritical = (expiresAt, now) => {
 };
 
 /**
- * Event-Aware Priority System: Detects time-limited bonuses and prioritizes them
+ * Helper: compute time metadata for an event end date
+ */
+const getTimeMeta = (endDate, date) => {
+  const hoursLeft = Math.ceil((endDate - date) / (1000 * 60 * 60));
+  const daysLeft = Math.ceil(hoursLeft / 24);
+  const isCritical = hoursLeft > 0 && hoursLeft < 24;
+  return { hoursLeft, daysLeft, isCritical };
+};
+
+/**
+ * Event-Aware Priority System: Detects time-limited bonuses and prioritizes them.
+ * Now reads ALL dates from WEEKLY_EVENTS config — update config/weeklyEvents.js
+ * every Thursday and this function automatically picks up the new data.
+ *
  * @param {Object} playerData - Player form data
  * @param {Date|number} currentDate - Current date (defaults to now)
  * @returns {Array} Active events with priority metadata
@@ -32,169 +48,97 @@ export const isExpiringCritical = (expiresAt, now) => {
 export const getActiveEvents = (playerData, currentDate = new Date()) => {
   const events = [];
   const date = new Date(currentDate);
-  
+
+  // Read date boundaries from config
+  const weekStart = new Date(WEEKLY_EVENTS.meta.validFrom);
+  const weekEnd = new Date(WEEKLY_EVENTS.meta.validUntil);
+  const isWithinWeek = date >= weekStart && date <= weekEnd;
+
   // ============================================
-  // WEEKLY EVENTS (Jan 15-21, 2026)
+  // WEEKLY EVENTS (data-driven from WEEKLY_EVENTS.bonuses)
   // ============================================
-  
-  // 4X Business Battles (Jan 15-21) - ALL PLAYERS
-  const bbStart = new Date('2026-01-15T10:00:00Z');
-  const bbEnd = new Date('2026-01-21T10:00:00Z');
-  
-  if (date >= bbStart && date <= bbEnd) {
-    const hoursLeft = Math.ceil((bbEnd - date) / (1000 * 60 * 60));
-    const daysLeft = Math.ceil(hoursLeft / 24);
-    const isCritical = hoursLeft < 24;
-    
-    events.push({
-      name: 'businessBattles4X',
-      expiry: '2026-01-21',
-      expiryTimestamp: bbEnd.getTime(),
-      hoursLeft: hoursLeft,
-      daysLeft: daysLeft,
-      multiplier: 4,
-      earningsRate: '$200-400k per battle',
-      tier: 1,
-      urgent: true,
-      critical: isCritical,
-      hourlyRate: 300000,
-      category: 'freemode',
-    });
-  }
-  
-  // 4X Nightclub Goods from Business Battles (Jan 15-21) - Requires Nightclub
-  if (playerData.hasNightclub && date >= bbStart && date <= bbEnd) {
-    const hoursLeft = Math.ceil((bbEnd - date) / (1000 * 60 * 60));
-    const daysLeft = Math.ceil(hoursLeft / 24);
-    const isCritical = hoursLeft < 24;
-    
-    events.push({
-      name: 'nightclubGoods4X',
-      expiry: '2026-01-21',
-      expiryTimestamp: bbEnd.getTime(),
-      hoursLeft: hoursLeft,
-      daysLeft: daysLeft,
-      multiplier: 4,
-      earningsRate: 'Massive passive boost',
-      tier: 1,
-      urgent: true,
-      critical: isCritical,
-      hourlyRate: 0, // Passive income, hard to quantify per hour
-      category: 'passive',
-    });
-  }
-  
-  // 2X Nightclub Safe Income (Jan 15-21) - Requires Nightclub
-  if (playerData.hasNightclub && date >= bbStart && date <= bbEnd) {
-    const hoursLeft = Math.ceil((bbEnd - date) / (1000 * 60 * 60));
-    const daysLeft = Math.ceil(hoursLeft / 24);
-    
-    events.push({
-      name: 'nightclubSafe2X',
-      expiry: '2026-01-21',
-      expiryTimestamp: bbEnd.getTime(),
-      hoursLeft: hoursLeft,
-      daysLeft: daysLeft,
-      multiplier: 2,
-      earningsRate: '2X safe accumulation',
-      tier: 2,
-      urgent: false,
-      critical: false,
-      hourlyRate: 50000, // Rough estimate
-      category: 'passive',
-    });
-  }
-  
-  // 40% Off Nightclub Properties & Upgrades (Jan 15-21)
-  if (date >= bbStart && date <= bbEnd) {
-    const hoursLeft = Math.ceil((bbEnd - date) / (1000 * 60 * 60));
-    const daysLeft = Math.ceil(hoursLeft / 24);
-    
-    events.push({
-      name: 'nightclubDiscount40',
-      expiry: '2026-01-21',
-      expiryTimestamp: bbEnd.getTime(),
-      hoursLeft: hoursLeft,
-      daysLeft: daysLeft,
-      discount: 0.40,
-      tier: 2,
-      urgent: hoursLeft < 48,
-      critical: hoursLeft < 24,
-      category: 'discount',
-    });
-  }
-  
-  // ============================================
-  // GTA+ MONTHLY EVENTS (Through Feb 4, 2026)
-  // ============================================
-  
-  // Auto Shop 2X (GTA+ only, Jan 8 - Feb 4, 2026)
-  if (playerData.hasGTAPlus && playerData.hasAutoShop) {
-    const startDate = new Date('2026-01-08T09:00:00Z');
-    const endDate = new Date('2026-02-04T10:00:00Z'); // Matches config/weeklyEvents.js gtaPlusValidUntil
-    
-    if (date >= startDate && date <= endDate) {
-      const daysLeft = Math.ceil((endDate - date) / (1000 * 60 * 60 * 24));
+
+  if (isWithinWeek) {
+    const bonuses = WEEKLY_EVENTS.bonuses || {};
+
+    // Iterate over every active bonus in the config
+    for (const [key, bonus] of Object.entries(bonuses)) {
+      if (!bonus.isActive) continue;
+
+      const endDate = new Date(bonus.validUntil);
+      if (date > endDate) continue;
+
+      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+      const expiryStr = formatExpiry(bonus.validUntil);
+
+      // Map config keys to event objects the rest of the codebase expects
       events.push({
-        name: 'autoShop2X',
-        expiry: '2026-02-04',
+        name: key,
+        expiry: expiryStr,
         expiryTimestamp: endDate.getTime(),
-        daysLeft: daysLeft,
-        multiplier: 2,
-        earningsRate: '1.0-1.5M/hr',
-        tier: 1,
-        critical: true,
-        urgent: true,
-        hourlyRate: 1250000,
-        category: 'gtaplus',
-      });
-    }
-  }
-  
-  // Paper Trail 4X (Jan 8-15), then 2X (Jan 16 - Feb 4)
-  // NOTE: Dates synchronized with config/weeklyEvents.js gtaPlusValidUntil
-  if (playerData.hasGTAPlus && playerData.hasAgency) {
-    const fourXStart = new Date('2026-01-08T09:00:00Z');
-    const fourXEnd = new Date('2026-01-15T09:00:00Z');
-    const twoXEnd = new Date('2026-02-04T10:00:00Z'); // Matches weeklyEvents.js
-    
-    if (date >= fourXStart && date <= fourXEnd) {
-      // 4X window (this week only)
-      const hoursLeft = Math.ceil((fourXEnd - date) / (1000 * 60 * 60));
-      const isCritical = hoursLeft < 24;
-      events.push({
-        name: 'paperTrail4X',
-        expiry: '2026-01-15',
-        expiryTimestamp: fourXEnd.getTime(),
-        hoursLeft: hoursLeft,
-        daysLeft: Math.ceil(hoursLeft / 24),
-        multiplier: 4,
-        earningsRate: '400k/hr + massive RP',
-        tier: 1,
-        urgent: true,
+        hoursLeft,
+        daysLeft,
+        multiplier: bonus.multiplier,
+        label: bonus.label,
+        tier: bonus.multiplier >= 3 ? 1 : 2,
+        urgent: bonus.multiplier >= 3 || hoursLeft < 48,
         critical: isCritical,
-        hourlyRate: 400000,
-        category: 'gtaplus',
+        hourlyRate: 0, // Consumers override per-activity
+        category: bonus.category,
       });
-    } else if (date > fourXEnd && date <= twoXEnd) {
-      // 2X window (Jan 16 - Feb 4)
-      const daysLeft = Math.ceil((twoXEnd - date) / (1000 * 60 * 60 * 24));
+    }
+
+    // Weekly discounts
+    const discounts = WEEKLY_EVENTS.discounts || {};
+    for (const [key, discount] of Object.entries(discounts)) {
+      const endDate = new Date(discount.validUntil);
+      if (date > endDate) continue;
+
+      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+
       events.push({
-        name: 'paperTrail2X',
-        expiry: '2026-02-04',
-        expiryTimestamp: twoXEnd.getTime(),
-        daysLeft: daysLeft,
-        multiplier: 2,
-        earningsRate: '200k/hr + good RP',
+        name: `${key}Discount`,
+        expiry: formatExpiry(discount.validUntil),
+        expiryTimestamp: endDate.getTime(),
+        hoursLeft,
+        daysLeft,
+        discount: discount.percent / 100,
+        tier: 2,
+        urgent: hoursLeft < 48,
+        critical: isCritical,
+        category: 'discount',
+      });
+    }
+  }
+
+  // ============================================
+  // GTA+ MONTHLY EVENTS (data-driven from WEEKLY_EVENTS.gtaPlus)
+  // ============================================
+
+  if (playerData.hasGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
+    for (const monthly of WEEKLY_EVENTS.gtaPlus.monthlyBonuses) {
+      const endDate = new Date(monthly.expires);
+      if (date > endDate) continue;
+
+      const { hoursLeft, daysLeft, isCritical } = getTimeMeta(endDate, date);
+
+      events.push({
+        name: `${monthly.activity}_gtaplus`,
+        expiry: formatExpiry(monthly.expires),
+        expiryTimestamp: endDate.getTime(),
+        hoursLeft,
+        daysLeft,
+        multiplier: monthly.multiplier,
+        label: `${monthly.multiplier}X ${monthly.activity.replace(/_/g, ' ')} (GTA+)`,
         tier: 1,
-        urgent: false,
-        critical: false,
-        hourlyRate: 200000,
+        urgent: daysLeft < 7,
+        critical: isCritical,
+        hourlyRate: 0,
         category: 'gtaplus',
       });
     }
   }
-  
+
   return events;
 };
 

@@ -24,7 +24,7 @@ export const ACTION_INSTRUCTIONS = {
     ],
     location: 'La Mesa / Mirror Park area (auto-assigned)',
     warnings: [
-      '⚠️ Expires Jan 14, 2026 at 4AM ET',
+      '⚠️ Check weekly events for current expiry date',
       '💡 Part of "Money Fronts" weekly update - requires meeting Madrazo first',
       '✅ Claim even if you won\'t use it - free $1.4M+ business asset',
     ],
@@ -32,19 +32,19 @@ export const ACTION_INSTRUCTIONS = {
   },
   
   claim_free_car: {
-    title: 'How to Claim Free Pfister Astrale (GTA+)',
+    title: 'How to Claim Free GTA+ Vehicle',
     steps: [
       'Go to The Vinewood Car Club (GPS: "Vinewood Car Club")',
       'Location: Elysian Island (south LS, near docks)',
       'Enter the building (yellow marker)',
-      'Approach the Pfister Astrale (highlighted vehicle)',
+      'Approach the highlighted vehicle',
       'Press interaction button to claim',
       'Choose garage to store it',
     ],
     location: 'Vinewood Car Club - Elysian Island',
     warnings: [
       '💡 GTA+ members only (monthly benefit)',
-      '✅ Claim even if you don\'t like sports cars - free $1.6M asset',
+      '✅ Claim even if you don\'t like the car - free garage asset',
     ],
   },
 
@@ -74,7 +74,7 @@ export const ACTION_INSTRUCTIONS = {
     },
     warnings: [
       '✅ GTA+ members get 50% off ($835k instead of $1.67M)',
-      '💡 2X Robbery Contracts run through Feb 4, 2026 for GTA+',
+      '💡 Check weekly events for current GTA+ bonus multipliers',
     ],
   },
 
@@ -220,7 +220,7 @@ export const ACTION_INSTRUCTIONS = {
       '4. Repeat ~15 times for Rank 33 → 50',
     ],
     warnings: [
-      '⚠️ 4X RP ends Jan 14 for GTA+ members',
+      '⚠️ Check weekly events for current GTA+ RP multiplier status',
       '✅ You also earn decent cash ($50k-$100k per run)',
     ],
   },

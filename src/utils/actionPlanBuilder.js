@@ -2,11 +2,11 @@
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
 
-import { WEEKLY_EVENTS, getDaysRemaining } from '../config/weeklyEvents.js';
+import { WEEKLY_EVENTS, getDaysRemaining, formatExpiry, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
 import { checkGatekeeper } from './gatekeeperEngine.js';
-import { generateInfrastructureRecommendations } from './infrastructureAdvisor.js';
+import { generateInfrastructureRecommendations, getNightclubTechnicianCost } from './infrastructureAdvisor.js';
 
 /**
  * Map activity names from weekly events to task identifiers
@@ -772,7 +772,7 @@ const generateMaintenanceActions = (formData, results) => {
       why: `You have ${nightclubTechsCount}/5 technicians. Adding more increases passive income.`,
       solution: 'Buy technicians from Nightclub computer',
       timeToComplete: '5 minutes',
-      cost: 141000, // Per technician
+      cost: getNightclubTechnicianCost(nightclubTechsCount, 5),
     });
   }
   
@@ -906,7 +906,7 @@ export const buildSmartActionPlan = (formData, results = null) => {
         priority: 0,
         urgency: expiresSoon ? 'URGENT' : 'URGENT',
         type: 'PURCHASE',
-        title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate || 'Jan 21'})`,
+        title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate || 'this week'})`,
         why: `You have $${(cash/1000000).toFixed(1)}M. Buying this unlocks $1.3M-$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
         cost: shopCost,
         earnings: '$1.3M-$1.5M/hr',
@@ -938,7 +938,7 @@ export const buildSmartActionPlan = (formData, results = null) => {
           urgency: expiresSoon ? 'URGENT' : 'URGENT',
           type: 'MISSION',
           title: '🔥 Grind Auto Shop Robbery Contracts (2X Event)',
-          why: `Zero prep, ~$540-600k per 20-25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0-1.5M/hr once practiced. Beats your ${cayoAvgTime}-min Cayo runs. Expires Feb 4.`,
+          why: `Zero prep, ~$540-600k per 20-25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0-1.5M/hr once practiced. Beats your ${cayoAvgTime}-min Cayo runs. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil || WEEKLY_EVENTS.meta.validUntil)}.`,
           solution: 'Rotation: Union Depository finale → Client vehicle delivery (also 2X) while staff preps → Repeat. Eliminates downtime.',
           timeToComplete: '20-25 min per finale, ~$540-600k payout',
           earnings: '$1.0-1.5M/hr (realistic)',
@@ -1031,7 +1031,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
   }
 
   // --- PRIORITY 1: WEEKLY EVENTS (Expires sooner than GTA+ monthly) ---
-  // 4X Business Battles (Jan 15-21) - ALL PLAYERS
+  // Weekly Bonuses - ALL PLAYERS (dates from WEEKLY_EVENTS config)
   const bbExpiry = WEEKLY_EVENTS.bonuses?.businessBattles?.validUntil 
     ? new Date(WEEKLY_EVENTS.bonuses.businessBattles.validUntil).getTime()
     : null;
@@ -1049,7 +1049,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
         urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
         type: 'FREEMODE',
         title: '⚡ Contest Business Battles (4X This Week!)',
-        why: `4X Business Battles + 4X Nightclub Goods expires Jan 21 (${urgencyText}). Your Nightclub profits massively from won battles. Stack between Auto Shop cooldowns.`,
+        why: `4X Business Battles + 4X Nightclub Goods ${getExpiryLabel(bbExpiry ? new Date(bbExpiry).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Your Nightclub profits massively from won battles. Stack between Auto Shop cooldowns.`,
         solution: 'Join Business Battles in Freemode (every ~15 mins). Goods go to your Nightclub at 4X value. Best stacking activity.',
         timeToComplete: '5-10 min per battle',
         earnings: '$200-400k per battle + 4X Nightclub goods',
@@ -1063,7 +1063,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
         urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
         type: 'FREEMODE',
         title: '⚡ Contest Business Battles (4X This Week!)',
-        why: `4X Business Battles expires Jan 21 (${urgencyText}). Even without Nightclub, battles pay 4X goods. Consider buying Nightclub at 40% off this week!`,
+        why: `4X Business Battles ${getExpiryLabel(bbExpiry ? new Date(bbExpiry).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Even without Nightclub, battles pay 4X goods. Consider buying Nightclub at discount this week!`,
         solution: 'Join Business Battles in Freemode (every ~15 mins). Good money even without Nightclub.',
         timeToComplete: '5-10 min per battle',
         earnings: '$200-400k per battle',
@@ -1074,7 +1074,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
     }
   }
   
-  // 40% Off Nightclub Upgrades (Jan 15-21) - If Nightclub not optimized
+  // Nightclub Upgrade Discounts - If Nightclub not optimized
   const ncDiscountExpiry = WEEKLY_EVENTS.discounts?.nightclubUpgrades?.validUntil
     ? new Date(WEEKLY_EVENTS.discounts.nightclubUpgrades.validUntil).getTime()
     : null;
@@ -1096,7 +1096,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
       urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
       type: 'PURCHASE',
       title: '💰 Buy Nightclub Upgrades (40% OFF!)',
-      why: `Your Nightclub isn't optimized. 40% off upgrades expires Jan 21 (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
+      why: `Your Nightclub isn't optimized. 40% off upgrades ${getExpiryLabel(ncDiscountExpiry ? new Date(ncDiscountExpiry).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
       solution: 'Buy Equipment Upgrade + Staff Upgrade from Nightclub computer. They boost production speed significantly.',
       timeToComplete: '5 minutes',
       savings: '~$600k savings',
@@ -1192,7 +1192,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
     const cayoGatekeeper = checkGatekeeper('cayo_perico', userProfile);
     
     let actionTitle = `Fix Cayo Route: Target Sub-45 Min (Currently ${cayoAvgTime} min)`;
-    let actionWhy = `Your ${cayoAvgTime}-min runs are ${efficiencyGap} minutes slower than meta benchmark (${META_BENCHMARKS.cayoTime} min). Target sub-45 min after bonuses end Feb 4.`;
+    let actionWhy = `Your ${cayoAvgTime}-min runs are ${efficiencyGap} minutes slower than meta benchmark (${META_BENCHMARKS.cayoTime} min). Target sub-45 min after current bonuses end.`;
     
     // Apply gatekeeper verdict
     if (cayoGatekeeper.status === 'LOCKED') {
@@ -1212,7 +1212,7 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
       why: actionWhy,
       solution: 'Drainage tunnel, primary only, swim exit. Study 2026 speedrun guides.',
       timeToComplete: '2-3 hours practice',
-      note: cayoGatekeeper.status === 'WARNING' ? cayoGatekeeper.reason : 'Do this after Auto Shop event ends Feb 4. Not urgent during event.',
+      note: cayoGatekeeper.status === 'WARNING' ? cayoGatekeeper.reason : 'Do this after current time-limited events end. Not urgent during event.',
       efficiencyGap: efficiencyGap,
       gatekeeperStatus: cayoGatekeeper.status,
       gatekeeperPenalty: cayoGatekeeper.score_penalty,
@@ -1280,15 +1280,16 @@ Math: You need ${impactsNeeded} punches to reach 40%. (~30 punches/min).`;
     });
   }
 
-  // --- PRIORITY 4+: POST-EVENT OPTIMIZATION (After Feb 4) ---
-  // Dr. Dre Contract (After Feb 4 when Auto Shop event ends)
+  // --- PRIORITY 4+: POST-EVENT OPTIMIZATION (After current weekly events) ---
+  // Dr. Dre Contract (After weekly events expire)
   if (formData.hasAgency && !formData.dreContractDone) {
     // Run gatekeeper check for Dr. Dre Contract
     const dreGatekeeper = checkGatekeeper('dre_contract', userProfile);
     
-    let actionTitle = 'Dr. Dre Contract (After Feb 4)';
-    let actionWhy = 'One-time $1M payout. Do after Auto Shop event ends Feb 4.';
-    let actionNote = 'Lower priority than time-limited events. Do after Feb 4.';
+    const weekEndLabel = formatExpiry(WEEKLY_EVENTS.meta.validUntil);
+    let actionTitle = `Dr. Dre Contract (After ${weekEndLabel})`;
+    let actionWhy = `One-time $1M payout. Do after current events end ${weekEndLabel}.`;
+    let actionNote = `Lower priority than time-limited events. Do after ${weekEndLabel}.`;
     let actionPriority = 4;
     
     // Apply gatekeeper verdict

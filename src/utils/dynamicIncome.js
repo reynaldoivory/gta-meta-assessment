@@ -1,7 +1,7 @@
 // src/utils/dynamicIncome.js
 // Dynamic income calculation with weekly event multipliers
 
-import { WEEKLY_EVENTS, getWeeklyBonuses } from '../config/weeklyEvents';
+import { WEEKLY_EVENTS, getWeeklyBonuses, formatExpiry } from '../config/weeklyEvents';
 import { MODEL_CONFIG } from './modelConfig';
 
 /**
@@ -57,15 +57,28 @@ export const calculateDynamicIncome = (formData) => {
     e.activity.toLowerCase().includes('robbery contract')
   );
   
-  // GTA+ members get 2X on Auto Shop Contracts (monthly benefit, not weekly)
+  // GTA+ members get boosted rates on monthly benefits
   if (formData.hasGTAPlus) {
-    const monthlyBenefitEnd = new Date('2026-02-05T09:00:00Z').getTime();
-    if (now < monthlyBenefitEnd) {
+    // Find the Auto Shop monthly bonus from config, or use the first monthly bonus expiry
+    const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
+    const autoShopMonthly = monthlyBonuses.find(b => b.activity.includes('auto_shop'));
+    const monthlyBenefitEnd = autoShopMonthly
+      ? new Date(autoShopMonthly.expires).getTime()
+      : monthlyBonuses.length > 0
+        ? new Date(monthlyBonuses[0].expires).getTime()
+        : 0;
+    const monthlyBenefitExpiry = autoShopMonthly
+      ? formatExpiry(autoShopMonthly.expires)
+      : monthlyBonuses.length > 0
+        ? formatExpiry(monthlyBonuses[0].expires)
+        : '';
+
+    if (monthlyBenefitEnd && now < monthlyBenefitEnd) {
       autoShopMultiplier = autoShopBonus?.multiplier || 2.0; // Use from config or default to 2.0
       autoShopEvent = {
         activity: 'Auto Shop Robbery Contracts (GTA+)',
         multiplier: `${autoShopMultiplier}X`,
-        note: autoShopBonus?.expiresLabel || 'Through Feb 4 (Monthly Benefit)',
+        note: autoShopBonus?.expiresLabel || `Through ${monthlyBenefitExpiry} (Monthly Benefit)`,
         isGTAPlus: true,
       };
     }
@@ -148,12 +161,13 @@ export const calculateDynamicIncome = (formData) => {
       if (paperTrailIncome > payphoneIncome) {
         agencyIncome = paperTrailIncome;
         agencyMultiplier = paperTrailMultiplier;
+        const paperTrailExpiry = formatExpiry(paperTrailBonus.validUntil || WEEKLY_EVENTS.meta.validUntil);
         agencyEvent = {
           activity: 'Operation Paper Trail',
           multiplier: `${paperTrailMultiplier}X`,
           note: formData.hasGTAPlus 
-            ? '4X GTA+ Super Boost (Expires Jan 14)' 
-            : '2X Weekly Event (Expires Jan 14)',
+            ? `${paperTrailMultiplier}X GTA+ Super Boost (Expires ${paperTrailExpiry})` 
+            : `${paperTrailMultiplier}X Weekly Event (Expires ${paperTrailExpiry})`,
           isGTAPlus: formData.hasGTAPlus,
         };
       } else {
@@ -181,13 +195,17 @@ export const calculateDynamicIncome = (formData) => {
   , incomeSources[0]);
   
   // Calculate days until event expires
-  // For GTA+ monthly benefits (Auto Shop 2X), use Feb 4, 2026
-  const monthlyBenefitEnd = new Date('2026-02-05T09:00:00Z').getTime();
+  // For GTA+ monthly benefits, use the longest monthly bonus expiry from config
+  const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
+  const latestMonthlyExpiry = monthlyBonuses.reduce((latest, b) => {
+    const t = new Date(b.expires).getTime();
+    return t > latest ? t : latest;
+  }, 0);
   const weeklyEventEnd = new Date(WEEKLY_EVENTS.meta.validUntil).getTime();
   
-  // Auto Shop 2X is monthly benefit (through Feb 4), others are weekly
-  const autoShopDaysLeft = formData.hasGTAPlus && autoShopMultiplier > 1
-    ? Math.ceil((monthlyBenefitEnd - Date.now()) / (1000 * 60 * 60 * 24))
+  // Auto Shop / monthly benefits use the monthly expiry; others are weekly
+  const autoShopDaysLeft = formData.hasGTAPlus && autoShopMultiplier > 1 && latestMonthlyExpiry
+    ? Math.ceil((latestMonthlyExpiry - Date.now()) / (1000 * 60 * 60 * 24))
     : 0;
   
   const daysUntilExpiry = isEventActive 

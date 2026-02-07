@@ -3,6 +3,7 @@
 // Distinguishes between "Owned" and "Optimized" businesses
 
 import { WEEKLY_EVENTS } from '../config/weeklyEvents.js';
+import { MODEL_CONFIG } from './modelConfig.js';
 
 /**
  * Infrastructure cost constants (2026 prices)
@@ -25,6 +26,8 @@ export const INFRASTRUCTURE_COSTS = {
     equipmentUpgrade: 1425000,
     staffUpgrade: 475000,
     securityUpgrade: 695000, // Optional - just reduces raids
+    technicianCosts: [0, 141000, 184500, 240500, 312000], // Tech 1-5 (first is free)
+    technicianTotal: 878000, // Total to hire all 5 technicians
     pounderCustom: 1900000,  // Essential for large sales
     muleCustom: 1400000,     // TRAP - never buy this
     speedo: 0,               // Free with NC
@@ -40,6 +43,27 @@ export const INFRASTRUCTURE_COSTS = {
     weed: { setup: 715000, equipmentUpgrade: 990000, staffUpgrade: 273000 },
     documents: { setup: 650000, equipmentUpgrade: 660000, staffUpgrade: 195000 },
   },
+};
+
+/**
+ * Calculate total cost to hire technicians from current to target count.
+ * Tech 1 is free; costs scale for Tech 2-5.
+ * @param {number} currentTechs - Current number of technicians (0-5)
+ * @param {number} targetTechs - Target number of technicians (0-5)
+ * @returns {number} Total cost to reach targetTechs
+ */
+export const getNightclubTechnicianCost = (currentTechs, targetTechs = 5) => {
+  const costs = INFRASTRUCTURE_COSTS.nightclub.technicianCosts;
+  const start = Math.max(0, Math.min(5, Number(currentTechs) || 0));
+  const end = Math.max(0, Math.min(5, Number(targetTechs) || 0));
+  if (end <= start) return 0;
+
+  let total = 0;
+  for (let i = start; i < end; i += 1) {
+    total += costs[i] || 0;
+  }
+
+  return total;
 };
 
 /**
@@ -94,13 +118,15 @@ export const getDiscountedPrice = (basePrice, category) => {
 };
 
 /**
- * Bunker income calculations
+ * Bunker income calculations (derived from MODEL_CONFIG single source of truth)
  */
+const _bunkerBase = MODEL_CONFIG.income.passive.bunkerBase;       // $30,000
+const _bunkerMax = MODEL_CONFIG.income.bunker.upgraded.perHour;  // $75,000
 export const BUNKER_INCOME = {
-  unupgraded: 20000,  // $/hr with no upgrades
-  equipmentOnly: 35000,
-  staffOnly: 30000,
-  fullyUpgraded: 60000, // $/hr with both Equipment + Staff
+  unupgraded: _bunkerBase,                                       // $30k/hr
+  equipmentOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.55), // ~$55k/hr
+  staffOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.40),     // ~$48k/hr
+  fullyUpgraded: _bunkerMax,                                     // $75k/hr
 };
 
 /**

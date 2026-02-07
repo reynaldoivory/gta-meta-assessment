@@ -9,6 +9,7 @@ import CarWashExpiryBadge from '../components/shared/CarWashExpiryBadge';
 import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
 import NightclubLogistics from '../components/shared/NightclubLogistics';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
+import { WEEKLY_EVENTS } from '../config/weeklyEvents';
 
 // Helper function to format last saved time
 const formatLastSaved = (date) => {
@@ -253,7 +254,7 @@ export default function AssessmentForm() {
           
           <div className="flex gap-2 flex-wrap items-center justify-between">
             <div className="flex gap-2 flex-wrap items-center">
-              <span className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs border border-blue-900/50">Jan 2026 Meta</span>
+              <span className="px-2 py-1 bg-blue-900/30 text-blue-400 rounded text-xs border border-blue-900/50">{(() => { const d = new Date(WEEKLY_EVENTS.meta.validFrom); return `${d.toLocaleDateString('en-US', { month: 'short', timeZone: 'UTC' })} ${d.getUTCFullYear()} Meta`; })()}</span>
               {hasDraft && <span className="px-2 py-1 bg-green-900/30 text-green-400 rounded text-xs border border-green-900/50">Draft Saved</span>}
               <button
                 type="button"
@@ -816,19 +817,6 @@ export default function AssessmentForm() {
               >
                 <div className="text-xs text-slate-500">
                   Solo-friendly contracts during Cayo cooldown. ~$200K/hr potential.
-                </div>
-              </AssetCard>
-
-              {/* MANSION */}
-              <AssetCard
-                label="Mansion"
-                emoji="🏛️"
-                cost="$2M+"
-                isOwned={formData.hasMansion}
-                onToggle={() => setFormData(p => ({ ...p, hasMansion: !p.hasMansion }))}
-              >
-                <div className="text-xs text-slate-500">
-                  Has gym for fastest strength training (30 min to max). Also unlocks Mansion Yoga buff (+15% run speed).
                 </div>
               </AssetCard>
 

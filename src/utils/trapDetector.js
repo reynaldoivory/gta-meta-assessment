@@ -4,6 +4,7 @@
 
 import { calculateNightclubIncome, calculateCayoIncome } from './incomeCalculators.js';
 import { MODEL_CONFIG } from './modelConfig.js';
+import { getNightclubTechnicianCost, INFRASTRUCTURE_COSTS } from './infrastructureAdvisor.js';
 
 /**
  * Trap severity levels
@@ -394,13 +395,13 @@ const detectNightclubTrap = (formData) => {
   if (efficiency >= 60) return null;
   
   const lostIncome = maxIncome - currentIncome;
-  const techCost = (5 - techs) * 141000;
+  const techCost = getNightclubTechnicianCost(techs, 5);
   
   // CRITICAL CASCADE TRAP: Has techs but NO feeders = Double waste
   // They spent money on techs that literally cannot work
   if (feeders === 0 && techs > 0) {
     const nightclubBaseCost = 1500000;
-    const wastedOnTechs = techs * 141000;
+    const wastedOnTechs = getNightclubTechnicianCost(0, techs);
     const totalWaste = nightclubBaseCost + wastedOnTechs;
     
     return {
@@ -492,12 +493,12 @@ const detectNightclubTrap = (formData) => {
       cost: `Losing $${lostIncome.toLocaleString()}/hr - technicians aren't assigned!`,
       lostPerHour: lostIncome,
       solution: `Hire ${5 - techs} more technicians ($${techCost.toLocaleString()} total)`,
-      reasoning: 'Each technician costs $141k but produces goods passively. ROI is typically under 10 hours.',
+      reasoning: `Technician costs scale by tier (total $${INFRASTRUCTURE_COSTS.nightclub.technicianTotal.toLocaleString()} for all 5). ROI is typically under 10 hours.`,
       timeToFix: '5 minutes (menu purchase)',
       requiredSteps: [
         { step: 'Go to Nightclub computer', reason: 'Management terminal for all nightclub operations' },
         { step: 'Select "Staff" tab', reason: 'Where you hire and assign technicians' },
-        { step: `Hire ${5 - techs} technicians ($141k each)`, reason: `Each tech adds ~$${Math.round(lostIncome / (5 - techs)).toLocaleString()}/hr` },
+        { step: `Hire ${5 - techs} technicians (total $${techCost.toLocaleString()})`, reason: `Each tech adds ~$${Math.round(lostIncome / (5 - techs)).toLocaleString()}/hr` },
         { step: 'Assign each technician to a business', reason: 'Unassigned techs don\'t produce anything' },
       ],
       fixCost: techCost,
@@ -517,7 +518,7 @@ const detectUnupgradedBunkerTrap = (formData) => {
   const baseIncome = MODEL_CONFIG.income.bunker.unupgraded.perHour;
   const upgradedIncome = MODEL_CONFIG.income.bunker.upgraded.perHour;
   const lostIncome = upgradedIncome - baseIncome;
-  const upgradeCost = 1800000; // Equipment + Staff upgrades
+  const upgradeCost = MODEL_CONFIG.income.passive.bunkerUpgradeCost;
   const hoursToPayoff = Math.ceil(upgradeCost / lostIncome);
   
   return {
@@ -528,13 +529,13 @@ const detectUnupgradedBunkerTrap = (formData) => {
     problem: `Your bunker earns $${baseIncome.toLocaleString()}/hr. Upgraded bunker earns $${upgradedIncome.toLocaleString()}/hr`,
     cost: `Losing $${lostIncome.toLocaleString()}/hr by not upgrading`,
     lostPerHour: lostIncome,
-    solution: 'Buy Equipment + Staff upgrades from Bunker laptop ($1.8M total)',
+    solution: `Buy Equipment + Staff upgrades from Bunker laptop ($${(upgradeCost / 1000000).toFixed(1)}M total)`,
     reasoning: `Upgrades give 2.5x income multiplier. Pays for itself in ${hoursToPayoff} hours of AFK time.`,
     timeToFix: '10 minutes (purchase only)',
     requiredSteps: [
-      'Go to Bunker laptop',
-      'Purchase Equipment Upgrade (~$1.1M)',
-      'Purchase Staff Upgrade (~$600k)',
+      { step: 'Go to Bunker laptop', reason: 'Access upgrade purchases' },
+      { step: 'Purchase Equipment Upgrade (~$1.16M)', reason: 'Biggest production boost' },
+      { step: 'Purchase Staff Upgrade (~$600k)', reason: 'Unlocks full production capacity' },
     ],
     fixCost: upgradeCost,
   };
@@ -551,7 +552,7 @@ const detectUnupgradedAcidLabTrap = (formData) => {
   const upgradeMultiplier = MODEL_CONFIG.income.passive.acidLabUpgrade;
   const upgradedIncome = baseIncome * upgradeMultiplier;
   const lostIncome = upgradedIncome - baseIncome;
-  const upgradeCost = MODEL_CONFIG.income.acidLab.upgradeCost;
+  const upgradeCost = MODEL_CONFIG.income.passive.acidLabUpgradeCost;
   const hoursToPayoff = Math.ceil(upgradeCost / lostIncome);
   
   return {

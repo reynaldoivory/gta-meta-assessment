@@ -2,7 +2,7 @@
 // Bottleneck detection logic extracted from computeAssessment.js
 
 import { MODEL_CONFIG } from './modelConfig.js';
-import { WEEKLY_EVENTS } from '../config/weeklyEvents.js';
+import { WEEKLY_EVENTS, formatExpiry, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { 
   calculateBunkerLeak, 
@@ -52,7 +52,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
   // TIER 0: URGENT EXPIRING EVENTS (Front of queue)
   // ============================================
 
-  // 1. FREE CAR WASH (Expires Jan 14)
+  // 1. FREE CAR WASH (expiry from WEEKLY_EVENTS config)
   if (!formData.hasCarWash) {
     const carWashBonus = WEEKLY_EVENTS.bonuses?.carWash;
     if (carWashBonus?.isActive) {
@@ -79,18 +79,21 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
   // 1.5. FREE VEHICLE (GTA+ Only)
   // Only recommend if they have GTA+ AND haven't claimed it yet
   if (hasGTAPlus && !formData.claimedFreeCar) {
+    const freeCarName = WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle';
+    const freeCarValue = WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1600000;
+    const freeCarLocation = WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club';
     bottlenecks.push({
       id: 'claim_free_car',
-      label: '🎁 Claim Free Pfister Astrale',
+      label: `🎁 Claim Free ${freeCarName}`,
       critical: false,
       urgent: false, // Monthly benefit (no expiry rush)
       impact: 'low', // It's just a car, not income
-      solution: 'Visit The Vinewood Car Club (Elysian Island)',
+      solution: `Visit ${freeCarLocation}`,
       actionType: 'vehicle_claim',
-      detail: 'Free $1.6M vehicle for GTA+ members. Claim even if you won\'t drive it - free garage asset.',
+      detail: `Free $${(freeCarValue / 1000000).toFixed(1)}M vehicle for GTA+ members. Claim even if you won't drive it - free garage asset.`,
       timeHours: 0.1,
       savingsPerHour: 0, // No income gain, just asset value
-      savingsValue: 1600000, // One-time savings (used by sorter if you add that logic)
+      savingsValue: freeCarValue, // One-time savings (used by sorter if you add that logic)
     });
   }
 
@@ -122,7 +125,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         impact: 'high',
         solution: 'Contest Business Battles in Freemode (every 15 mins). Goods go directly to your Nightclub at 4X value. Stack between Auto Shop contracts.',
         actionType: 'freemode',
-        detail: `Expires Jan 21 (${urgencyText}). Business Battles pay 4X goods + 4X Nightclub value. If you have a Nightclub, this is massive passive income. Stack between mission cooldowns.`,
+        detail: `${getExpiryLabel(WEEKLY_EVENTS.bonuses.businessBattles?.validUntil || WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Business Battles pay 4X goods + 4X Nightclub value. If you have a Nightclub, this is massive passive income. Stack between mission cooldowns.`,
         timeHours: 0,
         savingsPerHour: event.hourlyRate,
         expiresAt: event.expiryTimestamp,
@@ -143,7 +146,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         impact: 'high',
         solution: 'Win Business Battles to deposit 4X goods into your Nightclub. Sell when full for massive payout.',
         actionType: 'passive',
-        detail: `Expires Jan 21 (${urgencyText}). Every Business Battle win deposits 4X goods into your Nightclub. Combined with Business Battles 4X = exponential value.`,
+        detail: `${getExpiryLabel(WEEKLY_EVENTS.bonuses.nightclubGoods?.validUntil || WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). Every Business Battle win deposits 4X goods into your Nightclub. Combined with Business Battles 4X = exponential value.`,
         timeHours: 0,
         expiresAt: event.expiryTimestamp,
         eventTier: event.tier,
@@ -163,7 +166,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         impact: 'high',
         solution: 'Run Union Depository, Lost MC, Superdollar Deal contracts repeatedly. Stack with client vehicle jobs (also 2X) between contracts. This beats Cayo Perico and requires zero prep time.',
         actionType: 'mission',
-        detail: `Robbery Contract finales pay $600-800k per 20-min run = ${event.earningsRate}. Zero prep time. Expires Feb 4 (${expiryText}). Highest $/hr in game right now. Solves cash crisis faster than Cayo.`,
+        detail: `Robbery Contract finales pay $600-800k per 20-min run = ${event.earningsRate}. Zero prep time. ${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${expiryText}). Highest $/hr in game right now. Solves cash crisis faster than Cayo.`,
         timeHours: 0, // Ongoing activity
         savingsPerHour: event.hourlyRate,
         expiresAt: event.expiryTimestamp,
@@ -181,9 +184,9 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         critical: event.critical,
         urgent: event.urgent,
         impact: 'high',
-        solution: 'Complete Operation Paper Trail missions repeatedly. GTA+ gets 4X GTA$ & 4X RP this week (Jan 8-15), then 2X through Feb 4. Good variety if you get bored of Auto Shop grinding.',
+        solution: 'Complete Operation Paper Trail missions repeatedly. GTA+ gets 4X GTA$ & 4X RP this week, then 2X through next month. Good variety if you get bored of Auto Shop grinding.',
         actionType: 'mission',
-        detail: `Expires Jan 15 (${urgencyText}). ${event.hoursLeft < 24 ? '🚨 DO THIS NOW - ' : ''}Massive RP boost = fastest path to Rank 50/100. Then drops to 2X through Feb 4. 4X RP solves 'Rank Under 50' health/armor bottleneck faster than any grind method. Top priority for next ${event.hoursLeft < 24 ? 'few hours' : '24 hours'}.`,
+        detail: `${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${urgencyText}). ${event.hoursLeft < 24 ? '🚨 DO THIS NOW - ' : ''}Massive RP boost = fastest path to Rank 50/100. 4X RP solves 'Rank Under 50' health/armor bottleneck faster than any grind method. Top priority for next ${event.hoursLeft < 24 ? 'few hours' : '24 hours'}.`,
         timeHours: 0,
         savingsPerHour: event.hourlyRate,
         expiresAt: event.expiryTimestamp,
@@ -199,7 +202,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
         impact: 'medium',
         solution: 'Complete Operation Paper Trail missions. Good variety option and solid RP/$ ratio.',
         actionType: 'mission',
-        detail: `Continues through Feb 4 (${event.daysLeft} days left). Good RP for ranking.`,
+        detail: `${getExpiryLabel(event.expiryTimestamp ? new Date(event.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${event.daysLeft} days left). Good RP for ranking.`,
         timeHours: 0,
         savingsPerHour: event.hourlyRate,
         expiresAt: event.expiryTimestamp,
@@ -337,10 +340,10 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
       solution: paperTrail4XEvent
         ? 'Farm Operation Paper Trail (4X RP & 4X GTA$ for GTA+ this week) - Magic Bullet for Rank + Good money variety'
         : paperTrail2XEvent
-        ? 'Farm Operation Paper Trail (2X RP through Feb 4)'
+        ? `Farm Operation Paper Trail (2X RP through ${formatExpiry(WEEKLY_EVENTS.gtaPlus?.monthlyBonuses?.[0]?.expires || WEEKLY_EVENTS.meta.validUntil)})`
         : 'Run Cayo Perico (best RP/$ combo)',
       actionType: 'mission',
-      detail: `Rank ${rank} = ~${Math.round(rank * 1.2)}% max health. You die instantly in Auto Shop raids. Cannot carry full body armor. Makes combat-heavy content much harder.`,
+      detail: `Rank ${rank} = ~${Math.floor(50 + (rank / 2))}% max health. You die instantly in Auto Shop raids. Cannot carry full body armor. Makes combat-heavy content much harder.`,
       timeHours: paperTrail4XEvent ? 1.5 : paperTrail2XEvent ? 2.0 : 2.5,
       savingsPerHour: paperTrail4XEvent ? 400000 : paperTrail2XEvent ? 200000 : 0,
     });
@@ -656,7 +659,7 @@ export const detectBottlenecks = (params, now, activeEvents, incomePerHour, form
       impact: 'high',
       solution: 'Purchase Nightclub from Maze Bank Foreclosures at 40% off. Best time to buy!',
       actionType: 'purchase',
-      detail: `40% off Nightclub properties expires Jan 21 (${nightclubDiscountEvent.hoursLeft < 48 ? nightclubDiscountEvent.hoursLeft + ' hours' : nightclubDiscountEvent.daysLeft + ' days'} left). Save ~$600k on property. Unlocks passive income + Business Battles synergy.`,
+      detail: `40% off Nightclub properties ${getExpiryLabel(nightclubDiscountEvent.expiryTimestamp ? new Date(nightclubDiscountEvent.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${nightclubDiscountEvent.hoursLeft < 48 ? nightclubDiscountEvent.hoursLeft + ' hours' : nightclubDiscountEvent.daysLeft + ' days'} left). Save ~$600k on property. Unlocks passive income + Business Battles synergy.`,
       timeHours: 0.25,
       expiresAt: nightclubDiscountEvent.expiryTimestamp,
       savingsValue: 600000,

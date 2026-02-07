@@ -1,103 +1,145 @@
 // src/config/weeklyEvents.js
 // The "Source of Truth" for weekly events
 // Update this file every Thursday when Rockstar announces new bonuses
+// Last updated: Feb 5, 2026
 
 export const WEEKLY_EVENTS = {
   meta: {
-    lastUpdated: '2026-01-16',
-    validFrom: '2026-01-15T10:00:00Z', // Thursday 4AM ET
-    validUntil: '2026-01-21T10:00:00Z', // Next Thursday 4AM ET
-    displayDate: 'Jan 15 - Jan 21',
+    lastUpdated: '2026-02-05',
+    validFrom: '2026-02-05T10:00:00Z', // Thursday 4AM ET
+    validUntil: '2026-02-12T10:00:00Z', // Next Thursday 4AM ET
+    displayDate: 'Feb 5 - Feb 12',
   },
   bonuses: {
     // Priority 0: The "Meta" Event
-    businessBattles: {
+    deadlineDuet: {
+      isActive: true,
+      multiplier: 3.0,
+      label: '3X Deadline Duet',
+      validUntil: '2026-02-12T10:00:00Z',
+      category: 'adversary',
+    },
+    associateSalaries: {
       isActive: true,
       multiplier: 4.0,
-      label: '4X Business Battles',
-      validUntil: '2026-01-21T10:00:00Z',
+      label: '4X Associate/Bodyguard Salaries',
+      validUntil: '2026-02-18T10:00:00Z',
       category: 'freemode',
     },
-    nightclubGoods: {
+    oddJobs: {
       isActive: true,
-      multiplier: 4.0,
-      label: '4X Nightclub Goods',
-      validUntil: '2026-01-21T10:00:00Z',
+      multiplier: 2.0,
+      label: '2X Odd Jobs',
+      validUntil: '2026-02-12T10:00:00Z',
+      category: 'freemode',
+    },
+    methProduction: {
+      isActive: true,
+      multiplier: 2.0,
+      label: '2X Meth Production Speed',
+      validUntil: '2026-02-12T10:00:00Z',
       category: 'passive',
     },
-    nightclubSafe: {
+    bunkerSeries: {
       isActive: true,
       multiplier: 2.0,
-      label: '2X Nightclub Safe Income',
-      validUntil: '2026-01-21T10:00:00Z',
-      category: 'passive',
+      label: '2X Bunker Series',
+      validUntil: '2026-02-12T10:00:00Z',
+      category: 'adversary',
     },
-    mansionRaid: {
+    bunkerResearch: {
       isActive: true,
       multiplier: 2.0,
-      label: '2X Mansion Raid',
-      validUntil: '2026-01-21T10:00:00Z',
-      category: 'pvp',
+      label: '2X Bunker Research Missions',
+      validUntil: '2026-02-12T10:00:00Z',
+      category: 'mission',
     },
-    autoShop: {
+    salvageYard: {
       isActive: true,
       multiplier: 2.0,
-      label: '2X Auto Shop Contracts',
-      expiresLabel: 'Feb 4 (GTA+ Monthly)',
-      gtaPlusValidUntil: '2026-02-04T10:00:00Z',
-      validUntil: '2026-01-21T10:00:00Z',
-      gtaPlusOnly: true, // GTA+ only
-    },
-    paperTrail: {
-      isActive: true,
-      label: 'Operation Paper Trail',
-      multiplier: '2X (GTA+)',
-      baseMultiplier: 2.0,
-      gtaPlusMultiplier: 2.0,
-      isRpEvent: true, // Tag for Rank bottlenecks
-      gtaPlusValidUntil: '2026-02-04T10:00:00Z',
-      validUntil: '2026-01-21T10:00:00Z',
-      gtaPlusOnly: true, // GTA+ only
+      label: '2X Salvage Yard Robberies',
+      validUntil: '2026-02-12T10:00:00Z',
+      category: 'mission',
     },
   },
   oneTimeBonuses: [
     {
-      id: 'mansion_raid_first_win',
-      reward: 200000,
-      description: 'Win one Mansion Raid match',
-      expires: '2026-01-18T10:00:00Z',
+      id: 'deadline_duet_first_win',
+      reward: 150000,
+      description: 'Win one Deadline Duet match',
+      expires: '2026-02-12T10:00:00Z',
       deliveryTime: 'within 72 hours',
     },
   ],
   discounts: {
-    nightclubProperties: {
-      percent: 40,
+    bunkerProperties: {
+      percent: 30,
       requiresGTAPlus: false,
-      validUntil: '2026-01-21T10:00:00Z',
+      validUntil: '2026-02-12T10:00:00Z',
     },
-    nightclubUpgrades: {
+    methLabProperties: {
       percent: 40,
       requiresGTAPlus: false,
-      validUntil: '2026-01-21T10:00:00Z',
+      validUntil: '2026-02-12T10:00:00Z',
+    },
+    methLabUpgrades: {
+      percent: 40,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-12T10:00:00Z',
+    },
+    salvageYardProperties: {
+      percent: 25,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-12T10:00:00Z',
     },
   },
   gtaPlus: {
-    freeCar: 'Benefactor SM722',
+    freeCar: 'Dewbauchee Champion',
+    freeCarValue: 1850000,
     freeCarLocation: 'The Vinewood Car Club',
+    earlyAccess: 'Grotti Itali Classic',
     monthlyCash: 500000,
     monthlyBonuses: [
       {
-        activity: 'auto_shop_finales',
-        multiplier: 2,
-        expires: '2026-02-04T10:00:00Z',
+        activity: 'odd_jobs',
+        multiplier: 3,
+        expires: '2026-03-05T10:00:00Z',
       },
       {
-        activity: 'paper_trail',
-        multiplier: 2,
-        expires: '2026-02-04T10:00:00Z',
+        activity: 'salvage_yard',
+        multiplier: 3,
+        expires: '2026-03-05T10:00:00Z',
       },
     ],
   },
+};
+
+/**
+ * Format an expiry date string from an ISO timestamp
+ * @param {string} isoDate - ISO date string (e.g., '2026-02-12T10:00:00Z')
+ * @returns {string} Formatted short date (e.g., 'Feb 12')
+ */
+export const formatExpiry = (isoDate) => {
+  if (!isoDate) return 'Unknown';
+  const date = new Date(isoDate);
+  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
+};
+
+/**
+ * Get a human-readable expiry label for a bonus or the weekly event
+ * @param {string} isoDate - ISO date string
+ * @param {number} [now] - Current timestamp (defaults to Date.now())
+ * @returns {string} e.g., 'Expires Feb 12 (3 days left)'
+ */
+export const getExpiryLabel = (isoDate, now = Date.now()) => {
+  if (!isoDate) return '';
+  const expiryMs = new Date(isoDate).getTime();
+  const hoursLeft = Math.ceil((expiryMs - now) / (1000 * 60 * 60));
+  const daysLeft = Math.ceil(hoursLeft / 24);
+  const dateStr = formatExpiry(isoDate);
+  if (hoursLeft <= 0) return `Expired ${dateStr}`;
+  if (hoursLeft < 48) return `Expires ${dateStr} (${hoursLeft}hrs left)`;
+  return `Expires ${dateStr} (${daysLeft} days left)`;
 };
 
 // Helper to calculate days remaining
@@ -122,53 +164,26 @@ export const isEventStale = () => {
 export const getEventExpiry = (eventKey, hasGTAPlus = false) => {
   const event = WEEKLY_EVENTS.bonuses[eventKey];
   if (!event) return null;
-  
-  // Auto Shop has different expiry for GTA+ members
-  if (eventKey === 'autoShop' && hasGTAPlus && event.gtaPlusValidUntil) {
-    return event.gtaPlusValidUntil;
+
+  // GTA+ monthly bonuses may have a longer expiry
+  if (hasGTAPlus) {
+    const monthlyBonus = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses?.find(
+      b => b.activity === eventKey || event.label?.toLowerCase().includes(b.activity.replace('_', ' '))
+    );
+    if (monthlyBonus?.expires) return monthlyBonus.expires;
   }
-  
+
   return event.validUntil;
 };
 
 export const getWeeklyBonuses = () => {
-  // Convert new structure to old array format for backward compatibility
-  return [
-    {
-      activity: 'Business Battles',
-      multiplier: `${WEEKLY_EVENTS.bonuses.businessBattles.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.businessBattles.label,
-      isGTAPlus: false,
-    },
-    {
-      activity: 'Nightclub Goods',
-      multiplier: `${WEEKLY_EVENTS.bonuses.nightclubGoods.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.nightclubGoods.label,
-      isGTAPlus: false,
-    },
-    {
-      activity: 'Nightclub Safe Income',
-      multiplier: `${WEEKLY_EVENTS.bonuses.nightclubSafe.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.nightclubSafe.label,
-      isGTAPlus: false,
-    },
-    {
-      activity: 'Mansion Raid',
-      multiplier: `${WEEKLY_EVENTS.bonuses.mansionRaid.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.mansionRaid.label,
-      isGTAPlus: false,
-    },
-    {
-      activity: 'Auto Shop Contracts',
-      multiplier: `${WEEKLY_EVENTS.bonuses.autoShop.multiplier}X`,
-      note: WEEKLY_EVENTS.bonuses.autoShop.label,
-      isGTAPlus: true, // GTA+ only
-    },
-    {
-      activity: 'Operation Paper Trail',
-      multiplier: WEEKLY_EVENTS.bonuses.paperTrail.multiplier,
-      note: WEEKLY_EVENTS.bonuses.paperTrail.label,
-      isGTAPlus: true, // GTA+ only
-    },
-  ];
+  // Dynamically build from bonuses object for backward compatibility
+  return Object.entries(WEEKLY_EVENTS.bonuses)
+    .filter(([, bonus]) => bonus.isActive)
+    .map(([key, bonus]) => ({
+      activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
+      multiplier: `${bonus.multiplier}X`,
+      note: bonus.label,
+      isGTAPlus: bonus.gtaPlusOnly || false,
+    }));
 };

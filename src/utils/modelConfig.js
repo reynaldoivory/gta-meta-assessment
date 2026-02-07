@@ -160,9 +160,11 @@ export const MODEL_CONFIG = {
     passive: {
       acidLabBase: 75000,          // Base Acid Lab income per hour
       acidLabUpgrade: 1.4,         // 40% boost when upgraded
+      acidLabUpgradeCost: 250000,  // Acid Lab equipment upgrade cost (single source of truth)
       nightclubMax: 50000,         // Max Nightclub income per hour
       bunkerBase: 30000,           // Base Bunker income per hour
       bunkerUpgrade: 2.5,          // 2.5x multiplier when upgraded
+      bunkerUpgradeCost: 1753500,  // Equipment ($1,155,000) + Staff ($598,500) = $1,753,500
       salvageYard: 35000           // Salvage Yard passive income per hour
     },
     // GTA+ subscription benefits
@@ -173,13 +175,13 @@ export const MODEL_CONFIG = {
     },
     acidLab: {
       upgraded: {
-        perHour: 335000           // Upgraded Acid Lab income
+        perHour: 105000           // Upgraded Acid Lab income ($75k * 1.4)
       },
       unupgraded: {
-        perHour: 62500            // Unupgraded Acid Lab income
+        perHour: 75000            // Unupgraded Acid Lab income (matches passive.acidLabBase)
       },
-      upgradeBenefit: 50000,      // Benefit per sale cycle
-      upgradeCost: 750000          // Upgrade cost
+      upgradeBenefit: 30000,      // Hourly income gain from upgrading ($105k - $75k)
+      upgradeCost: 250000          // Upgrade cost (matches infrastructureAdvisor)
     },
     salvageYard: {
       robbery: 100000,            // Robbery income per hour
@@ -192,10 +194,10 @@ export const MODEL_CONFIG = {
     },
     bunker: {
       upgraded: {
-        perHour: 75000            // Upgraded bunker income
+        perHour: 75000            // Upgraded bunker income ($30k * 2.5)
       },
       unupgraded: {
-        perHour: 27000            // Unupgraded bunker income
+        perHour: 30000            // Unupgraded bunker income (matches passive.bunkerBase)
       }
     },
     autoShop: {

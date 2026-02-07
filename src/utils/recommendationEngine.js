@@ -8,6 +8,8 @@ import { calculateCompoundEfficiency } from './actionPlanBuilder.js';
 import { calculateTaskMetrics } from './taskMetrics.js';
 import { validateStat } from './assessmentHelpers.js';
 import { TASK_REQUIREMENTS } from '../config/gatekeeperSchema.js';
+import { MODEL_CONFIG } from './modelConfig.js';
+import { getNightclubTechnicianCost } from './infrastructureAdvisor.js';
 
 /**
  * Get weekly events - uses current data from weeklyEvents.js
@@ -197,25 +199,33 @@ const detectMissingUpgrades = (user, gameState = {}) => {
   const formData = user.formData || user;
   const upgrades = [];
   
-  // Bunker without upgrades = losing $40k/hour
+  // Bunker without upgrades (values from MODEL_CONFIG single source of truth)
   if (formData.hasBunker && !formData.bunkerUpgraded) {
+    const bunkerBase = MODEL_CONFIG.income.bunker.unupgraded.perHour;
+    const bunkerMax = MODEL_CONFIG.income.bunker.upgraded.perHour;
+    const bunkerUpgradeCost = MODEL_CONFIG.income.passive.bunkerUpgradeCost;
+    const bunkerHourlyLoss = bunkerMax - bunkerBase;
     upgrades.push({
       id: 'bunker_upgrades',
       name: 'Bunker Equipment + Staff Upgrades',
-      cost: 1900000, // $1.425M + $475k
-      hourlyLoss: 40000, // $60k - $20k = $40k/hour lost
-      roiHours: 48, // Pays back in ~48 hours
+      cost: bunkerUpgradeCost,
+      hourlyLoss: bunkerHourlyLoss,
+      roiHours: Math.ceil(bunkerUpgradeCost / bunkerHourlyLoss),
     });
   }
   
-  // Acid Lab without upgrades
+  // Acid Lab without upgrades (values from MODEL_CONFIG single source of truth)
   if (formData.hasAcidLab && !formData.acidLabUpgraded) {
+    const acidBase = MODEL_CONFIG.income.passive.acidLabBase;
+    const acidUpgradeMult = MODEL_CONFIG.income.passive.acidLabUpgrade;
+    const acidUpgradeCost = MODEL_CONFIG.income.passive.acidLabUpgradeCost;
+    const acidHourlyLoss = Math.round(acidBase * acidUpgradeMult - acidBase);
     upgrades.push({
       id: 'acid_lab_upgrades',
       name: 'Acid Lab Equipment Upgrade',
-      cost: 750000,
-      hourlyLoss: 30000, // Significant production boost lost
-      roiHours: 25,
+      cost: acidUpgradeCost,
+      hourlyLoss: acidHourlyLoss,
+      roiHours: Math.ceil(acidUpgradeCost / acidHourlyLoss),
     });
   }
   
@@ -226,7 +236,7 @@ const detectMissingUpgrades = (user, gameState = {}) => {
     upgrades.push({
       id: 'nightclub_technicians',
       name: `Hire ${missingTechs} More Nightclub Technician${missingTechs > 1 ? 's' : ''}`,
-      cost: missingTechs * 150000,
+      cost: getNightclubTechnicianCost(nightclubTechs, 5),
       hourlyLoss: missingTechs * 10000, // ~$10k/hour per missing tech
       roiHours: 15,
     });

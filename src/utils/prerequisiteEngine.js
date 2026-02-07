@@ -4,6 +4,7 @@
 
 import { calculateNightclubIncome } from './incomeCalculators.js';
 import { MODEL_CONFIG } from './modelConfig.js';
+import { INFRASTRUCTURE_COSTS } from './infrastructureAdvisor.js';
 
 /**
  * Prerequisite check status levels
@@ -363,7 +364,7 @@ const checkNightclubPrereqs = (formData, assessment) => {
       expectedROI: `Pays for itself (club + techs) in ~${hoursToPayoff} hours`,
       nextSteps: [
         { step: 'Buy Nightclub from Maze Bank Foreclosures', reason: 'Any location works - choose based on convenience' },
-        { step: 'Hire all 5 technicians ($705k total)', reason: 'Each tech costs $141k but produces ~$15k+/hr passively' },
+        { step: `Hire all 5 technicians ($${INFRASTRUCTURE_COSTS.nightclub.technicianTotal.toLocaleString()} total)`, reason: 'Technician costs scale by tier but produce ~$15k+/hr passively each' },
         { step: 'Assign each technician to a business', reason: 'Unassigned techs don\'t produce anything!' },
         { step: 'Sell when stock reaches ~$800k+', reason: 'Optimal sell point before diminishing production rates' },
       ],

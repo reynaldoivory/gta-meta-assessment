@@ -1,5 +1,5 @@
 // src/context/AssessmentContext.jsx
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef, useCallback } from 'react';
 import { useDebounce } from '../utils/useDebounce';
 import { computeAssessment } from '../utils/computeAssessment';
 import { submitAnonymousStats, submitTrapStats } from '../utils/communityStats';
@@ -254,70 +254,71 @@ export const AssessmentProvider = ({ children }) => {
     }
   }, []);
 
-  // Save on Change
+  // Save on Change (debounce is already handled by useDebounce above)
   useEffect(() => {
     if (!localStorageAvailable) return;
     
     setIsSaving(true);
-    const timer = setTimeout(() => {
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(debouncedFormData));
-        setLastSaved(new Date());
-        setHasDraft(true);
-        setIsSaving(false);
-        console.log('💾 Auto-saved to localStorage'); // Debug log
-      } catch (e) { 
-        console.error('❌ Save failed:', e);
-        setIsSaving(false);
-        // Storage full or disabled
-      }
-    }, 1000); // Match debounce delay
-
-    return () => clearTimeout(timer);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(debouncedFormData));
+      setLastSaved(new Date());
+      setHasDraft(true);
+      console.log('💾 Auto-saved to localStorage');
+    } catch (e) { 
+      console.error('❌ Save failed:', e);
+      // Storage full or disabled
+    } finally {
+      setIsSaving(false);
+    }
   }, [debouncedFormData, localStorageAvailable]);
 
   // 3. Actions
-  const runAssessment = () => {
+  const assessmentTimerRef = useRef(null);
+
+  // Cleanup assessment timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (assessmentTimerRef.current) {
+        clearTimeout(assessmentTimerRef.current);
+      }
+    };
+  }, []);
+
+  const runAssessment = useCallback(() => {
     // Validation logic could live here or in utils
     setIsCalculating(true);
-    try {
-      // Small delay to show loading state (prevents flash)
-      setTimeout(() => {
-        try {
-          const calculatedResults = computeAssessment(formData);
-          setResults(calculatedResults);
-          setStep('results');
-          
-          // Submit stats and save progress
-          submitAnonymousStats(formData, calculatedResults);
-          saveProgressSnapshot(formData, calculatedResults);
-          recordAssessment(); // Track streak
-          
-          // Submit trap statistics for community tracking
-          const traps = detectTraps(formData, calculatedResults);
-          const trapSummary = getTrapSummary(traps);
-          submitTrapStats(trapSummary, formData);
-          
-          // Sound effects
-          soundEffects.levelUp();
-          if (calculatedResults.score >= 90) {
-            soundEffects.achievement();
-          }
-          setIsCalculating(false);
-        } catch (error) {
-          console.error('Assessment failed:', error);
-          console.error('Error details:', error.message, error.stack);
-          console.error('FormData at error:', formData);
-          setErrors({ general: `Failed to calculate assessment: ${error.message}. Please check your inputs.` });
-          setIsCalculating(false);
+    // Small delay to show loading state (prevents flash)
+    assessmentTimerRef.current = setTimeout(() => {
+      try {
+        const calculatedResults = computeAssessment(formData);
+        setResults(calculatedResults);
+        setStep('results');
+        
+        // Submit stats and save progress
+        submitAnonymousStats(formData, calculatedResults);
+        saveProgressSnapshot(formData, calculatedResults);
+        recordAssessment(); // Track streak
+        
+        // Submit trap statistics for community tracking
+        const traps = detectTraps(formData, calculatedResults);
+        const trapSummary = getTrapSummary(traps);
+        submitTrapStats(trapSummary, formData);
+        
+        // Sound effects
+        soundEffects.levelUp();
+        if (calculatedResults.score >= 90) {
+          soundEffects.achievement();
         }
-      }, 100);
-    } catch (error) {
-      console.error('Assessment failed:', error);
-      setErrors({ general: 'Failed to calculate assessment. Please check your inputs.' });
-      setIsCalculating(false);
-    }
-  };
+      } catch (error) {
+        console.error('Assessment failed:', error);
+        console.error('Error details:', error.message, error.stack);
+        console.error('FormData at error:', formData);
+        setErrors({ general: `Failed to calculate assessment: ${error.message}. Please check your inputs.` });
+      } finally {
+        setIsCalculating(false);
+      }
+    }, 100);
+  }, [formData]);
 
   const resetForm = () => {
     setFormData({

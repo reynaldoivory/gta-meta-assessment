@@ -1,6 +1,7 @@
 // src/views/AssessmentResults.jsx
 import React, { useState, useEffect, useRef } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
+import { useToast } from '../context/ToastContext';
 import { soundEffects } from '../utils/soundEffects';
 import { fireConfetti } from '../utils/confettiEffects';
 import { getRandomQuote, getMotivationalMessage } from '../utils/motivationalQuotes';
@@ -25,6 +26,7 @@ import { detectTraps, checkForFixedTraps, getTrapSummary } from '../utils/trapDe
 
 const AssessmentResults = () => {
   const { formData, results, setStep } = useAssessment();
+  const { showToast } = useToast();
   const [showConfetti, setShowConfetti] = useState(false);
   const trapFixCelebratedRef = useRef(false);
 

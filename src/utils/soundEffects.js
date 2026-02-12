@@ -1,5 +1,8 @@
 // src/utils/soundEffects.js
 // Sound effects for user feedback (using Web Audio API)
+// Respects user sound preference via gamification engine toggle
+
+import { isSoundEnabled } from './gamificationEngine';
 
 /**
  * Play a simple beep sound using Web Audio API
@@ -8,6 +11,7 @@
  * @param {string} type - Waveform type ('sine', 'square', 'sawtooth', 'triangle')
  */
 const playBeep = (frequency = 440, duration = 200, type = 'sine') => {
+  if (!isSoundEnabled()) return;
   try {
     const audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     const oscillator = audioContext.createOscillator();
@@ -37,6 +41,7 @@ const playBeep = (frequency = 440, duration = 200, type = 'sine') => {
  * @param {number} duration - Duration in milliseconds
  */
 const playChord = (frequencies, duration = 300) => {
+  if (!isSoundEnabled()) return;
   try {
     const audioContext = new (globalThis.AudioContext || globalThis.webkitAudioContext)();
     const gainNode = audioContext.createGain();

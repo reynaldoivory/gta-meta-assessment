@@ -2,7 +2,7 @@
 // Prevents expensive mistakes by detecting common "noob traps"
 // Run automatically during assessment to warn players before they waste money
 
-import { calculateNightclubIncome, calculateCayoIncome } from './incomeCalculators.js';
+import { calculateNightclubIncome } from './incomeCalculators.js';
 import { MODEL_CONFIG } from './modelConfig.js';
 import { getNightclubTechnicianCost, INFRASTRUCTURE_COSTS } from './infrastructureAdvisor.js';
 
@@ -371,12 +371,6 @@ export const detectTraps = (formData, assessment = null) => {
   const agencyTrap = detectIncompleteAgencyTrap(formData);
   if (agencyTrap) traps.push(agencyTrap);
   
-  const cayoBurnoutTrap = detectCayoBurnoutTrap(formData);
-  if (cayoBurnoutTrap) traps.push(cayoBurnoutTrap);
-  
-  const kosatkaWithoutUseTrap = detectKosatkaWithoutUseTrap(formData);
-  if (kosatkaWithoutUseTrap) traps.push(kosatkaWithoutUseTrap);
-  
   // Sort by severity (critical first)
   return sortTrapsBySeverity(traps);
 };
@@ -538,7 +532,9 @@ const detectNightclubTrap = (formData) => {
  * Bunker without upgrades produces 64% less per hour
  */
 const detectUnupgradedBunkerTrap = (formData) => {
-  if (!formData.hasBunker || formData.bunkerUpgraded) return null;
+  // Check if bunker has both equipment AND staff upgrades
+  const hasUpgrades = formData.bunkerEquipmentUpgrade && formData.bunkerStaffUpgrade;
+  if (!formData.hasBunker || hasUpgrades) return null;
   
   const baseIncome = MODEL_CONFIG.income.bunker.unupgraded.perHour;
   const upgradedIncome = MODEL_CONFIG.income.bunker.upgraded.perHour;
@@ -601,7 +597,7 @@ const detectUnupgradedAcidLabTrap = (formData) => {
 
 /**
  * TRAP 4: Has Kosatka but no Sparrow
- * Wasting 15+ minutes per Cayo run
+ * Wasting time without fast travel helicopter
  */
 const detectMissingSparrowTrap = (formData, totalWealth) => {
   if (!formData.hasKosatka || formData.hasSparrow) return null;
@@ -610,26 +606,16 @@ const detectMissingSparrowTrap = (formData, totalWealth) => {
   const sparrowCost = 1815000;
   if (totalWealth < sparrowCost) return null;
   
-  const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
-  const optimalTime = 45; // With Sparrow
-  const timeSaved = Math.max(0, cayoAvgTime - optimalTime);
-  
-  // Calculate opportunity cost
-  const cayoPayout = MODEL_CONFIG.income.cayo.basePayout;
-  const currentRunsPerHour = 60 / cayoAvgTime;
-  const optimalRunsPerHour = 60 / optimalTime;
-  const lostIncomePerHour = Math.round((optimalRunsPerHour - currentRunsPerHour) * cayoPayout);
-  
   return {
     id: 'missing_sparrow',
     severity: TRAP_SEVERITY.HIGH,
     title: '🚁 Missing Sparrow Helicopter',
     icon: '🚁',
-    problem: `You own Kosatka but no Sparrow - wasting ~${timeSaved} minutes per Cayo run`,
-    cost: `Losing ~$${lostIncomePerHour.toLocaleString()}/hr opportunity cost`,
-    lostPerHour: lostIncomePerHour,
+    problem: 'You own Kosatka but no Sparrow - wasting ~15+ minutes per heist prep run',
+    cost: 'Losing significant time on heist preps and freeroam travel',
+    lostPerHour: 200000, // Estimated opportunity cost
     solution: 'Buy Sparrow from Kosatka interaction menu ($1.8M)',
-    reasoning: 'Sparrow spawns inside Kosatka and has missiles. Cuts prep time from 90min to 45min average.',
+    reasoning: 'Sparrow spawns inside Kosatka and has missiles. Cuts prep time dramatically and is useful for many activities.',
     timeToFix: '5 minutes (purchase only)',
     requiredSteps: [
       'Enter Kosatka submarine',
@@ -667,138 +653,6 @@ const detectIncompleteAgencyTrap = (formData) => {
       'Collect $1M finale payout',
     ],
     fixCost: 0, // Free, just time
-  };
-};
-
-/**
- * TRAP 6: Cayo burnout pattern with efficiency decay detection
- * Now tracks historical performance to detect declining efficiency
- */
-const detectCayoBurnoutTrap = (formData) => {
-  const completions = Number(formData.cayoCompletions) || 0;
-  const avgTime = Number(formData.cayoAvgTime) || 60;
-  
-  // Get historical Cayo data if available
-  const cayoHistory = formData.cayoHistory || [];
-  const recentRuns = cayoHistory.slice(-10); // Last 10 runs
-  
-  // Calculate efficiency decay if we have historical data
-  let efficiencyDecay = null;
-  let decayPercentage = 0;
-  
-  if (recentRuns.length >= 5 && avgTime > 0) {
-    // Compare recent average to overall average
-    const recentAvg = recentRuns.reduce((sum, r) => sum + (r.time || avgTime), 0) / recentRuns.length;
-    const oldAvg = avgTime; // Their reported overall average
-    
-    // Check for 20%+ slowdown (efficiency decay)
-    if (recentAvg > oldAvg * 1.2) {
-      decayPercentage = Math.round(((recentAvg - oldAvg) / oldAvg) * 100);
-      efficiencyDecay = {
-        detected: true,
-        recentAvg: Math.round(recentAvg),
-        historicalAvg: Math.round(oldAvg),
-        decayPct: decayPercentage,
-      };
-    }
-  }
-  
-  // Case 1: Efficiency decay detected (most actionable)
-  if (efficiencyDecay?.detected) {
-    const cayoPayout = MODEL_CONFIG.income.cayo.basePayout;
-    const lostPerRun = Math.round(cayoPayout * (efficiencyDecay.decayPct / 100));
-    const lostPerHour = Math.round((60 / efficiencyDecay.recentAvg) * lostPerRun);
-    
-    return {
-      id: 'cayo_efficiency_decay',
-      severity: TRAP_SEVERITY.HIGH,
-      title: '📉 Cayo Efficiency Decay Detected',
-      icon: '📉',
-      isEfficiencyDecay: true,
-      problem: `Your recent runs are ${efficiencyDecay.decayPct}% slower than your average (${efficiencyDecay.recentAvg}min vs ${efficiencyDecay.historicalAvg}min)`,
-      cost: `Losing ~$${lostPerHour.toLocaleString()}/hr from declining performance`,
-      lostPerHour: lostPerHour,
-      solution: 'Take a break from Cayo. Your brain is on autopilot and making mistakes.',
-      reasoning: 'Performance decay is a sign of mental fatigue. Continuing to grind will only make it worse. Switch activities for 2-3 days.',
-      efficiencyData: efficiencyDecay,
-      timeToFix: '2-3 days break from Cayo',
-      requiredSteps: [
-        { step: 'Stop running Cayo for 48+ hours', reason: 'Mental reset improves pattern recognition' },
-        { step: 'Run Auto Shop contracts instead', reason: '2X event active - matches Cayo income without burnout' },
-        { step: 'Mix in Payphone Hits ($85k/kill)', reason: 'Quick variety during cooldowns' },
-        { step: 'Return to Cayo fresh in 2-3 days', reason: 'You\'ll likely hit sub-50min times again' },
-      ],
-      fixCost: 0,
-    };
-  }
-  
-  // Case 2: Classic burnout pattern (high volume + slow times)
-  if (completions < 30 || avgTime < 65) return null;
-  
-  // Calculate what their income SHOULD be vs what it is
-  const optimalTime = 45;
-  const cayoPayout = MODEL_CONFIG.income.cayo.basePayout;
-  const currentIncomePerHour = (60 / avgTime) * cayoPayout;
-  const optimalIncomePerHour = (60 / optimalTime) * cayoPayout;
-  const lostIncome = Math.round(optimalIncomePerHour - currentIncomePerHour);
-  
-  return {
-    id: 'cayo_burnout',
-    severity: completions > 75 ? TRAP_SEVERITY.MEDIUM : TRAP_SEVERITY.LOW,
-    title: '🔥 Cayo Burnout Pattern Detected',
-    icon: '🔥',
-    problem: `You've run Cayo ${completions} times with ${avgTime}min average - this suggests grinding fatigue`,
-    cost: completions > 75 
-      ? `~$${lostIncome.toLocaleString()}/hr lost vs optimal ${optimalTime}min runs`
-      : 'Diminishing returns from repetitive grinding',
-    lostPerHour: Math.max(0, lostIncome),
-    solution: 'Diversify: Mix in Payphone Hits, Salvage Yard, or Auto Shop contracts during cooldowns',
-    reasoning: '2026 meta: Variety keeps you engaged. Agency payphone hits ($255k/hr) + Auto Shop (2X right now!) maintain income while reducing monotony. Fresh eyes = faster runs.',
-    timeToFix: 'Strategy change (no cost)',
-    requiredSteps: [
-      { step: 'Do 2-3 Payphone Hits after each Cayo', reason: 'Fills 2.5hr cooldown productively' },
-      { step: 'Run Auto Shop contracts during 2X events', reason: 'Currently beats Cayo income this week' },
-      { step: 'Try Salvage Yard robberies for variety', reason: 'Different gameplay loop prevents autopilot' },
-      { step: 'Track your next 5 run times', reason: 'Self-monitoring often improves performance' },
-    ],
-    recoveryTips: completions > 75 ? [
-      'Consider taking a 1-week Cayo break',
-      'Practice drainage tunnel approach on a fresh save',
-      'Watch a 2026 speedrun guide - meta may have changed',
-    ] : null,
-    fixCost: 0,
-  };
-};
-
-/**
- * TRAP 7: Owns Kosatka but hasn't used it
- * Bought the sub but never ran Cayo
- */
-const detectKosatkaWithoutUseTrap = (formData) => {
-  if (!formData.hasKosatka) return null;
-  
-  const completions = Number(formData.cayoCompletions) || 0;
-  if (completions > 0) return null;
-  
-  return {
-    id: 'kosatka_unused',
-    severity: TRAP_SEVERITY.HIGH,
-    title: '🚢 Kosatka Unused',
-    icon: '🚢',
-    problem: 'You own a Kosatka but have never completed Cayo Perico heist',
-    cost: 'Missing out on best solo money maker in the game',
-    lostPerHour: calculateCayoIncome(60, 0), // Potential income
-    solution: 'Complete your first Cayo Perico heist - watch a beginner guide first',
-    reasoning: 'Cayo Perico pays $700k-$1.2M per run. Solo-friendly. This is why you bought the Kosatka!',
-    timeToFix: '2-3 hours (first run with preps)',
-    requiredSteps: [
-      'Watch a "Cayo Perico Solo Guide 2026" on YouTube (15 mins)',
-      'Enter Kosatka → Planning Screen',
-      'Complete Intel Mission (scope the island)',
-      'Do Prep Missions (4-5 missions)',
-      'Launch Heist Finale',
-    ],
-    fixCost: 0,
   };
 };
 

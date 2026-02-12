@@ -22,6 +22,20 @@ export const validateField = (field, value) => {
         return 'Cash cannot be negative';
       }
       return null;
+
+    case 'totalIncomeCollected':
+      const incomeNum = Number(value);
+      if (value && (isNaN(incomeNum) || incomeNum < 0)) {
+        return 'Total income cannot be negative';
+      }
+      return null;
+
+    case 'totalRPCollected':
+      const rpNum = Number(value);
+      if (value && (isNaN(rpNum) || rpNum < 0)) {
+        return 'Total RP cannot be negative';
+      }
+      return null;
       
     case 'timePlayed':
       const timeNum = Number(value);
@@ -29,21 +43,21 @@ export const validateField = (field, value) => {
         return 'Time played cannot be negative';
       }
       return null;
-      
-    case 'cayoCompletions':
-      const cayoNum = Number(value);
-      if (value && (isNaN(cayoNum) || cayoNum < 0 || cayoNum > 10000)) {
-        return 'Cayo completions must be between 0-10000';
+
+    case 'timePlayedDays':
+      const daysNum = Number(value);
+      if (value && (isNaN(daysNum) || daysNum < 0)) {
+        return 'Days played cannot be negative';
       }
       return null;
-      
-    case 'cayoAvgTime':
-      const timeAvg = Number(value);
-      if (value && (isNaN(timeAvg) || timeAvg < 30 || timeAvg > 180)) {
-        return 'Average time must be between 30-180 minutes';
+
+    case 'timePlayedHours':
+      const hoursNum = Number(value);
+      if (value && (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23)) {
+        return 'Hours must be between 0-23';
       }
       return null;
-      
+
     case 'nightclubTechs':
       const techs = Number(value);
       if (value && (isNaN(techs) || techs < 0 || techs > 5)) {
@@ -84,8 +98,9 @@ export const validateForm = (formData) => {
   
   // Validate all numeric fields
   const fieldsToValidate = [
-    'rank', 'liquidCash', 'timePlayed', 'cayoCompletions', 
-    'cayoAvgTime', 'nightclubTechs', 'nightclubFeeders', 'securityContracts'
+    'rank', 'liquidCash', 'totalIncomeCollected', 'totalRPCollected', 'timePlayed', 'timePlayedDays', 'timePlayedHours',
+    'nightclubTechs',
+    'nightclubFeeders', 'securityContracts'
   ];
   
   fieldsToValidate.forEach(field => {

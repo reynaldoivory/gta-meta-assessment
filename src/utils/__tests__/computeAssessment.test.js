@@ -16,8 +16,6 @@ describe('computeAssessment', () => {
     hasSparrow: false,
     hasRaiju: false,
     hasOppressor: false,
-    cayoCompletions: '',
-    cayoAvgTime: '',
     hasAgency: false,
     dreContractDone: false,
     payphoneUnlocked: false,
@@ -34,6 +32,9 @@ describe('computeAssessment', () => {
     nightclubFeeders: '',
     // Keep tests stable (don’t depend on weekly event flags)
     hasCarWash: true,
+    hasWeedFarm: false,
+    hasHeliTours: false,
+    sellsToStreetDealers: false,
     claimedWheelSpin: true,
     claimedFreeCar: true,
     hasGTAPlus: false,
@@ -89,8 +90,6 @@ describe('computeAssessment', () => {
       stealth: 3,
       hasKosatka: true,
       hasSparrow: true,
-      cayoCompletions: '12',
-      cayoAvgTime: '60',
       hasAcidLab: true,
       acidLabUpgraded: true,
       hasAgency: true,
@@ -137,8 +136,6 @@ describe('computeAssessment', () => {
       driving: 5,
       hasKosatka: true,
       hasSparrow: true,
-      cayoCompletions: '100',
-      cayoAvgTime: '45',
       hasAgency: true,
       dreContractDone: true,
       payphoneUnlocked: true,
@@ -205,19 +202,17 @@ describe('computeAssessment', () => {
       expect(result.bottlenecks.some(b => b.id === 'flying_low')).toBe(true);
     });
 
-    test('should calculate Cayo income correctly', () => {
+    test('should calculate Kosatka-based income correctly', () => {
       const profile = createBaseFormData({
         hasKosatka: true,
         hasSparrow: true,
-        cayoCompletions: '10',
-        cayoAvgTime: '50',
         playMode: 'solo'
       });
       const result = computeAssessment(profile);
-      // Current model uses per-run time only (no cooldown baked into $/hr):
-      // \(700k * (60/50) * 1.1\) ≈ 924k/hr at mastery threshold.
-      expect(result.incomePerHour).toBeGreaterThan(850000);
-      expect(result.incomePerHour).toBeLessThan(1100000);
+      // Kosatka owner gets Cayo income: ~$560k/hr (700k * 60/75)
+      // Plus Car Wash passive (~$5k/hr from base form)
+      expect(result.incomePerHour).toBeGreaterThan(500000);
+      expect(result.incomePerHour).toBeLessThan(1000000);
     });
   });
 });

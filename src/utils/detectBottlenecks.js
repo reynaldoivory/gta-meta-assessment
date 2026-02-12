@@ -73,7 +73,8 @@ const detectUrgentExpiring = (params, now, formData) => {
 // ============================================
 
 const detectIncomeLeaks = (params, now, activeEvents) => {
-  const { rank, strength } = params;
+  const { rank, strength, playMode } = params;
+  const isSoloPlayer = playMode === 'invite' || playMode === 'solo';
   const bottlenecks = [];
 
   // Build event lookups dynamically from whatever events are active this week
@@ -86,24 +87,75 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
     // Skip discount events (handled separately below) and GTA+ monthly events
     if (event.category === 'discount' || event.category === 'gtaplus') return;
 
-    const urgencyText = event.hoursLeft < 48
-      ? `${event.hoursLeft} hours left`
-      : `${event.daysLeft} days left`;
-
-    const impactLevel = event.multiplier >= 3 ? 'high' : 'medium';
     const expiryIso = event.expiryTimestamp
       ? new Date(event.expiryTimestamp).toISOString()
       : WEEKLY_EVENTS.meta.validUntil;
 
+    // --- Play-mode filtering ---
+    // If player is solo/invite-only and event requires multiplayer, demote or skip
+    if (isSoloPlayer && event.requiresMultiplayer) {
+      bottlenecks.push({
+        id: `weekly_event_${event.name}`,
+        label: `\u26A0\uFE0F ${event.label || event.name} (Requires Other Players)`,
+        critical: false,
+        urgent: false,
+        impact: 'low',
+        solution: event.soloNote || `This bonus requires other players and is not effective in ${playMode === 'invite' ? 'Invite Only' : 'Solo'} sessions.`,
+        actionType: 'freemode',
+        detail: `${getExpiryLabel(expiryIso)}. ${event.multiplier}X bonus active but requires multiplayer. Consider briefly joining a friend\u2019s org to earn the one-time challenge reward, then return to solo.`,
+        timeHours: 0,
+        savingsPerHour: 0,
+        expiresAt: event.expiryTimestamp,
+        eventTier: 3, // Demoted tier
+        hoursLeft: event.hoursLeft,
+        daysLeft: event.daysLeft,
+        filteredByPlayMode: true,
+      });
+      return;
+    }
+
+    // --- Impact assessment (considers $/hr, multiplier, and highValue flag) ---
+    let impactLevel;
+    if (event.highValue || event.multiplier >= 4 || event.hourlyRate >= 600000) {
+      impactLevel = 'high';
+    } else if (event.multiplier >= 3 || event.hourlyRate >= 300000) {
+      impactLevel = 'high';
+    } else {
+      impactLevel = 'medium';
+    }
+
+    // --- Build detailed solution text ---
+    let solutionText;
+    if (isSoloPlayer && event.soloTip) {
+      solutionText = event.soloTip;
+    } else if (event.hourlyRate > 0) {
+      solutionText = `Take advantage of ${event.label || event.name} (~$${Math.round(event.hourlyRate / 1000)}k/hr) before it expires.`;
+    } else {
+      solutionText = `Take advantage of ${event.label || event.name} before it expires.`;
+    }
+
+    // --- Build detail text (no duplicate days-left) ---
+    const hourlyRateNote = event.hourlyRate > 0
+      ? ` Est. ~$${Math.round(event.hourlyRate / 1000)}k/hr.`
+      : '';
+    let multiplierNote;
+    if (event.multiplier > 1) {
+      multiplierNote = `${event.multiplier}X bonus active \u2014 prioritize this over normal activities.`;
+    } else if (event.highValue) {
+      multiplierNote = 'High-value opportunity \u2014 prioritize this week.';
+    } else {
+      multiplierNote = `${event.multiplier}X bonus active.`;
+    }
+
     bottlenecks.push({
       id: `weekly_event_${event.name}`,
-      label: `⚡ ${event.label || event.name} THIS WEEK`,
+      label: `\u26A1 ${event.label || event.name} THIS WEEK`,
       critical: event.critical,
       urgent: event.urgent,
       impact: impactLevel,
-      solution: `Take advantage of ${event.label || event.name} before it expires.`,
+      solution: solutionText,
       actionType: { mission: 'mission', passive: 'passive' }[event.category] || 'freemode',
-      detail: `${getExpiryLabel(expiryIso)} (${urgencyText}). ${event.multiplier}X bonus active — prioritize this over normal activities.`,
+      detail: `${getExpiryLabel(expiryIso)}. ${multiplierNote}${hourlyRateNote}`,
       timeHours: 0,
       savingsPerHour: event.hourlyRate || 0,
       expiresAt: event.expiryTimestamp,
@@ -150,6 +202,43 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       });
     }
     // Rank 80+ with strength >= 60 = no prep needed, skip bottleneck
+  }
+
+  // --- GTA+ Monthly Bonuses (e.g., 2X Security Contracts) ---
+  const { hasGTAPlus, hasAgency } = params;
+  if (hasGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
+    const now_ts = Date.now();
+    WEEKLY_EVENTS.gtaPlus.monthlyBonuses.forEach(bonus => {
+      const expiryDate = new Date(bonus.expires);
+      if (now_ts >= expiryDate.getTime()) return;
+
+      // Skip if it duplicates a weekly bonus already added (e.g., lunar stunt races)
+      const alreadyAdded = bottlenecks.some(b => b.id === `weekly_event_${bonus.activity}`);
+      if (alreadyAdded) return;
+
+      // Check asset prerequisites (e.g., security contracts need Agency)
+      if (bonus.activity === 'security_contracts' && !hasAgency) return;
+
+      const daysLeft = Math.ceil((expiryDate.getTime() - now_ts) / (1000 * 60 * 60 * 24));
+      const solutionText = (isSoloPlayer && bonus.soloTip) ? bonus.soloTip : `Use ${bonus.label} before it expires.`;
+
+      bottlenecks.push({
+        id: `gtaplus_monthly_${bonus.activity}`,
+        label: `\uD83D\uDC8E ${bonus.label}`,
+        critical: false,
+        urgent: false,
+        impact: bonus.estimatedHourlyRate >= 200000 ? 'high' : 'medium',
+        solution: solutionText,
+        actionType: 'mission',
+        detail: `GTA+ monthly perk. Expires ${formatExpiry(bonus.expires)} (${daysLeft} days left). Est. ~$${Math.round((bonus.estimatedHourlyRate || 0) / 1000)}k/hr.`,
+        timeHours: 0,
+        savingsPerHour: bonus.estimatedHourlyRate || 0,
+        expiresAt: expiryDate.getTime(),
+        eventTier: 2,
+        hoursLeft: daysLeft * 24,
+        daysLeft,
+      });
+    });
   }
 
   return { bottlenecks, nightclubDiscountEvent };
@@ -213,7 +302,7 @@ const detectFlyingGap = (params, activeEvents) => {
 
   let flyingDetail;
   if (hasSparrowOrRaiju) {
-    flyingDetail = 'Low flying skill causes severe turbulence when using Sparrow/Raiju. This slows down Cayo Perico prep runs significantly (adds 5-10 mins per prep). Flight School fixes this.';
+    flyingDetail = 'Low flying skill causes severe turbulence when using Sparrow/Raiju. This slows down heist preps and freeroam missions (adds 5-10 mins per prep). Flight School fixes this.';
   } else if (hasFastTravel) {
     flyingDetail = 'Flying skill affects vehicle stability. Low skill = more turbulence = slower prep times.';
   } else {
@@ -226,7 +315,7 @@ const detectFlyingGap = (params, activeEvents) => {
     critical: hasTimeLimitedEvent ? false : flyingCritical,
     impact: flyingImpact,
     solution: hasFastTravel
-      ? 'Flight School at LSIA (45 mins) - Reduces turbulence during Cayo prep runs'
+      ? 'Flight School at LSIA (45 mins) - Reduces turbulence during heist prep flights'
       : 'Buy Sparrow ($1.8M) OR do Flight School',
     actionType: hasFastTravel ? 'mission' : 'property_purchase',
     detail: flyingDetail,
@@ -251,7 +340,7 @@ const detectRankGap = (params, activeEvents) => {
       rankTimeHours = 2;
       rankSavingsPerHour = 200000;
     } else {
-      rankSolution = 'Run Cayo Perico (best RP/$ combo)';
+      rankSolution = 'Run missions & heists (Cayo, Auto Shop, Security Contracts for RP + $)';
       rankTimeHours = 2.5;
       rankSavingsPerHour = 0;
     }
@@ -299,79 +388,107 @@ const detectStatBottlenecks = (params, activeEvents, formData) => {
 // TIER 3: ASSET GAPS (Same as before)
 // ============================================
 
-// --- Cayo optimization helper ---
-const buildCayoOptimizationBottleneck = ({ hasSparrow, cayoCompletions, cayoAvgTime, masteryRuns }) => {
-  if (cayoAvgTime <= 50 && cayoCompletions >= masteryRuns) return null;
-
-  const isNewPlayer = cayoCompletions < masteryRuns;
-  const targetTime = isNewPlayer ? 50 : 45;
-  const basePayout = isNewPlayer ? 800000 : 700000;
-  const potentialPerHour = (60 / targetTime) * basePayout;
-  const currentPerHour = (60 / cayoAvgTime) * basePayout;
-  const lossPerHour = potentialPerHour - currentPerHour;
-  const isSkillIssue = hasSparrow;
-
-  return {
-    id: 'cayo_optimization',
-    label: isSkillIssue ? '🎯 Fix Cayo Perico Strategy (Skill/Route Issue)' : '🎯 OPTIMIZE CAYO RUNS (Critical)',
-    critical: true,
-    impact: 'high',
-    solution: 'Watch "Cayo Perico Solo Speedrun 2026" guide → Practice Longfin/Drainage Tunnel approach',
-    actionType: 'skill_improvement',
-    detail: isSkillIssue
-      ? `You have Sparrow (fast travel). Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. This is purely a knowledge gap. Target: ${targetTime} mins.`
-      : `Your ${cayoAvgTime}-min runs cost you $${Math.round(lossPerHour).toLocaleString()}/hr. Target: ${targetTime} mins. This is your #1 income leak.`,
-    timeHours: isNewPlayer ? 2 : ((masteryRuns - cayoCompletions) * 0.75),
-    savingsPerHour: Math.round(lossPerHour),
-  };
-};
-
-// --- Kosatka/Cayo sub-check ---
-const detectCayoGaps = (params) => {
-  const { hasKosatka, hasSparrow, cayoCompletions, cayoAvgTime } = params;
+// --- Income diversification helper ---
+const detectIncomeDiversificationGaps = (params) => {
+  const { hasKosatka, hasSparrow, hasAutoShop, hasCarWash, hasWeedFarm, hasHeliTours, sellsToStreetDealers } = params;
   const bottlenecks = [];
 
-  if (hasKosatka) {
-    if (!hasSparrow) {
-      bottlenecks.push({
-        id: 'no_sparrow',
-        label: 'No Sparrow for Cayo',
-        critical: false,
-        impact: 'medium',
-        solution: 'Purchase Sparrow helicopter ($1.8M) from Kosatka interaction menu',
-        actionType: 'purchase',
-        detail: 'Sparrow cuts Cayo setup time in half and makes preps painless.',
-        timeHours: MODEL_CONFIG.time?.assets?.sparrowPurchase ?? 2,
-      });
-    }
-
-    const masteryRuns = MODEL_CONFIG.thresholds?.cayo?.masteryRuns ?? 10;
-
-    if (cayoCompletions === 0) {
-      bottlenecks.push({
-        id: 'cayo_no_runs',
-        label: 'No Cayo completions yet',
-        critical: false,
-        impact: 'high',
-        solution: 'Complete your first Cayo Perico heist (follow guide for optimal approach)',
-        actionType: 'heist',
-        detail: 'First Cayo unlocks your main solo grind loop.',
-        timeHours: MODEL_CONFIG.time?.assets?.firstCayo ?? 2,
-      });
-    } else {
-      const cayoOpt = buildCayoOptimizationBottleneck({ hasSparrow, cayoCompletions, cayoAvgTime, masteryRuns });
-      if (cayoOpt) bottlenecks.push(cayoOpt);
-    }
-  } else {
+  // Kosatka is still a good purchase for Cayo access, but not the only path
+  if (!hasKosatka) {
     bottlenecks.push({
       id: 'no_kosatka',
       label: 'No Kosatka Submarine',
       critical: false,
-      impact: 'high',
-      solution: 'Grind to $2.2M and purchase Kosatka from Warstock',
+      impact: 'medium',
+      solution: 'Purchase Kosatka ($2.2M) from Warstock for Cayo Perico access (~$560k/hr solo)',
       actionType: 'purchase',
-      detail: 'You are locked out of Cayo Perico, the best solo content even post-nerf.',
-      timeHours: MODEL_CONFIG.time?.assets?.kosatkaGrind ?? 5,
+      detail: 'Unlocks Cayo Perico Heist — a solid solo active income source (~$700k avg per run).',
+      timeHours: 5,
+    });
+  }
+
+  if (hasKosatka && !hasSparrow) {
+    bottlenecks.push({
+      id: 'no_sparrow',
+      label: 'No Sparrow for fast travel',
+      critical: false,
+      impact: 'medium',
+      solution: 'Purchase Sparrow helicopter ($1.8M) from Kosatka interaction menu',
+      actionType: 'purchase',
+      detail: 'Sparrow cuts Cayo prep time in half and is useful for many freeroam missions.',
+      timeHours: 2,
+    });
+  }
+
+  // Car Wash feeder recommendations
+  if (hasCarWash && !hasWeedFarm) {
+    bottlenecks.push({
+      id: 'no_weed_farm',
+      label: 'Car Wash missing Weed Farm feeder',
+      critical: false,
+      impact: 'medium',
+      solution: 'Purchase Weed Farm ($715K) to boost Car Wash passive income by ~$10K/hr',
+      actionType: 'purchase',
+      detail: 'Weed Farm feeds product to Car Wash, boosting its passive earnings significantly.',
+      timeHours: 0.5,
+      savingsPerHour: 10000,
+    });
+  }
+
+  if (hasCarWash && !hasHeliTours) {
+    bottlenecks.push({
+      id: 'no_heli_tours',
+      label: 'Car Wash missing Heli Tours feeder',
+      critical: false,
+      impact: 'medium',
+      solution: 'Purchase Helicopter Tours ($750K) to boost Car Wash passive income by ~$8K/hr',
+      actionType: 'purchase',
+      detail: 'Helicopter Tours bring tourists to Car Wash, boosting passive earnings.',
+      timeHours: 0.5,
+      savingsPerHour: 8000,
+    });
+  }
+
+  // Street Dealer recommendation 
+  if (!sellsToStreetDealers) {
+    bottlenecks.push({
+      id: 'not_selling_street_dealers',
+      label: '💊 Not selling to Street Dealers',
+      critical: false,
+      impact: 'high',
+      solution: 'Visit 3 Street Dealers daily (~15 min for ~$202-250K). Requires MC businesses + Acid Lab stocked.',
+      actionType: 'daily_routine',
+      detail: 'Street Dealers refresh daily at 07:00 UTC. Sell Cocaine, Meth, Weed & Acid for ~$250K/day average with premiums. Best $/minute ratio in the game.',
+      timeHours: 0.25,
+      savingsPerHour: 250000, // daily but high impact per time invested
+    });
+  }
+
+  // Auto Shop recommendation
+  if (!hasAutoShop) {
+    bottlenecks.push({
+      id: 'no_auto_shop',
+      label: 'No Auto Shop',
+      critical: false,
+      impact: 'medium',
+      solution: 'Purchase Auto Shop ($1.8M) for robbery contracts (~$400-600K/hr solo)',
+      actionType: 'purchase',
+      detail: 'Union Depository contract pays ~$300K for 30 min work. Great solo active income.',
+      timeHours: 1,
+    });
+  }
+
+  // Car Wash recommendation
+  if (!hasCarWash) {
+    bottlenecks.push({
+      id: 'no_car_wash',
+      label: 'No Car Wash (passive income)',
+      critical: false,
+      impact: 'medium',
+      solution: 'Purchase Car Wash ($1.5M) + feeders for up to ~$23K/hr passive income',
+      actionType: 'purchase',
+      detail: 'Car Wash generates passive income. Add Weed Farm ($715K) and Heli Tours ($750K) as feeders to maximize earnings.',
+      timeHours: 1,
     });
   }
 
@@ -380,7 +497,7 @@ const detectCayoGaps = (params) => {
 
 const detectAssetGaps = (params, incomePerHour) => {
   const { hasAgency, hasAcidLab, acidLabUpgraded, dreContractDone } = params;
-  const bottlenecks = detectCayoGaps(params);
+  const bottlenecks = detectIncomeDiversificationGaps(params);
 
   if (!hasAgency && incomePerHour >= (MODEL_CONFIG.thresholds?.recommendations?.agencyPurchase ?? 400000)) {
     bottlenecks.push({

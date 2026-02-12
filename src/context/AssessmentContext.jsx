@@ -5,9 +5,14 @@ import { useDebounce } from '../utils/useDebounce';
 import { computeAssessment } from '../utils/computeAssessment';
 import { submitAnonymousStats, submitTrapStats } from '../utils/communityStats';
 import { detectTraps, getTrapSummary } from '../utils/trapDetector';
-import { saveProgressSnapshot } from '../utils/progressTracker';
+import { saveProgressSnapshot, getProgressHistory } from '../utils/progressTracker';
 import { soundEffects } from '../utils/soundEffects';
 import { recordAssessment } from '../utils/streakTracker';
+import {
+  applyAssessmentGamification,
+  loadGamificationState,
+  GAMIFICATION_STORAGE_KEY,
+} from '../utils/gamificationEngine';
 
 const AssessmentContext = createContext(null);
 
@@ -102,8 +107,46 @@ const migrateBunkerUpgrades = (migrated) => {
   return migrated;
 };
 
+/** MIGRATION: timePlayed -> timePlayedDays/Hours/Minutes */
+const migrateTimePlayedParts = (migrated) => {
+  const hasParts = migrated.timePlayedDays !== undefined || migrated.timePlayedHours !== undefined || migrated.timePlayedMinutes !== undefined;
+  if (!hasParts && migrated.timePlayed !== undefined && migrated.timePlayed !== '') {
+    const totalHours = Number(migrated.timePlayed);
+    if (!Number.isNaN(totalHours) && totalHours >= 0) {
+      let days = Math.floor(totalHours / 24);
+      let remainder = totalHours - days * 24;
+      let hours = Math.floor(remainder);
+      let minutes = Math.round((remainder - hours) * 60);
+
+      if (minutes === 60) {
+        minutes = 0;
+        hours += 1;
+      }
+      if (hours >= 24) {
+        days += Math.floor(hours / 24);
+        hours = hours % 24;
+      }
+
+      migrated.timePlayedDays = days ? String(days) : '';
+      migrated.timePlayedHours = hours ? String(hours) : '';
+      migrated.timePlayedMinutes = minutes ? String(minutes) : '';
+    }
+  }
+
+  if (migrated.timePlayedDays === undefined) migrated.timePlayedDays = '';
+  if (migrated.timePlayedHours === undefined) migrated.timePlayedHours = '';
+  if (migrated.timePlayedMinutes === undefined) migrated.timePlayedMinutes = '';
+  return migrated;
+};
+
 /** Ensure default fields exist (prevents TypeErrors on deep merge / missing arrays) */
 const ensureDefaults = (migrated) => {
+  if (!migrated.timePlayedMode) {
+    const hasParts = migrated.timePlayedDays !== undefined || migrated.timePlayedHours !== undefined;
+    const hasTotal = migrated.timePlayed !== undefined && migrated.timePlayed !== '';
+    migrated.timePlayedMode = hasParts ? 'parts' : hasTotal ? 'total' : 'parts';
+  }
+
   if (!migrated.purchaseDates || typeof migrated.purchaseDates !== 'object') {
     migrated.purchaseDates = {
       kosatka: null,
@@ -117,9 +160,15 @@ const ensureDefaults = (migrated) => {
     };
   }
 
-  if (!Array.isArray(migrated.cayoHistory)) {
-    migrated.cayoHistory = [];
-  }
+  // Clean up legacy Cayo fields from old saves
+  delete migrated.cayoCompletions;
+  delete migrated.cayoAvgTime;
+  delete migrated.cayoHistory;
+  delete migrated.lastCayoRun;
+  // Ensure new fields have defaults
+  if (migrated.hasWeedFarm === undefined) migrated.hasWeedFarm = false;
+  if (migrated.hasHeliTours === undefined) migrated.hasHeliTours = false;
+  if (migrated.sellsToStreetDealers === undefined) migrated.sellsToStreetDealers = false;
   return migrated;
 };
 
@@ -134,6 +183,7 @@ const migrateUserData = (data) => {
   migrated = migrateNightclubStorage(migrated);
   migrated = migrateStamina(migrated);
   migrated = migrateBunkerUpgrades(migrated);
+  migrated = migrateTimePlayedParts(migrated);
   migrated = ensureDefaults(migrated);
   return migrated;
 };
@@ -141,9 +191,10 @@ const migrateUserData = (data) => {
 export const AssessmentProvider = ({ children }) => {
   // 1. Initialize State
   const [formData, setFormData] = useState({
-    rank: '', timePlayed: '', liquidCash: '0', 
+    rank: '', timePlayed: '', timePlayedDays: '', timePlayedHours: '', timePlayedMinutes: '', timePlayedMode: 'parts', liquidCash: '0', 
+    totalIncomeCollected: '', totalRPCollected: '',
     strength: 0, flying: 0, shooting: 0, stealth: 0, stamina: 0, driving: 0,
-    hasKosatka: false, hasSparrow: false, cayoCompletions: '', cayoAvgTime: '',
+    hasKosatka: false, hasSparrow: false,
     hasAgency: false, dreContractDone: false, payphoneUnlocked: false, securityContracts: '',
     hasAcidLab: false, acidLabUpgraded: false, 
     hasNightclub: false, 
@@ -174,6 +225,9 @@ export const AssessmentProvider = ({ children }) => {
     hasMansion: false,
     mansionType: '',
     hasCarWash: false,
+    hasWeedFarm: false,      // Car Wash feeder business
+    hasHeliTours: false,     // Car Wash feeder business
+    sellsToStreetDealers: false, // Daily street dealer sells
     claimedFreeCar: false,
     claimedWheelSpin: false,
     hasGTAPlus: false, playMode: 'invite',
@@ -188,12 +242,11 @@ export const AssessmentProvider = ({ children }) => {
       autoShop: null,
       salvageYard: null,
     },
-    // Cayo performance history for efficiency decay detection
-    cayoHistory: [], // Array of { time: number, date: timestamp }
-    lastCayoRun: null, // Timestamp of last completion
   });
 
   const [results, setResults] = useState(null);
+  const [gamification, setGamification] = useState(() => loadGamificationState());
+  const [gamificationSummary, setGamificationSummary] = useState(null);
   const [step, setStep] = useState('form'); // 'form', 'results', 'guide', 'actionPlan'
   const [hasDraft, setHasDraft] = useState(false);
   const [errors, setErrors] = useState({});
@@ -266,8 +319,7 @@ export const AssessmentProvider = ({ children }) => {
             // Deep merge nested objects (with fallbacks to prevent spread errors)
             nightclubSources: { ...prev.nightclubSources, ...upgradedData.nightclubSources },
             nightclubStorage: { ...prev.nightclubStorage, ...upgradedData.nightclubStorage },
-            purchaseDates: { ...prev.purchaseDates, ...upgradedData.purchaseDates },
-            cayoHistory: upgradedData.cayoHistory || prev.cayoHistory || []
+            purchaseDates: { ...prev.purchaseDates, ...upgradedData.purchaseDates }
           }));
           setHasDraft(true);
         }
@@ -319,8 +371,18 @@ export const AssessmentProvider = ({ children }) => {
         
         // Submit stats and save progress
         submitAnonymousStats(formData, calculatedResults);
+        const progressHistory = getProgressHistory();
+        const streakResult = recordAssessment(); // Track streak
+        const gamificationResult = applyAssessmentGamification({
+          formData,
+          results: calculatedResults,
+          history: progressHistory,
+          streak: streakResult.streak,
+        });
+
+        setGamification(gamificationResult.state);
+        setGamificationSummary(gamificationResult.summary);
         saveProgressSnapshot(formData, calculatedResults);
-        recordAssessment(); // Track streak
         
         // Submit trap statistics for community tracking
         const traps = detectTraps(formData, calculatedResults);
@@ -343,11 +405,12 @@ export const AssessmentProvider = ({ children }) => {
     }, 100);
   }, [formData]);
 
-  const resetForm = () => {
+  const resetForm = useCallback(() => {
     setFormData({
-      rank: '', timePlayed: '', liquidCash: '0', 
+      rank: '', timePlayed: '', timePlayedDays: '', timePlayedHours: '', timePlayedMinutes: '', timePlayedMode: 'parts', liquidCash: '0', 
+      totalIncomeCollected: '', totalRPCollected: '',
       strength: 0, flying: 0, shooting: 0, stealth: 0, stamina: 0, driving: 0,
-      hasKosatka: false, hasSparrow: false, cayoCompletions: '', cayoAvgTime: '',
+      hasKosatka: false, hasSparrow: false,
       hasAgency: false, dreContractDone: false, payphoneUnlocked: false, securityContracts: '',
       hasAcidLab: false, acidLabUpgraded: false, 
       hasNightclub: false, 
@@ -377,6 +440,9 @@ export const AssessmentProvider = ({ children }) => {
       hasMansion: false,
       mansionType: '',
       hasCarWash: false,
+      hasWeedFarm: false,
+      hasHeliTours: false,
+      sellsToStreetDealers: false,
       claimedFreeCar: false,
       claimedWheelSpin: false,
       hasGTAPlus: false, playMode: 'invite',
@@ -390,8 +456,6 @@ export const AssessmentProvider = ({ children }) => {
         autoShop: null,
         salvageYard: null,
       },
-      cayoHistory: [],
-      lastCayoRun: null,
     });
     setResults(null);
     setStep('form');
@@ -399,9 +463,9 @@ export const AssessmentProvider = ({ children }) => {
     setHasDraft(false);
     setLastSaved(null);
     localStorage.removeItem(STORAGE_KEY);
-  };
+  }, []);
 
-  const manualSave = () => {
+  const manualSave = useCallback(() => {
     if (!localStorageAvailable) {
       alert('⚠️ Auto-save disabled. Are you in private browsing mode?');
       return;
@@ -415,11 +479,12 @@ export const AssessmentProvider = ({ children }) => {
       console.error('❌ Manual save failed:', error);
       alert('❌ Failed to save. Check console for details.');
     }
-  };
+  }, [formData, localStorageAvailable]);
 
-  const clearSavedData = () => {
+  const clearSavedData = useCallback(() => {
     if (confirm('⚠️ Clear all saved data? This cannot be undone.')) {
       localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(GAMIFICATION_STORAGE_KEY);
       // Also clear old keys
       ['gta_assessment_draft_v1', 'gta_assessment_draft_v2', 'gta_assessment_draft_v3', 'gta_assessment_draft_v4', 'gtaAssessmentDraft_v1', 'gtaAssessmentDraft_v2', 'gtaAssessmentDraft_v3', 'gtaAssessmentDraft_v4'].forEach(key => {
         try {
@@ -430,34 +495,7 @@ export const AssessmentProvider = ({ children }) => {
       });
       globalThis.location.reload();
     }
-  };
-
-  // Update Cayo history with a new run time for efficiency decay tracking
-  const updateCayoHistory = (runTime) => {
-    setFormData(prev => {
-      const newEntry = {
-        time: Number.parseFloat(runTime),
-        timestamp: Date.now(),
-      };
-      
-      // Keep only last 50 runs to prevent storage bloat
-      const currentHistory = prev.cayoHistory || [];
-      const updatedHistory = [...currentHistory, newEntry].slice(-50);
-      
-      // Calculate new average from history
-      const avgTime = updatedHistory.length > 0
-        ? (updatedHistory.reduce((sum, entry) => sum + entry.time, 0) / updatedHistory.length).toFixed(1)
-        : prev.cayoAvgTime;
-      
-      return {
-        ...prev,
-        cayoHistory: updatedHistory,
-        lastCayoRun: Date.now(),
-        cayoAvgTime: avgTime,
-        cayoCompletions: String((Number(prev.cayoCompletions) || 0) + 1),
-      };
-    });
-  };
+  }, []);
 
   const contextValue = useMemo(() => ({
     formData, setFormData,
@@ -468,13 +506,31 @@ export const AssessmentProvider = ({ children }) => {
     whatIfText, setWhatIfText,
     isCalculating,
     isSaving,
-    updateCayoHistory,
     lastSaved,
     localStorageAvailable,
+    gamification,
+    gamificationSummary,
     runAssessment, resetForm, manualSave, clearSavedData,
     // Version for migration support
-    version: 'v5'
-  }), [formData, results, step, hasDraft, errors, whatIfText, isCalculating, isSaving, lastSaved, localStorageAvailable, updateCayoHistory, runAssessment, resetForm, manualSave, clearSavedData]);
+    version: 'v6'
+  }), [
+    formData,
+    results,
+    step,
+    hasDraft,
+    errors,
+    whatIfText,
+    isCalculating,
+    isSaving,
+    lastSaved,
+    localStorageAvailable,
+    gamification,
+    gamificationSummary,
+    runAssessment,
+    resetForm,
+    manualSave,
+    clearSavedData,
+  ]);
 
   return (
     <AssessmentContext.Provider value={contextValue}>

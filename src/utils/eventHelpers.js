@@ -61,11 +61,16 @@ const collectWeeklyBonuses = (bonuses, date) => {
       daysLeft,
       multiplier: bonus.multiplier,
       label: bonus.label,
-      tier: bonus.multiplier >= 3 ? 1 : 2,
-      urgent: bonus.multiplier >= 3 || hoursLeft < 48,
+      tier: (bonus.multiplier >= 3 || bonus.highValue) ? 1 : 2,
+      urgent: bonus.multiplier >= 3 || bonus.highValue || hoursLeft < 48,
       critical: isCritical,
-      hourlyRate: 0, // Consumers override per-activity
+      hourlyRate: bonus.estimatedHourlyRate || 0,
       category: bonus.category,
+      requiresMultiplayer: bonus.requiresMultiplayer || false,
+      soloFriendly: bonus.soloFriendly || false,
+      soloNote: bonus.soloNote || '',
+      soloTip: bonus.soloTip || '',
+      highValue: bonus.highValue || false,
     });
   }
   return results;

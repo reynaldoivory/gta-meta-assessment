@@ -48,7 +48,6 @@ const ActionPlan = ({ user: propUser, gameState: propGameState }) => {
       bunkerUpgraded: formData.bunkerUpgraded || false,
       acidLabUpgraded: formData.acidLabUpgraded || false,
       nightclubTechs: Number(formData.nightclubTechs) || 0,
-      cayoAvgTime: Number(formData.cayoAvgTime) || 70,
       playTime: 20,
     };
   }, [propUser, formData]);
@@ -71,8 +70,6 @@ const ActionPlan = ({ user: propUser, gameState: propGameState }) => {
         } : null,
       },
       claimedBonuses: [],
-      cayoCompletions: Number(formData.cayoCompletions) || 0,
-      averageCayoTime: Number(formData.cayoAvgTime) || 70,
     };
   }, [propGameState, formData]);
 

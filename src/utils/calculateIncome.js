@@ -61,11 +61,6 @@ export const getNightclubRates = () => NC_RATES;
 /**
  * Calculate all income sources for a player
  * @param {Object} params - Normalized player data
- * @param {number} params.cayoCompletions - Number of Cayo completions
- * @param {number} params.cayoAvgTime - Average Cayo completion time in minutes
- * @param {number} params.nightclubTechs - Number of nightclub technicians (0-5)
- * @param {number} params.nightclubFeeders - Number of nightclub feeder businesses (0-5)
- * @param {number} params.securityContracts - Number of security contracts completed
  * @param {boolean} params.hasKosatka - Owns Kosatka submarine
  * @param {boolean} params.hasAgency - Owns Agency
  * @param {boolean} params.hasAcidLab - Owns Acid Lab
@@ -77,13 +72,16 @@ export const getNightclubRates = () => NC_RATES;
  * @param {boolean} params.hasTowTruck - Owns Tow Truck
  * @param {boolean} params.payphoneUnlocked - Payphone hits unlocked
  * @param {boolean} params.hasGTAPlus - Has GTA+ subscription
+ * @param {boolean} params.hasAutoShop - Owns Auto Shop
+ * @param {boolean} params.hasCarWash - Owns Car Wash
+ * @param {boolean} params.hasWeedFarm - Owns Weed Farm (Car Wash feeder)
+ * @param {boolean} params.hasHeliTours - Owns Helicopter Tours (Car Wash feeder)
+ * @param {boolean} params.sellsToStreetDealers - Sells to Street Dealers daily
  * @param {Object} formData - Original form data for dynamic income calculation
  * @returns {Object} Income calculation results
  */
 export const calculateIncome = (params, formData) => {
   const {
-    cayoCompletions,
-    cayoAvgTime,
     nightclubTechs,
     nightclubFeeders,
     securityContracts,
@@ -98,24 +96,24 @@ export const calculateIncome = (params, formData) => {
     hasTowTruck,
     payphoneUnlocked,
     hasGTAPlus,
+    hasAutoShop,
+    hasCarWash,
+    hasWeedFarm,
+    hasHeliTours,
+    sellsToStreetDealers,
   } = params;
 
   let activeIncome = 0;   // GTA$/hr from active grinding
   let passiveIncome = 0;  // GTA$/hr from businesses + GTA+
 
-  // --- 2.1 Cayo Perico (Kosatka) ---
+  // --- 2.1 Cayo Perico (Kosatka) – one of many active income sources ---
   if (hasKosatka) {
     const config = MODEL_CONFIG.income?.cayo || {};
-    const basePayout = config.basePayout ?? 700000;       // avg post-nerf
-    const masteryRuns = config.masteryThreshold ?? 10;    // runs for mastery
-    const masteryBonus = config.masteryBonus ?? 1.1;      // 10% faster when mastered
-
-    const runsPerHour = 60 / cayoAvgTime;
-    const mastered = cayoCompletions >= masteryRuns;
-    const multiplier = mastered ? masteryBonus : 1;
-
-    const cayoPerHour = basePayout * runsPerHour * multiplier;
-    activeIncome += cayoPerHour;
+    const basePayout = config.basePayout ?? 700000;       // avg post-nerf payout
+    // Assume ~75 min avg run (prep + heist) for a typical player
+    const avgRunTime = 75; // minutes
+    const runsPerHour = 60 / avgRunTime;
+    activeIncome += basePayout * runsPerHour;             // ~$560k/hr
   }
 
   // --- 2.2 Agency / Payphone Hits ---
@@ -161,7 +159,32 @@ export const calculateIncome = (params, formData) => {
     passiveIncome += pCfg.salvageYard ?? 35000;
   }
 
-  // --- 2.7 GTA+ Passive Equivalent ---
+  // --- 2.7 Car Wash (Passive + Feeders) ---
+  if (hasCarWash) {
+    const cwCfg = MODEL_CONFIG.income?.carWash || {};
+    let carWashIncome = cwCfg.basePerHour ?? 5000;
+    if (hasWeedFarm) carWashIncome += cwCfg.weedFarmBonus ?? 10000;
+    if (hasHeliTours) carWashIncome += cwCfg.heliToursBonus ?? 8000;
+    passiveIncome += carWashIncome;
+  }
+
+  // --- 2.8 Street Dealers (Daily Income) ---
+  if (sellsToStreetDealers) {
+    const sdCfg = MODEL_CONFIG.income?.streetDealers || {};
+    const dailyAvg = sdCfg.avgDailyWithPremium ?? 250000;
+    const timeMinutes = sdCfg.timeToSellAll ?? 15;
+    // Convert daily income to $/hr equivalent (based on time investment)
+    const streetDealerPerHour = dailyAvg / (timeMinutes / 60);
+    activeIncome += streetDealerPerHour; // ~$1M/hr for 15 min of work
+  }
+
+  // --- 2.9 Auto Shop Contracts ---
+  if (hasAutoShop) {
+    // Union Depository ~$300k for ~30 min = ~$600k/hr. Average contracts ~$400k/hr.
+    activeIncome += 400000;
+  }
+
+  // --- 2.10 GTA+ Passive Equivalent ---
   let gtaPlusBonusPerHour = 0;
   if (hasGTAPlus) {
     const gCfg = MODEL_CONFIG.income?.gtaPlus || {};
@@ -172,7 +195,7 @@ export const calculateIncome = (params, formData) => {
     passiveIncome += gtaPlusBonusPerHour;
   }
 
-  // --- 2.8 DYNAMIC INCOME WITH EVENTS ---
+  // --- 2.11 DYNAMIC INCOME WITH EVENTS ---
   const dynamicIncome = calculateDynamicIncome(formData);
   
   // Use dynamic income if events are active and boost income

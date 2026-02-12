@@ -857,7 +857,6 @@ export const buildSmartActionPlan = (formData, results = null) => {
   const flyingPct = validateStat(formData.flying);
   const hasGTAPlus = formData.hasGTAPlus || false;
   const playerRank = Number(formData.rank) || 0;
-  const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
   
   // Build user profile for gatekeeper checks
   const userProfile = {
@@ -944,7 +943,7 @@ export const buildSmartActionPlan = (formData, results = null) => {
           urgency: 'URGENT',
           type: 'MISSION',
           title: '🔥 Grind Auto Shop Robbery Contracts (2X Event)',
-          why: `Zero prep, ~$540-600k per 20-25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0-1.5M/hr once practiced. Beats your ${cayoAvgTime}-min Cayo runs. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil || WEEKLY_EVENTS.meta.validUntil)}.`,
+          why: `Zero prep, ~$540-600k per 20-25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0-1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil || WEEKLY_EVENTS.meta.validUntil)}.`,
           solution: 'Rotation: Union Depository finale → Client vehicle delivery (also 2X) while staff preps → Repeat. Eliminates downtime.',
           timeToComplete: '20-25 min per finale, ~$540-600k payout',
           earnings: '$1.0-1.5M/hr (realistic)',
@@ -1190,41 +1189,6 @@ Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
   });
 
   // --- PRIORITY 3: EFFICIENCY BENCHMARKING ---
-  // Cayo Perico: Flag if > 45 min (meta benchmark - sub-45 target)
-  if (formData.hasKosatka && cayoAvgTime > META_BENCHMARKS.cayoTime) {
-    const efficiencyGap = cayoAvgTime - META_BENCHMARKS.cayoTime;
-    
-    // Run gatekeeper check for Cayo Perico
-    const cayoGatekeeper = checkGatekeeper('cayo_perico', userProfile);
-    
-    let actionTitle = `Fix Cayo Route: Target Sub-45 Min (Currently ${cayoAvgTime} min)`;
-    let actionWhy = `Your ${cayoAvgTime}-min runs are ${efficiencyGap} minutes slower than meta benchmark (${META_BENCHMARKS.cayoTime} min). Target sub-45 min after current bonuses end.`;
-    
-    // Apply gatekeeper verdict
-    if (cayoGatekeeper.status === 'LOCKED') {
-      // Should not happen since we check formData.hasKosatka, but handle it
-      actionTitle = `🔒 ${actionTitle}`;
-      actionWhy = `${cayoGatekeeper.reason}. ${actionWhy}`;
-    } else if (cayoGatekeeper.status === 'WARNING') {
-      actionTitle = `⚠️ ${actionTitle}`;
-      actionWhy = `${cayoGatekeeper.reason} ${actionWhy}`;
-    }
-    
-    actions.push({
-      priority: 3,
-      urgency: 'MEDIUM',
-      type: 'SKILL',
-      title: actionTitle,
-      why: actionWhy,
-      solution: 'Drainage tunnel, primary only, swim exit. Study 2026 speedrun guides.',
-      timeToComplete: '2-3 hours practice',
-      note: cayoGatekeeper.status === 'WARNING' ? cayoGatekeeper.reason : 'Do this after current time-limited events end. Not urgent during event.',
-      efficiencyGap: efficiencyGap,
-      gatekeeperStatus: cayoGatekeeper.status,
-      gatekeeperPenalty: cayoGatekeeper.score_penalty,
-    });
-  }
-  
   // Flying skill: Flag if < 80% (4/5 bars) for heist leadership
   if (flyingPct < META_BENCHMARKS.flyingSkill) {
     const efficiencyGap = META_BENCHMARKS.flyingSkill - flyingPct;

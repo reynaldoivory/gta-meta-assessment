@@ -1,23 +1,25 @@
 // src/config/weeklyEvents.js
 // The "Source of Truth" for weekly events
 // Update this file every Thursday when Rockstar announces new bonuses
-// Last updated: Feb 5, 2026
+// Last updated: Feb 12, 2026
+// Source: r/gtaonline weekly thread by PapaXan + rockstargames.com/gta-plus
 
 export const WEEKLY_EVENTS = {
   meta: {
-    lastUpdated: '2026-02-05',
-    validFrom: '2026-02-05T10:00:00Z', // Thursday 4AM ET
-    validUntil: '2026-02-12T10:00:00Z', // Next Thursday 4AM ET
-    displayDate: 'Feb 5 - Feb 12',
+    lastUpdated: '2026-02-12',
+    validFrom: '2026-02-12T10:00:00Z', // Thursday 5AM ET
+    validUntil: '2026-02-19T10:00:00Z', // Next Thursday 5AM ET
+    displayDate: 'Feb 12 - Feb 19',
   },
   bonuses: {
-    // Priority 0: The "Meta" Event
+    // Valentine's Event (through Feb 18)
     deadlineDuet: {
       isActive: true,
       multiplier: 3,
       label: '3X Deadline Duet',
-      validUntil: '2026-02-12T10:00:00Z',
+      validUntil: '2026-02-18T10:00:00Z',
       category: 'adversary',
+      tag: 'valentines',
     },
     associateSalaries: {
       isActive: true,
@@ -25,72 +27,124 @@ export const WEEKLY_EVENTS = {
       label: '4X Associate/Bodyguard Salaries',
       validUntil: '2026-02-18T10:00:00Z',
       category: 'freemode',
+      tag: 'valentines',
+      requiresMultiplayer: true,
+      soloNote: 'Requires being hired as Associate/Bodyguard by another CEO — not available solo in Invite Only.',
     },
-    oddJobs: {
+    ceoVipWork: {
       isActive: true,
-      multiplier: 2,
-      label: '2X Odd Jobs',
-      validUntil: '2026-02-12T10:00:00Z',
+      multiplier: 4,
+      label: '4X CEO/VIP Work',
+      validUntil: '2026-02-19T10:00:00Z',
       category: 'freemode',
+      soloFriendly: true,
+      estimatedHourlyRate: 700000,
+      soloTip: 'Loop Headhunter + Sightseer in Invite Only with Sparrow for ~$600-800k/hr.',
     },
-    methProduction: {
+    lunarNewYearStuntRaces: {
+      isActive: true,
+      multiplier: 3,
+      label: '3X Lunar New Year Stunt Races',
+      validUntil: '2026-03-04T10:00:00Z',
+      category: 'race',
+      tag: 'lunar_new_year',
+      gtaPlusMultiplier: 6,
+    },
+    communitySeries: {
       isActive: true,
       multiplier: 2,
-      label: '2X Meth Production Speed',
-      validUntil: '2026-02-12T10:00:00Z',
-      category: 'passive',
+      label: '2X Community Series',
+      validUntil: '2026-02-19T10:00:00Z',
+      category: 'race',
     },
-    bunkerSeries: {
+    cayoPericoPinkDiamond: {
       isActive: true,
-      multiplier: 2,
-      label: '2X Bunker Series',
-      validUntil: '2026-02-12T10:00:00Z',
-      category: 'adversary',
+      multiplier: 1,
+      label: 'Boosted Pink Diamond Chance (~50%)',
+      validUntil: '2026-02-19T10:00:00Z',
+      category: 'heist',
+      note: 'Cayo Perico Heist primary target',
+      soloFriendly: true,
+      highValue: true,
+      estimatedHourlyRate: 1300000,
+      soloTip: 'Pink Diamond ($1.3M) makes even slow Cayo runs highly profitable. Run Cayo this week.',
     },
-    bunkerResearch: {
-      isActive: true,
-      multiplier: 2,
-      label: '2X Bunker Research Missions',
-      validUntil: '2026-02-12T10:00:00Z',
-      category: 'mission',
+  },
+  specialEvents: {
+    valentines: {
+      label: "Valentine's Day Event",
+      validUntil: '2026-02-18T10:00:00Z',
+      rewards: [
+        'Valentines Onesie (login reward)',
+        '50% off Valentine\'s Clothing',
+        '50% off Nagasaki Shotaro',
+        'Free Champagne in all Nightclubs',
+      ],
     },
-    salvageYard: {
-      isActive: true,
-      multiplier: 2,
-      label: '2X Salvage Yard Robberies',
-      validUntil: '2026-02-12T10:00:00Z',
-      category: 'mission',
+    lunarNewYear: {
+      label: 'Lunar New Year: Year of the Fire Horse',
+      validUntil: '2026-03-04T10:00:00Z',
+      rewards: [
+        'Red Year of the Horse Tee (login reward)',
+        'Free Horse Masks & Tattoos',
+        'Yuanbao Collectibles Return (36 total)',
+        'New Stunt Race: The Senora Derby',
+      ],
     },
   },
   oneTimeBonuses: [
     {
-      id: 'deadline_duet_first_win',
-      reward: 150000,
-      description: 'Win one Deadline Duet match',
-      expires: '2026-02-12T10:00:00Z',
-      deliveryTime: 'within 72 hours',
+      id: 'valentines_blazer_challenge',
+      reward: 100000,
+      description: 'Earn $100k as Associate/Bodyguard → Valentines Blazer + $100k',
+      expires: '2026-02-19T10:00:00Z',
+      deliveryTime: 'immediate',
     },
   ],
   discounts: {
-    bunkerProperties: {
+    executiveOffices: {
+      label: 'Executive Offices',
+      percent: 40,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-19T10:00:00Z',
+    },
+    executiveOfficeUpgrades: {
+      label: 'Executive Office Upgrades',
+      percent: 40,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-19T10:00:00Z',
+    },
+    valentinesClothing: {
+      label: "Valentine's Clothing",
+      percent: 50,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-18T10:00:00Z',
+      tag: 'valentines',
+    },
+    nagasakiShotaro: {
+      label: 'Nagasaki Shotaro',
+      percent: 50,
+      requiresGTAPlus: false,
+      validUntil: '2026-02-18T10:00:00Z',
+      tag: 'valentines',
+    },
+    vehicles30: {
+      label: 'Select Vehicles (Hotring Everon, Tulip M-100, Vagner, Tahoma Coupe, Neon, Raiden, Velum 5-Seat, Yosemite 1500, Torero, Cheetah Classic)',
       percent: 30,
       requiresGTAPlus: false,
-      validUntil: '2026-02-12T10:00:00Z',
+      validUntil: '2026-02-19T10:00:00Z',
     },
-    methLabProperties: {
-      percent: 40,
+    gunVanGusenberg: {
+      label: 'Gusenberg Sweeper (Gun Van)',
+      percent: 100,
       requiresGTAPlus: false,
-      validUntil: '2026-02-12T10:00:00Z',
+      validUntil: '2026-02-19T10:00:00Z',
     },
-    methLabUpgrades: {
-      percent: 40,
-      requiresGTAPlus: false,
-      validUntil: '2026-02-12T10:00:00Z',
-    },
-    salvageYardProperties: {
-      percent: 25,
-      requiresGTAPlus: false,
-      validUntil: '2026-02-12T10:00:00Z',
+    gunVanTacticalSMG: {
+      label: 'Tactical SMG (Gun Van)',
+      percent: 30,
+      requiresGTAPlus: true,
+      validUntil: '2026-02-19T10:00:00Z',
     },
   },
   gtaPlus: {
@@ -98,17 +152,24 @@ export const WEEKLY_EVENTS = {
     freeCarValue: 1850000,
     freeCarLocation: 'The Vinewood Car Club',
     earlyAccess: 'Grotti Itali Classic',
+    earlyAccessDiscount: 20,
     monthlyCash: 500000,
+    benefitsExpire: '2026-03-04T10:00:00Z',
     monthlyBonuses: [
       {
-        activity: 'odd_jobs',
-        multiplier: 3,
-        expires: '2026-03-05T10:00:00Z',
+        activity: 'lunar_stunt_races',
+        multiplier: 6,
+        label: '6X Lunar New Year Stunt Races (vs 3X)',
+        expires: '2026-03-04T10:00:00Z',
       },
       {
-        activity: 'salvage_yard',
-        multiplier: 3,
-        expires: '2026-03-05T10:00:00Z',
+        activity: 'security_contracts',
+        multiplier: 2,
+        label: '2X Security Contracts (GTA+ Perk)',
+        expires: '2026-03-04T10:00:00Z',
+        soloFriendly: true,
+        estimatedHourlyRate: 280000,
+        soloTip: 'Run Specialist+ difficulty contracts from Agency during Cayo cooldown (~$100-140k each).',
       },
     ],
   },

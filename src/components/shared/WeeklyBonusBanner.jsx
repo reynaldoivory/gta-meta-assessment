@@ -24,7 +24,7 @@ const WeeklyBonusBanner = () => {
           2026 META
         </span>
       </div>
-      <div className="grid gap-3 md:grid-cols-3">
+      <div className="grid grid-cols-3 gap-3">
         {bonuses.map((b, idx) => (
           <div
             key={idx}

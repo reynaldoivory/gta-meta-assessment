@@ -202,11 +202,83 @@ export const MODEL_CONFIG = {
     },
     autoShop: {
       perHour: 40000              // Auto Shop income per hour
-    }
+    },
+    // Car Wash passive income (Bottom Dollar Bounties DLC)
+    carWash: {
+      base: 5000,                 // Base safe income per hr (no feeders)
+      withWeedFarm: 10000,        // Added safe income from Weed Farm feeder
+      withHeliTours: 8000,        // Added safe income from Heli Tours feeder
+      maxSafe: 250000,            // Safe capacity
+      // Total with all feeders: ~$23,000/hr
+    },
+    // Street Dealers (3 daily, sell all 4 drug types)
+    streetDealers: {
+      // Per dealer averages (all 4 types sold)
+      cocainePerDealer: 20000,    // 1 unit × ~$20k avg
+      methPerDealer: 17500,       // 2 units × ~$8.75k avg
+      weedPerDealer: 15000,       // 10 units × ~$1.5k avg
+      acidPerDealer: 14850,       // 10 units × ~$1.485k avg
+      allTypesPerDealer: 67350,   // Sum of all 4 types (no premium)
+      dealersPerDay: 3,           // 3 dealers spawn daily
+      dailyTotal: 202050,         // ~$202k/day (no premiums)
+      dailyWithPremiums: 250000,  // ~$250k/day avg (some premiums)
+      timeMinutes: 15,            // ~15 min to visit all 3
+    },
+    // Cluckin Bell Factory Raid
+    cluckinBell: {
+      payout: 400000,             // ~$400k per completion
+      timeMinutes: 25,            // ~25 min per run
+      perHour: 960000,            // ~$960k/hr (repeatable)
+    },
   },
-
   // Heist readiness criteria count
   heistReadiness: {
-    totalCriteria: 6
+    totalCriteria: 6,
+    weights: {
+      rank: 16,
+      strength: 16,
+      flying: 16,
+      diversifiedIncome: 20,
+      travelOptimized: 16,
+      bizCore: 16
+    },
+    diversifiedIncome: {
+      points: {
+        acidLab: 3,
+        agency: 3,
+        nightclub: 3,
+        kosatka: 2,
+        bunker: 2,
+        autoShop: 1,
+        salvageYard: 1,
+        carWash: 1,
+        streetDealers: 1
+      },
+      mcPoints: {
+        coke: 0.5,
+        meth: 0.5,
+        cash: 0.5
+      },
+      tiers: {
+        bronze: 3,
+        silver: 6,
+        gold: 10,
+        platinum: 15
+      },
+      tierScores: {
+        paper: 0,
+        bronze: 40,
+        silver: 75,
+        gold: 90,
+        platinum: 100
+      },
+      tierLabels: {
+        paper: 'Fresh Meat',
+        bronze: 'Hustler',
+        silver: 'Established',
+        gold: 'Diversified Mogul',
+        platinum: 'Empire Builder'
+      }
+    }
   }
 };

@@ -1,12 +1,11 @@
 // src/views/AssessmentForm.jsx
-import React, { useRef, useMemo } from 'react';
+import React, { useRef, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
 import { Activity, Zap, Briefcase, CheckCircle, Cloud, Save, Trash2, AlertCircle } from 'lucide-react';
 import StatBar from '../components/shared/StatBar';
 import AssetCard from '../components/shared/AssetCard';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
-import CarWashExpiryBadge from '../components/shared/CarWashExpiryBadge';
 import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
 import NightclubLogistics from '../components/shared/NightclubLogistics';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
@@ -88,6 +87,38 @@ const errorBorder = (errors, field) =>
 const errorBorderSimple = (errors, field) => 
   errors[field] ? 'border-red-500' : 'border-slate-700';
 
+// Helper: time played conversions
+const hasAnyTimeParts = (formData) => (
+  [formData.timePlayedDays, formData.timePlayedHours]
+    .some(value => value !== '' && value !== undefined && value !== null)
+);
+
+const clampTimePart = (value, max) => {
+  if (value === '') return '';
+  const parsed = Number(value);
+  if (Number.isNaN(parsed)) return '';
+  const clamped = Math.min(Math.max(Math.floor(parsed), 0), max ?? Number.MAX_SAFE_INTEGER);
+  return String(clamped);
+};
+
+const calculateTotalHours = (days, hours, minutes = 0) => {
+  const total = days * 24 + hours + minutes / 60;
+  return Math.round(total);
+};
+
+const formatHours = (value) => {
+  if (!Number.isFinite(value)) return '0';
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
+// Helper: format number with commas for display (like GTA UI)
+const formatCurrency = (value) => {
+  if (!value || value === '') return '';
+  const num = Number(value);
+  if (Number.isNaN(num)) return value;
+  return num.toLocaleString('en-US');
+};
+
 // Sub-component: GTA+ Vehicle Reminder
 const GTAPlusVehicleReminder = ({ formData }) => {
   const show = formData.hasGTAPlus && !formData.claimedFreeCar && !formData.hasRaiju && !formData.hasOppressor;
@@ -107,7 +138,7 @@ const GTAPlusVehicleReminder = ({ formData }) => {
 
 // Sub-component: Bunker warning
 const BunkerWarning = ({ formData }) => {
-  const show = formData.hasBunker && !formData.bunkerEquipmentUpgrade && !formData.bunkerUpgraded;
+  const show = formData.hasBunker && (!formData.bunkerEquipmentUpgrade || !formData.bunkerStaffUpgrade);
   if (!show) return null;
   return (
     <div className="p-2 bg-red-900/30 border border-red-500/50 rounded text-xs text-red-300">
@@ -127,17 +158,7 @@ const MuleWarning = ({ formData }) => {
   );
 };
 
-// Sub-component: Cayo nerf warning
-const CayoNerfWarning = ({ formData }) => {
-  const show = formData.cayoCompletions && Number(formData.cayoCompletions) > 0;
-  if (!show) return null;
-  return (
-    <div className="mt-2 p-2 bg-yellow-900/20 border border-yellow-700/30 rounded text-xs text-yellow-400">
-      ⚠️ <strong>2023 Nerf Impact:</strong> Tequila (~60% drop rate) pays ~$630k total. 
-      Pink Diamond/Panther pay $1M-1.9M but are rare. Average: $700k/run.
-    </div>
-  );
-};
+
 
 // Sub-component: Active Bonuses & Claims section
 const BonusClaimsSection = ({ formData, setFormData }) => (
@@ -148,27 +169,7 @@ const BonusClaimsSection = ({ formData, setFormData }) => (
       </h3>
       
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        {/* 1. FREE CAR WASH (Weekly Event) */}
-        <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
-          formData.hasCarWash 
-            ? 'bg-slate-800 opacity-60' 
-            : 'bg-slate-800 hover:bg-slate-700 ring-2 ring-green-500/50'
-        }`}>
-          <input
-            type="checkbox"
-            checked={formData.hasCarWash}
-            onChange={(e) => setFormData({ ...formData, hasCarWash: e.target.checked })}
-            className="form-checkbox h-5 w-5 text-green-500 rounded border-slate-600 bg-slate-700 focus:ring-offset-slate-900"
-          />
-          <div className="flex-1">
-            <span className={`font-medium ${formData.hasCarWash ? 'text-slate-400 line-through' : 'text-slate-200'}`}>
-              {formData.hasCarWash ? 'Claimed:' : 'Available:'} Hands-On Car Wash
-            </span>
-            <CarWashExpiryBadge claimed={formData.hasCarWash} />
-          </div>
-        </label>
-
-        {/* 2. FREE CAR (GTA+ Only) */}
+        {/* 1. FREE CAR (GTA+ Only) */}
         {formData.hasGTAPlus && (
           <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
             formData.claimedFreeCar
@@ -191,7 +192,7 @@ const BonusClaimsSection = ({ formData, setFormData }) => (
           </label>
         )}
 
-        {/* 3. CASINO WHEEL SPIN (GTA+ Only) */}
+        {/* 2. CASINO WHEEL SPIN (GTA+ Only) */}
         {formData.hasGTAPlus && (
           <label className={`flex items-center space-x-3 p-3 rounded cursor-pointer transition ${
             formData.claimedWheelSpin
@@ -271,7 +272,7 @@ const FormFooter = ({ errors, cascadeTraps, hasCriticalTrap, criticalTraps, runA
 GTAPlusVehicleReminder.propTypes = { formData: PropTypes.object.isRequired };
 BunkerWarning.propTypes = { formData: PropTypes.object.isRequired };
 MuleWarning.propTypes = { formData: PropTypes.object.isRequired };
-CayoNerfWarning.propTypes = { formData: PropTypes.object.isRequired };
+
 BonusClaimsSection.propTypes = { formData: PropTypes.object.isRequired, setFormData: PropTypes.func.isRequired };
 FormFooter.propTypes = {
   errors: PropTypes.object.isRequired,
@@ -287,6 +288,9 @@ const QUICK_FILL_PRESETS = {
   'New Player': {
     rank: '25',
     timePlayed: '10',
+    timePlayedDays: '0',
+    timePlayedHours: '10',
+    timePlayedMode: 'parts',
     liquidCash: '500000',
     strength: 2,
     flying: 2,
@@ -307,6 +311,9 @@ const QUICK_FILL_PRESETS = {
   'Mid Grinder': {
     rank: '75',
     timePlayed: '100',
+    timePlayedDays: '4',
+    timePlayedHours: '4',
+    timePlayedMode: 'parts',
     liquidCash: '5000000',
     strength: 4,
     flying: 4,
@@ -342,8 +349,10 @@ const QUICK_FILL_PRESETS = {
     bunkerStaffUpgrade: true,
     bunkerSecurityUpgrade: false,
     hasAutoShop: true,
-    cayoCompletions: '25',
-    cayoAvgTime: '60',
+    hasCarWash: true,
+    hasWeedFarm: false,
+    hasHeliTours: false,
+    sellsToStreetDealers: true,
     dreContractDone: true,
     payphoneUnlocked: true,
     securityContracts: '150',
@@ -353,6 +362,9 @@ const QUICK_FILL_PRESETS = {
   'Endgame 2026': {
     rank: '150',
     timePlayed: '500',
+    timePlayedDays: '20',
+    timePlayedHours: '20',
+    timePlayedMode: 'parts',
     liquidCash: '50000000',
     strength: 5,
     flying: 5,
@@ -397,8 +409,10 @@ const QUICK_FILL_PRESETS = {
     hasRaiju: true,
     hasOppressor: true,
     hasArmoredKuruma: true,
-    cayoCompletions: '100',
-    cayoAvgTime: '45',
+    hasCarWash: true,
+    hasWeedFarm: true,
+    hasHeliTours: true,
+    sellsToStreetDealers: true,
     hasGTAPlus: true,
     playMode: 'invite'
   }
@@ -410,12 +424,35 @@ export default function AssessmentForm() {
     isSaving, lastSaved, localStorageAvailable, manualSave, clearSavedData
   } = useAssessment();
   const formContainerRef = useRef(null);
+  const [focusedField, setFocusedField] = useState(null);
   
   // Detect traps in real-time as user fills form
   const detectedTraps = useMemo(() => detectTraps(formData), [formData]);
   const criticalTraps = detectedTraps.filter(t => t.severity === TRAP_SEVERITY.CRITICAL);
   const cascadeTraps = detectedTraps.filter(t => t.isCascadeTrap);
   const hasCriticalTrap = criticalTraps.length > 0;
+
+  const timePlayedHasParts = useMemo(
+    () => hasAnyTimeParts(formData),
+    [formData.timePlayedDays, formData.timePlayedHours]
+  );
+  const timePlayedMode = formData.timePlayedMode || 'parts';
+  const timePlayedTotal = useMemo(() => {
+    if (timePlayedHasParts) {
+      const days = Number(formData.timePlayedDays) || 0;
+      const hours = Number(formData.timePlayedHours) || 0;
+      const minutes = Number(formData.timePlayedMinutes) || 0;
+      return calculateTotalHours(days, hours, minutes);
+    }
+    const fallback = Number(formData.timePlayed);
+    return Number.isFinite(fallback) ? Math.round(fallback) : 0;
+  }, [
+    timePlayedHasParts,
+    formData.timePlayed,
+    formData.timePlayedDays,
+    formData.timePlayedHours,
+    formData.timePlayedMinutes
+  ]);
 
   // Input change handler with auto purchase date tracking
   const handleInputChange = (e) => {
@@ -432,6 +469,89 @@ export default function AssessmentForm() {
       [name]: type === 'checkbox' ? checked : value
     }));
     clearFieldError(name, errors, setErrors);
+  };
+
+  const handleTimePlayedPartChange = (e) => {
+    const { name, value } = e.target;
+    const max = name === 'timePlayedHours' ? 23 : undefined;
+    const normalized = clampTimePart(value, max);
+
+    setFormData(prev => {
+      const next = { ...prev, [name]: normalized, timePlayedMinutes: '', timePlayedMode: 'parts' };
+      const hasParts = hasAnyTimeParts(next);
+      if (!hasParts) {
+        return { ...next, timePlayed: '' };
+      }
+
+      const days = Number(next.timePlayedDays) || 0;
+      const hours = Number(next.timePlayedHours) || 0;
+      const minutes = Number(next.timePlayedMinutes) || 0;
+      const totalHours = calculateTotalHours(days, hours, minutes);
+      return { ...next, timePlayed: String(totalHours) };
+    });
+
+    clearFieldError('timePlayed', errors, setErrors);
+  };
+
+  const handleTimePlayedTotalChange = (e) => {
+    const { value } = e.target;
+    if (value === '') {
+      setFormData(prev => ({
+        ...prev,
+        timePlayed: '',
+        timePlayedDays: '',
+        timePlayedHours: '',
+        timePlayedMinutes: '',
+        timePlayedMode: 'total'
+      }));
+      clearFieldError('timePlayed', errors, setErrors);
+      return;
+    }
+
+    const parsed = Number(value);
+    const rounded = Number.isNaN(parsed) ? '' : String(Math.max(0, Math.round(parsed)));
+
+    setFormData(prev => ({
+      ...prev,
+      timePlayed: rounded,
+      timePlayedDays: '',
+      timePlayedHours: '',
+      timePlayedMinutes: '',
+      timePlayedMode: 'total'
+    }));
+
+    clearFieldError('timePlayed', errors, setErrors);
+  };
+
+  const handleTimePlayedModeChange = (mode) => {
+    setFormData(prev => ({
+      ...prev,
+      timePlayedMode: mode,
+      timePlayed: mode === 'parts' ? '' : prev.timePlayed,
+      timePlayedDays: mode === 'total' ? '' : prev.timePlayedDays,
+      timePlayedHours: mode === 'total' ? '' : prev.timePlayedHours,
+      timePlayedMinutes: ''
+    }));
+
+    clearFieldError('timePlayed', errors, setErrors);
+  };
+
+  const handleTimePlayedModeFocus = (mode) => {
+    setFormData(prev => {
+      const hasParts = (prev.timePlayedDays !== undefined && prev.timePlayedDays !== '') || 
+                       (prev.timePlayedHours !== undefined && prev.timePlayedHours !== '');
+      const hasTotal = prev.timePlayed !== undefined && prev.timePlayed !== '';
+
+      // Only switch modes if the other mode is empty; prevents accidental flips
+      if (mode === 'parts' && hasTotal && !hasParts) {
+        return { ...prev, timePlayedMode: mode };
+      }
+      if (mode === 'total' && hasParts && !hasTotal) {
+        return { ...prev, timePlayedMode: mode };
+      }
+      
+      return prev;
+    });
   };
 
   // Stat change handler
@@ -549,14 +669,22 @@ export default function AssessmentForm() {
               </div>
               <div>
                 <label htmlFor="liquidCash" className="text-xs text-slate-500 font-bold uppercase block mb-1">Cash</label>
-                <input 
-                  id="liquidCash"
-                  name="liquidCash" 
-                  type="number" 
-                  value={formData.liquidCash} 
-                  onChange={handleInputChange} 
-                  className={`w-full bg-slate-900 border rounded p-3 focus:border-green-500 outline-none transition-colors ${errorBorder(errors, 'liquidCash')}`}
-                />
+                <div className="relative">
+                  <input 
+                    id="liquidCash"
+                    name="liquidCash" 
+                    type="number" 
+                    placeholder="e.g. 50,000,000"
+                    value={formData.liquidCash} 
+                    onChange={handleInputChange} 
+                    onFocus={() => setFocusedField('liquidCash')}
+                    onBlur={() => setFocusedField(null)}
+                    className={`w-full bg-slate-900 border rounded p-3 focus:border-green-500 outline-none transition-colors ${formData.liquidCash && formData.liquidCash !== '0' && formData.liquidCash !== 0 ? 'text-transparent' : ''} ${errorBorder(errors, 'liquidCash')}`}
+                  />
+                  {formData.liquidCash && formData.liquidCash !== '0' && formData.liquidCash !== 0 && !errors.liquidCash && (
+                    <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-green-400 font-mono text-lg">$ {formatCurrency(formData.liquidCash)}</div>
+                  )}
+                </div>
                 {errors.liquidCash && (
                   <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
                     <AlertCircle className="w-3 h-3 flex-shrink-0" />
@@ -565,46 +693,167 @@ export default function AssessmentForm() {
                 )}
               </div>
             </div>
-            <div className="col-span-2">
-              <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-900 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
-                <input 
-                  type="checkbox" 
-                  name="hasGTAPlus"
-                  checked={formData.hasGTAPlus} 
-                  onChange={handleInputChange} 
-                  className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-blue-500 focus:ring-blue-500"
-                  aria-label="GTA+ Subscriber"
-                />
-                <div className="flex-1">
-                  <div className="text-white font-medium">GTA+ Subscriber ($7.99/mo)</div>
-                  <div className="text-xs text-slate-500">
-                    Adds $500k/month + 2X Lucky Wheel + current weekly bonuses
-                  </div>
-                  <div className="text-[11px] text-slate-500 mt-1">
-                    Assumes ~$500k/month extra (~115k/hour averaged over a 4–5h weekly grind).
-                  </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div>
+                <label htmlFor="totalRPCollected" className="text-xs text-slate-500 font-bold uppercase block mb-1">Total RP (lifetime)</label>
+                <div className="relative">
+                  <input 
+                    id="totalRPCollected"
+                    name="totalRPCollected" 
+                    type="number" 
+                    placeholder="e.g. 50,000,000"
+                    value={formData.totalRPCollected} 
+                    onChange={handleInputChange} 
+                    onFocus={() => setFocusedField('totalRPCollected')}
+                    onBlur={() => setFocusedField(null)}
+                    className={`w-full bg-slate-900 border rounded p-3 focus:border-purple-500 outline-none transition-colors ${formData.totalRPCollected && formData.totalRPCollected !== '0' && formData.totalRPCollected !== 0 ? 'text-transparent' : ''} ${errorBorder(errors, 'totalRPCollected')}`}
+                  />
+                  {formData.totalRPCollected && formData.totalRPCollected !== '0' && formData.totalRPCollected !== 0 && !errors.totalRPCollected && (
+                    <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-purple-400 font-mono text-lg">{formatCurrency(formData.totalRPCollected)} RP</div>
+                  )}
                 </div>
-              </label>
+                {errors.totalRPCollected && (
+                  <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    <span>{errors.totalRPCollected}</span>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label htmlFor="totalIncomeCollected" className="text-xs text-slate-500 font-bold uppercase block mb-1">Total Income (lifetime)</label>
+                <div className="relative">
+                  <input 
+                    id="totalIncomeCollected"
+                    name="totalIncomeCollected" 
+                    type="number" 
+                    placeholder="e.g. 500,000,000"
+                    value={formData.totalIncomeCollected} 
+                    onChange={handleInputChange} 
+                    onFocus={() => setFocusedField('totalIncomeCollected')}
+                    onBlur={() => setFocusedField(null)}
+                    className={`w-full bg-slate-900 border rounded p-3 focus:border-green-500 outline-none transition-colors ${formData.totalIncomeCollected && formData.totalIncomeCollected !== '0' && formData.totalIncomeCollected !== 0 ? 'text-transparent' : ''} ${errorBorder(errors, 'totalIncomeCollected')}`}
+                  />
+                  {formData.totalIncomeCollected && formData.totalIncomeCollected !== '0' && formData.totalIncomeCollected !== 0 && !errors.totalIncomeCollected && (
+                    <div className="absolute inset-0 flex items-center px-3 pointer-events-none text-green-400 font-mono text-lg">$ {formatCurrency(formData.totalIncomeCollected)}</div>
+                  )}
+                </div>
+                {errors.totalIncomeCollected && (
+                  <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
+                    <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                    <span>{errors.totalIncomeCollected}</span>
+                  </div>
+                )}
+              </div>
             </div>
+            <div className="text-xs text-slate-600">
+              <p>💡 Find these in Stats → Career Progress (Lifetime Stats). Helps compare your efficiency to community benchmarks.</p>
+            </div>
+            <label className="flex items-center gap-3 cursor-pointer p-3 bg-slate-900 border border-slate-700 rounded-lg hover:bg-slate-800 transition-colors">
+              <input 
+                type="checkbox" 
+                name="hasGTAPlus"
+                checked={formData.hasGTAPlus} 
+                onChange={handleInputChange} 
+                className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-blue-500 focus:ring-blue-500"
+                aria-label="GTA+ Subscriber"
+              />
+              <div className="flex-1">
+                <div className="text-white font-medium">GTA+ Subscriber ($7.99/mo)</div>
+                <div className="text-xs text-slate-500">
+                  Adds $500k/month + 2X Lucky Wheel + current weekly bonuses
+                </div>
+                <div className="text-[11px] text-slate-500 mt-1">
+                  Assumes ~$500k/month extra (~115k/hour averaged over a 4–5h weekly grind).
+                </div>
+              </div>
+            </label>
             <div>
-              <label htmlFor="timePlayed" className="text-xs text-slate-500 font-bold uppercase block mb-1">
+              <label htmlFor="timePlayedDays" className="text-xs text-slate-500 font-bold uppercase block mb-1">
                 Total Hours Played
                 {' '}<span className="text-slate-600 font-normal">(cumulative, for efficiency calculation)</span>
               </label>
-              <input 
-                id="timePlayed"
-                name="timePlayed" 
-                type="number" 
-                placeholder="e.g. 150"
-                value={formData.timePlayed} 
-                onChange={handleInputChange} 
-                className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${errorBorderSimple(errors, 'timePlayed')}`}
-                min="0"
-              />
+              <div className="grid grid-cols-2 gap-2 mb-3">
+                <button
+                  type="button"
+                  onClick={() => handleTimePlayedModeChange('parts')}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${timePlayedMode === 'parts'
+                    ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-200'
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Days + Hours
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleTimePlayedModeChange('total')}
+                  className={`px-3 py-2 rounded-lg text-xs font-semibold border transition ${timePlayedMode === 'total'
+                    ? 'bg-yellow-500/20 border-yellow-500/60 text-yellow-200'
+                    : 'bg-slate-900 border-slate-700 text-slate-400 hover:text-slate-200'}`}
+                >
+                  Total Hours
+                </button>
+              </div>
+              {timePlayedMode === 'parts' ? (
+                <div className="grid grid-cols-2 gap-3 transition-all duration-200 ease-in-out">
+                  <div>
+                    <label htmlFor="timePlayedDays" className="text-[11px] text-slate-500 font-bold uppercase block mb-1">Days</label>
+                    <input 
+                      id="timePlayedDays"
+                      name="timePlayedDays"
+                      type="number" 
+                      placeholder="0"
+                      value={formData.timePlayedDays} 
+                      onChange={handleTimePlayedPartChange} 
+                      onFocus={() => handleTimePlayedModeFocus('parts')}
+                      className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${errorBorderSimple(errors, 'timePlayed')}`}
+                      min="0"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="timePlayedHours" className="text-[11px] text-slate-500 font-bold uppercase block mb-1">Hours</label>
+                    <input 
+                      id="timePlayedHours"
+                      name="timePlayedHours"
+                      type="number" 
+                      placeholder="0"
+                      value={formData.timePlayedHours} 
+                      onChange={handleTimePlayedPartChange} 
+                      onFocus={() => handleTimePlayedModeFocus('parts')}
+                      className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${errorBorderSimple(errors, 'timePlayed')}`}
+                      min="0"
+                      max="23"
+                    />
+                  </div>
+                </div>
+              ) : (
+                <div className="transition-all duration-200 ease-in-out">
+                  <label htmlFor="timePlayed" className="text-[11px] text-slate-500 font-bold uppercase block mb-1">
+                    Total Hours (rounded)
+                  </label>
+                  <input
+                    id="timePlayed"
+                    name="timePlayed"
+                    type="number"
+                    placeholder="e.g. 142"
+                    value={formData.timePlayed}
+                    onChange={handleTimePlayedTotalChange}
+                    onFocus={() => handleTimePlayedModeFocus('total')}
+                    className={`w-full bg-slate-900 border rounded p-3 focus:border-yellow-500 outline-none ${errorBorderSimple(errors, 'timePlayed')}`}
+                    min="0"
+                    step="0.1"
+                  />
+                </div>
+              )}
+              <div className="text-xs text-slate-600 mt-2">
+                Total (rounded to nearest hour): <span className="text-slate-200">{
+                  timePlayedHasParts || formData.timePlayed ? formatHours(timePlayedTotal) : '—'
+                }</span> hours
+              </div>
               {errors.timePlayed ? (
                 <p className="text-xs text-red-400 mt-1">{errors.timePlayed}</p>
               ) : (
-                <div className="text-xs text-slate-600 mt-1">Your total playtime across all sessions. Leave blank to see theoretical max only.</div>
+                <div className="text-xs text-slate-600 mt-1">
+                  Use days + hours from the GTA stats screen, or enter total hours directly if you track playtime elsewhere.
+                </div>
               )}
             </div>
           </section>
@@ -682,46 +931,8 @@ export default function AssessmentForm() {
                     <div className="text-xs text-slate-500">Cost: $1.8M • Essential for fast preps</div>
                   </div>
                 </label>
-                <div className="space-y-3">
-                  <div>
-                    <label htmlFor="cayoCompletions" className="text-xs text-slate-500 font-bold uppercase mb-1 block">Cayo Perico Completions</label>
-                    <input 
-                      id="cayoCompletions"
-                      name="cayoCompletions"
-                      type="number" 
-                      placeholder="0" 
-                      value={formData.cayoCompletions} 
-                      onChange={handleInputChange} 
-                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${errorBorder(errors, 'cayoCompletions')}`}
-                    />
-                    {errors.cayoCompletions && (
-                      <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
-                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                        <span>{errors.cayoCompletions}</span>
-                      </div>
-                    )}
-                  </div>
-                  <div>
-                    <label htmlFor="cayoAvgTime" className="text-xs text-slate-500 font-bold uppercase mb-1 block">Avg Run Time (minutes)</label>
-                    <input 
-                      id="cayoAvgTime"
-                      name="cayoAvgTime"
-                      type="number" 
-                      placeholder="e.g. 65" 
-                      value={formData.cayoAvgTime} 
-                      onChange={handleInputChange} 
-                      className={`w-full bg-slate-800 border rounded p-2 text-sm focus:border-blue-500 outline-none transition-colors ${errorBorder(errors, 'cayoAvgTime')}`}
-                    />
-                    {errors.cayoAvgTime ? (
-                      <div className="flex items-center gap-1 mt-1 text-red-400 text-xs">
-                        <AlertCircle className="w-3 h-3 flex-shrink-0" />
-                        <span>{errors.cayoAvgTime}</span>
-                      </div>
-                    ) : (
-                      <div className="text-xs text-slate-500 mt-1">Includes prep + heist time. Elite: &lt;50min</div>
-                    )}
-                    <CayoNerfWarning formData={formData} />
-                  </div>
+                <div className="text-xs text-slate-500 mt-1">
+                  Unlocks Cayo Perico Heist (~$700k avg/run). One of many income sources.
                 </div>
               </AssetCard>
 
@@ -1001,9 +1212,77 @@ export default function AssessmentForm() {
                 onToggle={() => setFormData(p => ({ ...p, hasAutoShop: !p.hasAutoShop }))}
               >
                 <div className="text-xs text-slate-500">
-                  Solo-friendly contracts during Cayo cooldown. ~$200K/hr potential.
+                  Solo-friendly robbery contracts. Union Depository pays ~$300k. ~$400-600K/hr potential.
                 </div>
               </AssetCard>
+
+              {/* CAR WASH */}
+              <AssetCard
+                label="Car Wash"
+                emoji="🚿"
+                cost="$1.5M"
+                isOwned={formData.hasCarWash}
+                onToggle={() => setFormData(p => ({ ...p, hasCarWash: !p.hasCarWash }))}
+              >
+                <div className="space-y-2">
+                  <div className="text-xs text-slate-400">Passive income. Add feeder businesses to boost earnings:</div>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      name="hasWeedFarm"
+                      checked={formData.hasWeedFarm} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-green-500 focus:ring-green-500"
+                      aria-label="Weed Farm feeder"
+                    />
+                    <div className="flex-1">
+                      <div className="text-slate-200 font-medium text-sm">🌿 Weed Farm</div>
+                      <div className="text-xs text-slate-500">$715K • Adds ~$10K/hr passive to Car Wash</div>
+                    </div>
+                  </label>
+                  <label className="flex items-center gap-3 cursor-pointer p-2 rounded-lg hover:bg-slate-800/50 transition-colors">
+                    <input 
+                      type="checkbox" 
+                      name="hasHeliTours"
+                      checked={formData.hasHeliTours} 
+                      onChange={handleInputChange} 
+                      className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-blue-500 focus:ring-blue-500"
+                      aria-label="Helicopter Tours feeder"
+                    />
+                    <div className="flex-1">
+                      <div className="text-slate-200 font-medium text-sm">🚁 Helicopter Tours</div>
+                      <div className="text-xs text-slate-500">$750K • Adds ~$8K/hr passive to Car Wash</div>
+                    </div>
+                  </label>
+                </div>
+              </AssetCard>
+
+              {/* STREET DEALERS */}
+              <div className="p-3 bg-slate-900 border border-slate-700 rounded-xl">
+                <label className="flex items-center gap-3 cursor-pointer">
+                  <input 
+                    type="checkbox" 
+                    name="sellsToStreetDealers"
+                    checked={formData.sellsToStreetDealers} 
+                    onChange={handleInputChange} 
+                    className="w-5 h-5 rounded bg-slate-800 border-slate-600 checked:bg-emerald-500 focus:ring-emerald-500"
+                    aria-label="Sells to Street Dealers daily"
+                  />
+                  <div className="flex-1">
+                    <div className="text-slate-200 font-bold flex items-center gap-2">
+                      <span>💊</span> Street Dealers
+                      <span className="text-xs bg-emerald-900/50 text-emerald-300 px-2 py-0.5 rounded-full">Daily</span>
+                    </div>
+                    <div className="text-xs text-slate-400 mt-1">
+                      3 dealers refresh daily at 07:00 UTC. Sell Cocaine, Meth, Weed & Acid.
+                      ~$202K/day base, ~$250K/day avg w/ premium bonuses. Takes ~15 min.
+                    </div>
+                    <div className="text-xs text-slate-500 mt-1">
+                      Requires: MC businesses (Coke, Meth, Weed) + Acid Lab stocked
+                    </div>
+                  </div>
+                </label>
+              </div>
 
               {/* ENDGAME TOYS */}
               <div className="grid grid-cols-2 gap-3 pt-2">

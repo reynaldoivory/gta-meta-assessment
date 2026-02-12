@@ -43,9 +43,9 @@ export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses = []
           )
           .join('\n');
 
-  // Cayo completion info
+  // Kosatka/Cayo info
   const cayoInfo = formData.hasKosatka
-    ? `Cayo Perico completions: ${formData.cayoCompletions || 0}; average run time: ${formData.cayoAvgTime || 'N/A'} minutes.`
+    ? 'Owns Kosatka submarine (Cayo Perico access available as one of several active income sources).'
     : 'No Kosatka owned yet.';
 
   return [
@@ -78,7 +78,7 @@ export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses = []
     `- Rank >= 50: ${heistReady.rank50 ? 'yes' : 'no'}`,
     `- Strength >= 80: ${heistReady.strength80 ? 'yes' : 'no'}`,
     `- Flying >= 80: ${heistReady.flying80 ? 'yes' : 'no'}`,
-    `- 10+ Cayo runs: ${heistReady.cayo10 ? 'yes' : 'no'}`,
+    `- Diversified income: ${heistReady.diversifiedIncomeTier} (${heistReady.diversifiedIncomePoints} pts, ${heistReady.diversifiedIncomeLabel})`,
     `- Travel optimized (Sparrow/Raiju/Oppressor): ${heistReady.travelOptimized ? 'yes' : 'no'}`,
     `- Core businesses (Agency + Acid Lab + Nightclub): ${heistReady.bizCore ? 'yes' : 'no'}`,
     '',
@@ -169,7 +169,7 @@ export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }
     `  ├─ Rank >= 50:         ${assessmentResults.heistReady.rank50 ? '✓' : '✗'}`,
     `  ├─ Strength >= 80:     ${assessmentResults.heistReady.strength80 ? '✓' : '✗'}`,
     `  ├─ Flying >= 80:       ${assessmentResults.heistReady.flying80 ? '✓' : '✗'}`,
-    `  ├─ 10+ Cayo Runs:      ${assessmentResults.heistReady.cayo10 ? '✓' : '✗'}`,
+    `  ├─ Diversified Income: ${assessmentResults.heistReady.diversifiedIncomeTier} (${assessmentResults.heistReady.diversifiedIncomePoints} pts, ${assessmentResults.heistReady.diversifiedIncomeLabel})`,
     `  ├─ Travel Optimized:   ${assessmentResults.heistReady.travelOptimized ? '✓' : '✗'}`,
     `  └─ Core Businesses:    ${assessmentResults.heistReady.bizCore ? '✓' : '✗'}`,
     '',

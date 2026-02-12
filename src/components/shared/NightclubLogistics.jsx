@@ -1,7 +1,7 @@
 // src/components/shared/NightclubLogistics.jsx
 // Smart Nightclub technician assignment with real-time income calculation
 import React, { useMemo } from 'react';
-import { TrendingUp, AlertTriangle, CheckCircle, Zap } from 'lucide-react';
+import { TrendingUp, AlertTriangle, CheckCircle, Zap, DollarSign } from 'lucide-react';
 
 // The Meta Ranking (Best to Worst) - $/hr per technician
 const SOURCE_RANKING = [
@@ -13,6 +13,10 @@ const SOURCE_RANKING = [
   { id: 'organic', label: 'Weed Farm', product: 'Organic Produce', rate: 4500, emoji: '🌿', warning: true },
   { id: 'printing', label: 'Document Forgery', product: 'Printing & Copying', rate: 1500, emoji: '📄', warning: true }
 ];
+
+// Technician hire prices (1st is free with nightclub, 2-5 cost GTA$)
+const TECH_PRICES = [0, 0, 141050, 141050, 141050, 141050];
+// Index 0 = "0 techs" (no cost), Index 1 = 1st tech (free), Index 2-5 = $141,050 each
 
 export default function NightclubLogistics({ formData, setFormData }) {
   
@@ -65,40 +69,7 @@ export default function NightclubLogistics({ formData, setFormData }) {
   return (
     <div className="space-y-4">
       
-      {/* 1. Technician Counter */}
-      <div>
-        <label className="text-xs text-slate-500 font-bold uppercase mb-2 block">
-          Technicians Hired ({currentTechs}/5)
-        </label>
-        <div className="flex gap-2">
-          {[0, 1, 2, 3, 4, 5].map(num => (
-            <button
-              key={num}
-              type="button"
-              onClick={() => setTechs(num)}
-              className={`flex-1 py-2 rounded font-bold text-sm transition-all border ${
-                currentTechs === num
-                  ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/50' 
-                  : num <= ownedCount 
-                    ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
-                    : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
-              }`}
-              disabled={num > ownedCount && num > 0}
-              title={num > ownedCount ? `Need ${num} linked businesses first` : `${num} technicians`}
-            >
-              {num}
-            </button>
-          ))}
-        </div>
-        {currentTechs > ownedCount && ownedCount > 0 && (
-          <div className="text-xs text-orange-400 mt-1 flex items-center gap-1">
-            <AlertTriangle className="w-3 h-3" />
-            You have {currentTechs} techs but only {ownedCount} businesses. {currentTechs - ownedCount} tech(s) idle.
-          </div>
-        )}
-      </div>
-
-      {/* 2. Source Selector Grid */}
+      {/* 1. Source Selector Grid (Linked Businesses — select FIRST) */}
       <div>
         <label className="text-xs text-slate-500 font-bold uppercase mb-2 flex justify-between items-center">
           <span>Linked Businesses (Check what you own)</span>
@@ -170,6 +141,71 @@ export default function NightclubLogistics({ formData, setFormData }) {
             );
           })}
         </div>
+      </div>
+
+      {/* 2. Technician Counter (hire AFTER selecting businesses) */}
+      <div>
+        <label className="text-xs text-slate-500 font-bold uppercase mb-2 block">
+          Technicians Hired ({currentTechs}/5)
+          {ownedCount > 0 && currentTechs === 0 && (
+            <span className="text-orange-400 normal-case font-normal ml-2">← hire techs to start earning</span>
+          )}
+        </label>
+        <div className="flex gap-2">
+          {[0, 1, 2, 3, 4, 5].map(num => {
+            const price = TECH_PRICES[num];
+            const cumulativeCost = TECH_PRICES.slice(2, num + 1).reduce((s, p) => s + p, 0);
+            return (
+              <button
+                key={num}
+                type="button"
+                onClick={() => setTechs(num)}
+                className={`flex-1 py-2 rounded font-bold text-sm transition-all border flex flex-col items-center ${
+                  currentTechs === num
+                    ? 'bg-purple-600 border-purple-500 text-white shadow-lg shadow-purple-900/50' 
+                    : num <= ownedCount 
+                      ? 'bg-slate-800 border-slate-700 text-slate-400 hover:bg-slate-700'
+                      : 'bg-slate-900 border-slate-800 text-slate-600 cursor-not-allowed'
+                }`}
+                disabled={num > ownedCount && num > 0}
+                title={
+                  num === 0 ? 'No technicians' 
+                  : num === 1 ? '1 technician (free with nightclub)' 
+                  : num > ownedCount ? `Need ${num} linked businesses first` 
+                  : `${num} technicians (total hire cost: $${cumulativeCost.toLocaleString()})`
+                }
+              >
+                <span>{num}</span>
+                {num >= 2 && (
+                  <span className={`text-[8px] font-normal leading-tight ${
+                    currentTechs === num ? 'text-purple-200' : 'text-slate-600'
+                  }`}>
+                    ${(price / 1000).toFixed(0)}k
+                  </span>
+                )}
+                {num === 1 && (
+                  <span className={`text-[8px] font-normal leading-tight ${
+                    currentTechs === num ? 'text-purple-200' : 'text-slate-600'
+                  }`}>
+                    free
+                  </span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+        {currentTechs > ownedCount && ownedCount > 0 && (
+          <div className="text-xs text-orange-400 mt-1 flex items-center gap-1">
+            <AlertTriangle className="w-3 h-3" />
+            You have {currentTechs} techs but only {ownedCount} businesses. {currentTechs - ownedCount} tech(s) idle.
+          </div>
+        )}
+        {currentTechs >= 2 && (
+          <div className="text-[10px] text-slate-600 mt-1 flex items-center gap-1">
+            <DollarSign className="w-3 h-3" />
+            Total hire cost: ${TECH_PRICES.slice(2, currentTechs + 1).reduce((s, p) => s + p, 0).toLocaleString()} (1st tech free with nightclub)
+          </div>
+        )}
       </div>
 
       {/* 3. Real-Time Insights Panel */}

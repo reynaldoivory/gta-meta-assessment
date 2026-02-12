@@ -13,21 +13,12 @@ const normalizeFormData = (formData) => {
   const rank = Number(formData.rank) || 0;
   const timePlayed = Number(formData.timePlayed) || 0; // total hours (optional)
   const liquidCash = Number(formData.liquidCash) || 0;
+  const totalIncomeCollected = Number(formData.totalIncomeCollected) || 0;
+  const totalRPCollected = Number(formData.totalRPCollected) || 0;
 
   const strength = validateStat(formData.strength);
   const flying = validateStat(formData.flying);
   const shooting = validateStat(formData.shooting);
-
-  const cayoCompletions = validateNumericInput(
-    formData.cayoCompletions,
-    0,
-    10000
-  );
-  const cayoAvgTime = validateNumericInput(
-    formData.cayoAvgTime,
-    30,  // min 30 min (preps + heist)
-    180  // max 3 hours
-  );
 
   const nightclubTechs = validateNumericInput(
     formData.nightclubTechs,
@@ -67,16 +58,24 @@ const normalizeFormData = (formData) => {
   const hasOppressor = !!formData.hasOppressor;
   const hasGTAPlus = !!formData.hasGTAPlus;
   const hasAutoShop = !!formData.hasAutoShop;
+  const hasCarWash = !!formData.hasCarWash;
+  const hasWeedFarm = !!formData.hasWeedFarm;
+  const hasHeliTours = !!formData.hasHeliTours;
+  const sellsToStreetDealers = !!formData.sellsToStreetDealers;
+  const hasCoke = !!formData.hasCoke || !!formData.nightclubSources?.imports;
+  const hasMeth = !!formData.hasMeth || !!formData.nightclubSources?.pharma;
+  const hasCash = !!formData.hasCash || !!formData.nightclubSources?.cash;
+  const playMode = formData.playMode || 'invite';
 
   return {
     rank,
     timePlayed,
     liquidCash,
+    totalIncomeCollected,
+    totalRPCollected,
     strength,
     flying,
     shooting,
-    cayoCompletions,
-    cayoAvgTime,
     nightclubTechs,
     nightclubFeeders,
     securityContracts,
@@ -96,27 +95,122 @@ const normalizeFormData = (formData) => {
     hasOppressor,
     hasGTAPlus,
     hasAutoShop,
+    hasCarWash,
+    hasWeedFarm,
+    hasHeliTours,
+    sellsToStreetDealers,
+    hasCoke,
+    hasMeth,
+    hasCash,
+    playMode,
   };
 };
 
 /** Check heist leadership readiness criteria. */
 const calculateHeistReadiness = (normalizedParams) => {
-  const { rank, strength, flying, cayoCompletions, hasSparrow, hasRaiju, hasOppressor, hasAcidLab, hasNightclub, hasAgency } = normalizedParams;
+  const {
+    rank,
+    strength,
+    flying,
+    hasSparrow,
+    hasRaiju,
+    hasOppressor,
+    hasAcidLab,
+    hasNightclub,
+    hasAgency,
+    hasAutoShop,
+    hasCarWash,
+    sellsToStreetDealers,
+    hasBunker,
+    hasSalvageYard,
+    hasWeedFarm,
+    hasHeliTours,
+    hasKosatka,
+    hasCoke,
+    hasMeth,
+    hasCash,
+  } = normalizedParams;
+
+  const heistConfig = MODEL_CONFIG.heistReadiness || {};
+  const diversifiedConfig = heistConfig.diversifiedIncome || {};
+  const points = diversifiedConfig.points || {};
+  const mcPoints = diversifiedConfig.mcPoints || {};
+
+  let diversifiedIncomePoints = 0;
+  if (hasAcidLab) diversifiedIncomePoints += points.acidLab ?? 3;
+  if (hasAgency) diversifiedIncomePoints += points.agency ?? 3;
+  if (hasNightclub) diversifiedIncomePoints += points.nightclub ?? 3;
+  if (hasKosatka) diversifiedIncomePoints += points.kosatka ?? 2;
+  if (hasBunker) diversifiedIncomePoints += points.bunker ?? 2;
+  if (hasAutoShop) diversifiedIncomePoints += points.autoShop ?? 1;
+  if (hasSalvageYard) diversifiedIncomePoints += points.salvageYard ?? 1;
+  if (hasCarWash) diversifiedIncomePoints += points.carWash ?? 1;
+  if (sellsToStreetDealers) diversifiedIncomePoints += points.streetDealers ?? 1;
+  if (hasCoke) diversifiedIncomePoints += mcPoints.coke ?? 0.5;
+  if (hasMeth) diversifiedIncomePoints += mcPoints.meth ?? 0.5;
+  if (hasCash) diversifiedIncomePoints += mcPoints.cash ?? 0.5;
+
+  diversifiedIncomePoints = Math.round(diversifiedIncomePoints * 10) / 10;
+
+  const tiers = diversifiedConfig.tiers || {};
+  const tierScores = diversifiedConfig.tierScores || {};
+  const tierLabels = diversifiedConfig.tierLabels || {};
+
+  let diversifiedIncomeTier = 'Paper';
+  if (diversifiedIncomePoints >= (tiers.platinum ?? 15)) {
+    diversifiedIncomeTier = 'Platinum';
+  } else if (diversifiedIncomePoints >= (tiers.gold ?? 10)) {
+    diversifiedIncomeTier = 'Gold';
+  } else if (diversifiedIncomePoints >= (tiers.silver ?? 6)) {
+    diversifiedIncomeTier = 'Silver';
+  } else if (diversifiedIncomePoints >= (tiers.bronze ?? 3)) {
+    diversifiedIncomeTier = 'Bronze';
+  }
+
+  const diversifiedIncomeScore =
+    tierScores[diversifiedIncomeTier.toLowerCase()] ?? 0;
+  const diversifiedIncomeLabel =
+    tierLabels[diversifiedIncomeTier.toLowerCase()] ?? diversifiedIncomeTier;
 
   const heistReady = {
     rank50: rank >= 50,
     strength80: strength >= 80,
     flying80: flying >= 80,
-    cayo10: cayoCompletions >= (MODEL_CONFIG.thresholds?.cayo?.masteryRuns ?? 10),
+    diversifiedIncome: diversifiedIncomeTier !== 'Paper',
+    diversifiedIncomeTier,
+    diversifiedIncomePoints,
+    diversifiedIncomeLabel,
+    diversifiedIncomeScore,
     travelOptimized: hasSparrow || hasRaiju || hasOppressor,
     bizCore: hasAcidLab && hasNightclub && hasAgency,
   };
 
-  const heistReadyFlags = Object.values(heistReady);
-  const heistReadyPercent =
-    heistReadyFlags.length > 0
-      ? (heistReadyFlags.filter(Boolean).length / heistReadyFlags.length) * 100
-      : 0;
+  const weights = heistConfig.weights || {
+    rank: 16,
+    strength: 16,
+    flying: 16,
+    diversifiedIncome: 20,
+    travelOptimized: 16,
+    bizCore: 16,
+  };
+
+  const weightTotal =
+    weights.rank +
+    weights.strength +
+    weights.flying +
+    weights.diversifiedIncome +
+    weights.travelOptimized +
+    weights.bizCore;
+
+  const weightedScore =
+    (heistReady.rank50 ? weights.rank : 0) +
+    (heistReady.strength80 ? weights.strength : 0) +
+    (heistReady.flying80 ? weights.flying : 0) +
+    (heistReady.travelOptimized ? weights.travelOptimized : 0) +
+    (heistReady.bizCore ? weights.bizCore : 0) +
+    (diversifiedIncomeScore / 100) * weights.diversifiedIncome;
+
+  const heistReadyPercent = weightTotal > 0 ? (weightedScore / weightTotal) * 100 : 0;
 
   return { heistReady, heistReadyPercent };
 };
@@ -126,6 +220,7 @@ const estimateNetWorth = (normalizedParams, formData, timePlayed) => {
   const {
     liquidCash, hasKosatka, hasSparrow, hasAgency, hasAcidLab,
     hasNightclub, hasBunker, hasSalvageYard, hasAutoShop, hasRaiju, hasOppressor,
+    hasCarWash, hasWeedFarm, hasHeliTours,
   } = normalizedParams;
 
   const estimatedNetWorth = liquidCash + 
@@ -137,8 +232,10 @@ const estimateNetWorth = (normalizedParams, formData, timePlayed) => {
     (hasBunker ? 1150000 : 0) +
     (hasSalvageYard ? 500000 : 0) +
     (hasAutoShop ? 1670000 : 0) +
-    (formData.hasCarWash ? 1400000 : 0) +
-    (formData.hasMansion ? 13500000 : 0) + // Mansion value (base + upgrades)
+    (hasCarWash ? 1400000 : 0) +
+    (hasWeedFarm ? 715000 : 0) +
+    (hasHeliTours ? 750000 : 0) +
+    (formData.hasMansion ? 13500000 : 0) +
     (hasRaiju ? 6000000 : 0) +
     (hasOppressor ? 3500000 : 0) +
     0;
@@ -190,6 +287,67 @@ const calculateTimeToGoal = (normalizedParams, formData, liquidCash, incomePerHo
   };
 };
 
+/** Calculate efficiency metrics and compare to Feb 2026 benchmarks. */
+const calculateEfficiencyMetrics = (timePlayed, totalIncomeCollected, totalRPCollected) => {
+  // Feb 2026 Benchmarks (community average/realistic expectations)
+  const BENCHMARKS = {
+    incomePerHour: 750000,        // Post-Cayo nerf avg grind
+    rpPerHour: 4500,              // Average grind RP rate
+    incomePerHourHardcore: 1200000, // Optimized grind (Acid Lab 2X + AE + Agency)
+    rpPerHourHardcore: 6000,       // Optimized RP grinding
+  };
+
+  if (!timePlayed || timePlayed <= 0) {
+    return {
+      incomePerHour: 0,
+      rpPerHour: 0,
+      incomeEfficiency: 0,
+      rpEfficiency: 0,
+      incomeGrade: '—',
+      rpGrade: '—',
+      incomeVsBench: 'Not enough data',
+      rpVsBench: 'Not enough data',
+    };
+  }
+
+  const incomePerHour = Math.round(totalIncomeCollected / timePlayed);
+  const rpPerHour = Math.round(totalRPCollected / timePlayed);
+
+  // Efficiency as percentage of benchmark
+  const incomeEfficiency = Math.round((incomePerHour / BENCHMARKS.incomePerHour) * 100);
+  const rpEfficiency = Math.round((rpPerHour / BENCHMARKS.rpPerHour) * 100);
+
+  // Grade letter (A+ to F)
+  const getGrade = (efficiency) => {
+    if (efficiency >= 150) return 'S+';
+    if (efficiency >= 130) return 'A+';
+    if (efficiency >= 110) return 'A';
+    if (efficiency >= 90) return 'B+';
+    if (efficiency >= 70) return 'B';
+    if (efficiency >= 50) return 'C';
+    return 'D';
+  };
+
+  const incomeGrade = getGrade(incomeEfficiency);
+  const rpGrade = getGrade(rpEfficiency);
+
+  // Comparison to benchmark
+  const incomeVsBench = incomePerHour >= BENCHMARKS.incomePerHour * 0.9 ? 'On Par' : 'Below Average';
+  const rpVsBench = rpPerHour >= BENCHMARKS.rpPerHour * 0.9 ? 'On Par' : 'Below Average';
+
+  return {
+    incomePerHour,
+    rpPerHour,
+    incomeEfficiency,
+    rpEfficiency,
+    incomeGrade,
+    rpGrade,
+    incomeVsBench,
+    rpVsBench,
+    benchmarks: BENCHMARKS,
+  };
+};
+
 /**
  * Core logic engine.
  * Pure function: same formData → same result, no side effects.
@@ -206,7 +364,7 @@ export const computeAssessment = (formData) => {
   // ---------- 1. NORMALIZE INPUT ----------
   const normalizedParams = normalizeFormData(formData);
   const {
-    timePlayed, liquidCash, strength, flying, shooting,
+    timePlayed, liquidCash, totalIncomeCollected, totalRPCollected, strength, flying, shooting,
     hasKosatka, hasSparrow, hasAgency, hasAcidLab, acidLabUpgraded,
     hasNightclub, hasBunker, bunkerUpgraded, hasSalvageYard, hasTowTruck,
     hasRaiju, hasOppressor, hasGTAPlus, hasAutoShop,
@@ -252,7 +410,10 @@ export const computeAssessment = (formData) => {
   // ---------- 8. TIME TO GOAL CALCULATOR ----------
   const nextGoal = calculateTimeToGoal(normalizedParams, formData, liquidCash, incomePerHour, dynamicIncome);
 
-  // ---------- 9. RETURN STRUCT ----------
+  // ---------- 9. EFFICIENCY METRICS ----------
+  const efficiencyMetrics = calculateEfficiencyMetrics(timePlayed, totalIncomeCollected, totalRPCollected);
+
+  // ---------- 10. RETURN STRUCT ----------
   return {
     score: scoreResult.score,
     tier: scoreResult.tier,
@@ -280,5 +441,7 @@ export const computeAssessment = (formData) => {
     },
     // Time to Goal calculator
     nextGoal,
+    // Efficiency metrics and Feb 2026 benchmarks
+    efficiencyMetrics,
   };
 };

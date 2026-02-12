@@ -51,10 +51,7 @@ const testGameState = {
       passiveRate: 11500
     }
   },
-  claimedBonuses: [], // No bonuses claimed yet
-  cayoCompletions: 5,
-  averageCayoTime: 70
-};
+  claimedBonuses: [], // No bonuses claimed yet\n};
 
 async function runTest() {
   console.log('=== TESTING RECOMMENDATION ENGINE ===\n');

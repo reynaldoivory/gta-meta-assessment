@@ -1,5 +1,5 @@
 // src/views/AssessmentResults.jsx
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
 import { useToast } from '../context/ToastContext';
@@ -7,14 +7,19 @@ import { soundEffects } from '../utils/soundEffects';
 import { fireConfetti } from '../utils/confettiEffects';
 import { getRandomQuote, getMotivationalMessage } from '../utils/motivationalQuotes';
 import { getProgressHistory } from '../utils/progressTracker';
+import { checkStreak } from '../utils/streakTracker';
 
 // Component Imports
 import Confetti from '../components/gamification/Confetti';
 import StreakBanner from '../components/gamification/StreakBanner';
 import GTA6Countdown from '../components/gamification/GTA6Countdown';
-import ProgressChart from '../components/gamification/ProgressChart';
-import ROICalculator from '../components/calculators/ROICalculator';
-import SocialCardGenerator from '../components/calculators/SocialCardGenerator';
+import EmpireProgressPanel from '../components/gamification/EmpireProgressPanel';
+import AchievementsGallery from '../components/gamification/AchievementsGallery';
+import SoundToggle from '../components/shared/SoundToggle';
+import { MILESTONE_LEVELS, getMilestoneLabel } from '../utils/gamificationEngine';
+const ProgressChart = React.lazy(() => import('../components/gamification/ProgressChart'));
+const ROICalculator = React.lazy(() => import('../components/calculators/ROICalculator'));
+const SocialCardGenerator = React.lazy(() => import('../components/calculators/SocialCardGenerator'));
 import AcidLabTracker from '../components/shared/AcidLabTracker';
 import DailyTracker from '../components/shared/DailyTracker';
 import TrapWarnings from '../components/shared/TrapWarnings';
@@ -32,8 +37,30 @@ const getHeistReadyColor = (percent) => {
   return 'text-red-400';
 };
 
+const hasAnyTimeParts = (formData) => (
+  [formData.timePlayedDays, formData.timePlayedHours]
+    .some(value => value !== '' && value !== undefined && value !== null)
+);
+
+const calculateTotalHours = (days, hours, minutes = 0) => {
+  const total = days * 24 + hours + minutes / 60;
+  return Math.round(total);
+};
+
+const formatHours = (value) => {
+  if (!Number.isFinite(value)) return '0';
+  return Number.isInteger(value) ? String(value) : value.toFixed(2);
+};
+
+const formatTimeParts = (days, hours) => {
+  const parts = [];
+  if (days) parts.push(`${days}d`);
+  if (hours) parts.push(`${hours}h`);
+  return parts.length ? parts.join(' ') : '0h';
+};
+
 const AssessmentResults = () => {
-  const { formData, results, setStep } = useAssessment();
+  const { formData, results, setStep, gamification, gamificationSummary } = useAssessment();
   const { showToast } = useToast();
   const [showConfetti, setShowConfetti] = useState(false);
   const trapFixCelebratedRef = useRef(false);
@@ -64,21 +91,60 @@ const AssessmentResults = () => {
     if (newlyFixedTraps.length > 0 && !trapFixCelebratedRef.current) {
       trapFixCelebratedRef.current = true;
       soundEffects.achievement();
-      fireConfetti('standard');
+      fireConfetti('default');
     }
   }, [newlyFixedTraps.length]);
+
+  useEffect(() => {
+    if (!gamificationSummary) return;
+
+    const hitMilestone =
+      gamificationSummary.levelAfter > gamificationSummary.levelBefore &&
+      MILESTONE_LEVELS.includes(gamificationSummary.levelAfter);
+
+    if (hitMilestone) {
+      // Extra dramatic celebration for milestones
+      soundEffects.achievement();
+      fireConfetti('tier-up');
+      const label = getMilestoneLabel(gamificationSummary.levelAfter);
+      if (label) {
+        setTimeout(() => fireConfetti('achievement'), 600);
+      }
+    } else if (gamificationSummary.levelAfter > gamificationSummary.levelBefore) {
+      soundEffects.achievement();
+      fireConfetti('achievement');
+    }
+
+    if (gamificationSummary.newAchievements?.length > 0) {
+      soundEffects.achievement();
+      fireConfetti('achievement');
+    }
+  }, [gamificationSummary]);
 
   if (!results) {
     return null;
   }
 
   const progressHistory = getProgressHistory();
+  const streakInfo = checkStreak();
   const quote = getRandomQuote();
   const motivation = getMotivationalMessage(results.score, results.tier);
   
   // Calculate strength training needs
   const strengthPct = (Number(formData.strength) || 0) * 20;
   const needsStrengthTraining = strengthPct < 60;
+
+  const timePartsPresent = hasAnyTimeParts(formData);
+  const timeDays = Number(formData.timePlayedDays) || 0;
+  const timeHours = Number(formData.timePlayedHours) || 0;
+  const timeMinutes = Number(formData.timePlayedMinutes) || 0;
+  const timePlayedTotal = timePartsPresent
+    ? calculateTotalHours(timeDays, timeHours, timeMinutes)
+    : Math.round(Number(formData.timePlayed) || 0);
+  const timePartsLabel = timePartsPresent
+    ? formatTimeParts(timeDays, timeHours)
+    : '';
+  const shouldShowTimePlayed = timePartsPresent || timePlayedTotal > 0;
 
   return (
     <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-100 font-sans">
@@ -94,14 +160,27 @@ const AssessmentResults = () => {
           >
             <ArrowLeft className="w-4 h-4" /> Edit Data
           </button>
-          <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-            Tier {results.tier} • Score {results.score}
+          <div className="flex items-center gap-3">
+            <SoundToggle />
+            <div className="font-display text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
+              Tier {results.tier} • Score {results.score}
+            </div>
           </div>
         </div>
 
         {/* Gamification Layer */}
         <GTA6Countdown />
         <StreakBanner />
+        <EmpireProgressPanel gamification={gamification} />
+
+        {/* Full Achievements Gallery */}
+        <AchievementsGallery
+          unlockedIds={gamification?.unlockedAchievements || []}
+          formData={formData}
+          results={results}
+          history={progressHistory}
+          streak={streakInfo?.streak || 0}
+        />
 
         {/* TRAP WARNINGS - Highest Priority Display */}
         {detectedTraps.length > 0 && (
@@ -148,7 +227,7 @@ const AssessmentResults = () => {
         {/* Core Results */}
         <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-6">
-            <h2 className="text-2xl font-bold text-white">Assessment Results</h2>
+            <h2 className="font-display text-2xl font-bold text-white">Assessment Results</h2>
             <div className={`text-3xl font-bold ${results.tierColor || 'text-yellow-400'}`}>
               Tier {results.tier}
             </div>
@@ -172,6 +251,16 @@ const AssessmentResults = () => {
               </div>
             </div>
           </div>
+          {shouldShowTimePlayed && (
+            <div className="bg-black/30 p-4 rounded-lg mb-6">
+              <div className="text-sm text-slate-400 mb-1">Total Hours Played</div>
+              <div className="text-2xl font-bold text-white">{formatHours(timePlayedTotal)}h</div>
+              {timePartsLabel && (
+                <div className="text-xs text-slate-500 mt-1">{timePartsLabel}</div>
+              )}
+              <div className="text-[11px] text-slate-500 mt-1">Rounded to the nearest hour.</div>
+            </div>
+          )}
 
           {/* Income Breakdown */}
           <div className="space-y-3">
@@ -210,10 +299,92 @@ const AssessmentResults = () => {
           </div>
         </div>
 
+        {/* Efficiency Metrics vs Feb 2026 Benchmarks */}
+        {results.efficiencyMetrics && (results.efficiencyMetrics.incomePerHour > 0 || results.efficiencyMetrics.rpPerHour > 0) && (
+          <div className="bg-slate-900/60 border border-amber-500/30 rounded-2xl p-6">
+            <div className="flex items-center gap-3 mb-6">
+              <TrendingUp className="text-amber-400 w-6 h-6" />
+              <h3 className="text-xl font-bold text-white">Efficiency vs Feb 2026 Benchmarks</h3>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Income Efficiency */}
+              <div className="bg-slate-800/30 p-5 rounded-xl border border-green-500/20">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-slate-200">Income Efficiency</span>
+                    <span className={`text-xl font-bold px-2 py-1 rounded ${
+                      results.efficiencyMetrics.incomeGrade === 'S+' || results.efficiencyMetrics.incomeGrade === 'A+' ? 'bg-emerald-500/30 text-emerald-300' :
+                      results.efficiencyMetrics.incomeGrade.startsWith('A') || results.efficiencyMetrics.incomeGrade.startsWith('B') ? 'bg-blue-500/30 text-blue-300' :
+                      'bg-yellow-500/30 text-yellow-300'
+                    }`}>
+                      {results.efficiencyMetrics.incomeGrade}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-mono font-bold text-green-400 mb-1">
+                    ${(results.efficiencyMetrics.incomePerHour / 1000).toFixed(0)}k/hr
+                  </div>
+                  <div className="text-xs text-slate-400 mb-2">
+                    {results.efficiencyMetrics.incomeEfficiency}% of benchmark
+                  </div>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700 mb-3">
+                  <div
+                    className="h-full bg-gradient-to-r from-green-500 to-emerald-500"
+                    style={{
+                      width: `${Math.min(results.efficiencyMetrics.incomeEfficiency, 200)}%`,
+                    }}
+                  />
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Benchmark: ${(results.efficiencyMetrics.benchmarks.incomePerHour / 1000).toFixed(0)}k/hr
+                </div>
+              </div>
+
+              {/* RP Efficiency */}
+              <div className="bg-slate-800/30 p-5 rounded-xl border border-purple-500/20">
+                <div className="mb-4">
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="font-bold text-slate-200">RP Efficiency</span>
+                    <span className={`text-xl font-bold px-2 py-1 rounded ${
+                      results.efficiencyMetrics.rpGrade === 'S+' || results.efficiencyMetrics.rpGrade === 'A+' ? 'bg-emerald-500/30 text-emerald-300' :
+                      results.efficiencyMetrics.rpGrade.startsWith('A') || results.efficiencyMetrics.rpGrade.startsWith('B') ? 'bg-blue-500/30 text-blue-300' :
+                      'bg-yellow-500/30 text-yellow-300'
+                    }`}>
+                      {results.efficiencyMetrics.rpGrade}
+                    </span>
+                  </div>
+                  <div className="text-2xl font-mono font-bold text-purple-400 mb-1">
+                    {results.efficiencyMetrics.rpPerHour.toLocaleString()} RP/hr
+                  </div>
+                  <div className="text-xs text-slate-400 mb-2">
+                    {results.efficiencyMetrics.rpEfficiency}% of benchmark
+                  </div>
+                </div>
+                <div className="h-2 w-full overflow-hidden rounded-full bg-slate-700 mb-3">
+                  <div
+                    className="h-full bg-gradient-to-r from-purple-500 to-pink-500"
+                    style={{
+                      width: `${Math.min(results.efficiencyMetrics.rpEfficiency, 200)}%`,
+                    }}
+                  />
+                </div>
+                <div className="text-[11px] text-slate-400">
+                  Benchmark: {results.efficiencyMetrics.benchmarks.rpPerHour.toLocaleString()} RP/hr
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-4 text-xs text-slate-400 bg-slate-900/50 p-3 rounded border border-slate-700/50">
+              <p>💡 Benchmarks are based on realistic Feb 2026 meta: post-Cayo nerf grinds (~750k/hr income) and standard RP rates (~4.5k/hr). Hardcore players with 2X events can exceed 1.2M/hr.</p>
+            </div>
+          </div>
+        )}
+
         {/* Heist Leadership Readiness */}
         <div className="bg-slate-900/60 border border-blue-500/30 rounded-2xl p-6">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
+            <h3 className="font-display text-xl font-bold text-white flex items-center gap-2">
               <Target className="w-6 h-6 text-blue-400" />
               Heist Leadership Readiness
             </h3>
@@ -226,7 +397,11 @@ const AssessmentResults = () => {
               { key: 'rank50', label: 'Rank 50+', met: results.heistReady.rank50 },
               { key: 'strength80', label: 'Strength 80/100', met: results.heistReady.strength80 },
               { key: 'flying80', label: 'Flying 80/100', met: results.heistReady.flying80 },
-              { key: 'cayo10', label: '10+ Cayo Runs', met: results.heistReady.cayo10 },
+              {
+                key: 'diversifiedIncome',
+                label: `Diversified Income (${results.heistReady.diversifiedIncomeTier} - ${results.heistReady.diversifiedIncomePoints} pts, ${results.heistReady.diversifiedIncomeLabel})`,
+                met: results.heistReady.diversifiedIncome,
+              },
               { key: 'travelOptimized', label: 'Travel Optimized', met: results.heistReady.travelOptimized },
               { key: 'bizCore', label: 'Core Businesses', met: results.heistReady.bizCore }
             ].map((item) => (
@@ -395,7 +570,9 @@ const AssessmentResults = () => {
                     <TrendingUp className="w-6 h-6 text-green-400" />
                     Progress Over Time
                   </h3>
-                  <ProgressChart history={progressHistory} />
+                  <Suspense fallback={<div className="text-sm text-slate-400">Loading charts...</div>}>
+                    <ProgressChart history={progressHistory} />
+                  </Suspense>
                 </div>
               )}
             </>
@@ -451,7 +628,9 @@ const AssessmentResults = () => {
         )}
 
         {/* Tools & Calculators */}
-        <ROICalculator formData={formData} results={results} />
+        <Suspense fallback={<div className="text-sm text-slate-400">Loading calculator...</div>}>
+          <ROICalculator formData={formData} results={results} />
+        </Suspense>
         
 
         {/* Social & Action */}
@@ -462,7 +641,9 @@ const AssessmentResults = () => {
           >
             <Target className="w-6 h-6" /> View Action Plan
           </button>
-          <SocialCardGenerator formData={formData} results={results} />
+          <Suspense fallback={<div className="text-sm text-slate-400">Loading social card...</div>}>
+            <SocialCardGenerator formData={formData} results={results} />
+          </Suspense>
         </div>
 
         {/* Motivational Quote */}

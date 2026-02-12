@@ -80,6 +80,7 @@ const calculateAutoShopIncome = (formData, events, isEventActive) => {
 
 /**
  * Calculate Cayo Perico income with event multipliers
+ * Uses flat estimated rate since Cayo is one of many income sources
  * @param {Object} formData - Form data
  * @param {Array} events - Weekly bonus events array
  * @param {boolean} isEventActive - Whether current weekly event is active
@@ -103,16 +104,11 @@ const calculateCayoIncome = (formData, events, isEventActive) => {
 
     const config = MODEL_CONFIG.income?.cayo || {};
     const basePayout = config.basePayout ?? 700000;
-    const cayoAvgTime = Number(formData.cayoAvgTime) || 90;
-    const cayoCompletions = Number(formData.cayoCompletions) || 0;
-    const masteryRuns = config.masteryThreshold ?? 10;
-    const masteryBonus = config.masteryBonus ?? 1.1;
+    // Assume ~75 min average run (prep + heist) for a typical player
+    const avgRunTime = 75; // minutes
+    const runsPerHour = 60 / avgRunTime;
 
-    const runsPerHour = 60 / cayoAvgTime;
-    const mastered = cayoCompletions >= masteryRuns;
-    const masteryMult = mastered ? masteryBonus : 1;
-
-    income = basePayout * runsPerHour * masteryMult * multiplier;
+    income = basePayout * runsPerHour * multiplier;
   }
 
   return { income, multiplier, event };

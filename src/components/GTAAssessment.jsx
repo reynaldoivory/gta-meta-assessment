@@ -37,7 +37,7 @@ const AssessmentRouter = () => {
 const GTAAssessment = () => (
   <ErrorBoundary>
     <AssessmentProvider>
-      <div className="min-h-screen bg-gradient-to-br from-slate-950 to-slate-900 font-sans text-slate-100">
+      <div className="min-h-screen bg-transparent font-body text-slate-100">
         <AssessmentRouter />
         <DevTools />
       </div>

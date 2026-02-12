@@ -68,13 +68,32 @@ export const ACHIEVEMENTS = {
     tier: 'silver',
     condition: (results) => results?.heistReadyPercent >= 100,
   },
-  CAYO_MASTER: {
-    id: 'cayo_master',
-    title: 'Cayo Perico Master',
-    description: 'Completed 50+ Cayo runs',
+  DIVERSIFIED_EARNER: {
+    id: 'diversified_earner',
+    title: 'Diversified Earner',
+    description: 'Reach Silver diversified income tier',
     icon: '🏝️',
+    tier: 'silver',
+    condition: (results) => {
+      const tier = results?.heistReady?.diversifiedIncomeTier;
+      return tier === 'Silver' || tier === 'Gold' || tier === 'Platinum';
+    },
+  },
+  DIVERSIFIED_MOGUL: {
+    id: 'diversified_mogul',
+    title: 'Diversified Mogul',
+    description: 'Reach Gold diversified income tier',
+    icon: '💼',
     tier: 'gold',
-    condition: (formData) => Number(formData?.cayoCompletions || 0) >= 50,
+    condition: (results) => results?.heistReady?.diversifiedIncomeTier === 'Gold',
+  },
+  EMPIRE_BUILDER: {
+    id: 'empire_builder',
+    title: 'Empire Builder',
+    description: 'Reach Platinum diversified income tier',
+    icon: '🏛️',
+    tier: 'platinum',
+    condition: (results) => results?.heistReady?.diversifiedIncomeTier === 'Platinum',
   },
   PASSIVE_KING: {
     id: 'passive_king',

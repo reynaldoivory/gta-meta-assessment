@@ -60,7 +60,7 @@ const formatTimeParts = (days, hours) => {
 };
 
 const AssessmentResults = () => {
-  const { formData, results, setStep, gamification, gamificationSummary } = useAssessment();
+  const { formData, results, setStep, gamification, gamificationSummary, setFormData } = useAssessment();
   const { showToast } = useToast();
   const [showConfetti, setShowConfetti] = useState(false);
   const trapFixCelebratedRef = useRef(false);
@@ -71,12 +71,14 @@ const AssessmentResults = () => {
   const newlyFixedTraps = results ? checkForFixedTraps(detectedTraps, formData, results) : [];
 
   // Trigger Effects on Mount - main results effect
+  // Note: setState in effect is intentional here for side effects (sounds, confetti)
   useEffect(() => {
     if (!results) {
       setStep('form');
       return;
     }
 
+    // Side effects: sounds and confetti (intentional setState for UI feedback)
     if (results.score >= 90) {
       soundEffects.achievement();
       setShowConfetti(true);
@@ -214,6 +216,8 @@ const AssessmentResults = () => {
         <DailyTracker 
           hasNightclub={formData.hasNightclub}
           hasAgency={formData.hasAgency}
+          formData={formData}
+          setFormData={setFormData}
         />
 
         {/* Acid Lab Tracker */}

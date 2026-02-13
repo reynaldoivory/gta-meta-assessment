@@ -31,20 +31,8 @@
 
 import { TASK_REQUIREMENTS } from '../config/gatekeeperSchema.js';
 import { validateStat } from './assessmentHelpers.js';
-import { applyWeeklyBoosts } from './actionPlanBuilder.js';
+import { applyWeeklyBoosts } from './actionPlanBuilder.ts';
 import { WEEKLY_EVENTS } from '../config/weeklyEvents.js';
-
-/**
- * Convert stat bars (1-5) to percentage (0-100)
- * @param {number} statBars - Stat value in bars (1-5 scale)
- * @returns {number} Percentage (0-100)
- */
-const statBarsToPercent = (statBars) => {
-  if (typeof statBars === 'number') {
-    return Math.min(100, Math.max(0, statBars * 20));
-  }
-  return 0;
-};
 
 /**
  * Calculate failure rate based on skill gaps

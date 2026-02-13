@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 
 const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   const [productionTime, setProductionTime] = useState(0);
   const [lastSold, setLastSold] = useState(null);
   const [suppliesNeeded, setSuppliesNeeded] = useState(false);
 
-  if (!hasAcidLab) return null;
-
   // Load from localStorage
   useEffect(() => {
+    if (!hasAcidLab) return;
+    
     const saved = localStorage.getItem('acidLabTracker');
     if (saved) {
       try {
@@ -16,15 +16,15 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         if (parsed.lastSold) {
           setLastSold(new Date(parsed.lastSold));
         }
-      } catch (e) {
+      } catch {
         // Invalid data, ignore
       }
     }
-  }, []);
+  }, [hasAcidLab]);
 
   // Calculate time since last sale
   useEffect(() => {
-    if (!lastSold) return;
+    if (!hasAcidLab || !lastSold) return;
 
     const updateTimer = () => {
       const now = Date.now();
@@ -45,7 +45,22 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     updateTimer();
     const timer = setInterval(updateTimer, 60000); // Update every minute
     return () => clearInterval(timer);
-  }, [lastSold, acidLabUpgraded]);
+  }, [hasAcidLab, lastSold, acidLabUpgraded]);
+
+  // Render calculations (using useMemo to avoid recalculating on every render)
+  const trackerData = useMemo(() => {
+    const maxCapacity = acidLabUpgraded ? 335000 : 237500;
+    const timeToFull = acidLabUpgraded ? 4 : 6;
+    const currentValue = Math.min(maxCapacity, (productionTime / timeToFull) * maxCapacity);
+    const percentFull = (productionTime / timeToFull) * 100;
+    const isReady = productionTime >= timeToFull;
+    const isNearFull = productionTime >= timeToFull * 0.75; // 75% full
+    
+    return { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull };
+  }, [acidLabUpgraded, productionTime]);
+
+  // Early return AFTER all hooks
+  if (!hasAcidLab) return null;
 
   const recordSale = () => {
     const now = new Date();
@@ -54,13 +69,7 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     localStorage.setItem('acidLabTracker', JSON.stringify({ lastSold: now.toISOString() }));
   };
 
-  const maxCapacity = acidLabUpgraded ? 335000 : 237500;
-  const timeToFull = acidLabUpgraded ? 4 : 6;
-  const currentValue = Math.min(maxCapacity, (productionTime / timeToFull) * maxCapacity);
-  const percentFull = (productionTime / timeToFull) * 100;
-
-  const isReady = productionTime >= timeToFull;
-  const isNearFull = productionTime >= timeToFull * 0.75; // 75% full
+  const { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull } = trackerData;
 
   return (
     <div className={`bg-slate-800 rounded-lg p-4 border ${

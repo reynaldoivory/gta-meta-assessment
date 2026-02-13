@@ -3,7 +3,7 @@
 
 import { WEEKLY_EVENTS } from '../config/weeklyEvents.js';
 import { detectCriticalOpportunities } from './priorityDetector.js';
-import { calculateCompoundEfficiency } from './actionPlanBuilder.js';
+import { calculateCompoundEfficiency } from './actionPlanBuilder.ts';
 import { calculateTaskMetrics } from './taskMetrics.js';
 import { validateStat } from './assessmentHelpers.js';
 import { TASK_REQUIREMENTS } from '../config/gatekeeperSchema.js';
@@ -27,7 +27,7 @@ export const getWeeklyEvents = () => {
  * @param {Object} user - User object with formData
  * @returns {Object|null} ROI calculation or null if not worth it
  */
-export const calculateTrainingROI = (skill, currentBars, targetBars, user) => {
+export const calculateTrainingROI = (skill, currentBars, targetBars, _user) => {
   if (currentBars >= targetBars) return null;
   
   const currentPercent = validateStat(currentBars);
@@ -50,7 +50,7 @@ export const calculateTrainingROI = (skill, currentBars, targetBars, user) => {
   // Find tasks that benefit from this skill
   let weeklyValueGain = 0;
   
-  Object.entries(TASK_REQUIREMENTS).forEach(([taskId, requirements]) => {
+  Object.entries(TASK_REQUIREMENTS).forEach(([_taskId, requirements]) => {
     const relevantGate = requirements.soft_gates?.find(g => g.stat === skill);
     if (relevantGate) {
       const currentGap = Math.max(0, relevantGate.min - currentPercent);
@@ -189,7 +189,7 @@ export const TASKS_DATABASE = [
  * @param {Object} gameState - Game state object
  * @returns {Array} Array of upgrade opportunities
  */
-const detectMissingUpgrades = (user, gameState = {}) => {
+const detectMissingUpgrades = (user, _gameState = {}) => {
   const formData = user.formData || user;
   const upgrades = [];
   
@@ -246,7 +246,7 @@ const detectMissingUpgrades = (user, gameState = {}) => {
  * @param {Array} tasks - All tasks with calculated efficiencies
  * @returns {Array} Array of synergy boosts
  */
-const detectAssetSynergies = (user, weeklyEvents, tasks) => {
+const detectAssetSynergies = (user, weeklyEvents, _tasks) => {
   const formData = user.formData || user;
   const synergies = [];
   

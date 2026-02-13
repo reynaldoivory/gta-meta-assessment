@@ -340,3 +340,38 @@ npm run deploy
 **Architecture Score:** 10/10 - Production-ready, modular, maintainable
 
 **Status:** ✅ Ready for production deployment
+
+---
+
+## 📚 Verified GTA Online Resources (Data Sources & Reliability Policy)
+
+This app's income models, cooldowns, and meta recommendations are cross-checked against the following tiered sources. Weekly event data in `weeklyEvents.js` is updated manually each Thursday after Rockstar's newswire post.
+
+### Tier 1 — Official (Ground Truth)
+| Source | URL | Use |
+|---|---|---|
+| Rockstar Newswire | https://www.rockstargames.com/newswire | Weekly bonus announcements |
+| GTA+ Benefits Page | https://www.rockstargames.com/gta-plus | GTA+ perks & monthly bonuses |
+| Rockstar Support | https://support.rockstargames.com | Confirmed cooldowns & mechanics |
+
+### Tier 2 — Community Cross-Checks (High Reliability)
+| Source | URL | Use |
+|---|---|---|
+| GTA Wiki (Fandom) | https://gta.fandom.com/wiki/The_Cayo_Perico_Heist | Payout tables, cooldown timers |
+| r/gtaonline subreddit | https://www.reddit.com/r/gtaonline/ | Weekly bonus megathreads, player-verified data |
+| TezFunz2 (Twitter/X) | https://x.com/TezFunz2 | Datamined event schedules & tunables |
+| GTA Series Videos | https://www.youtube.com/@GTASeriesVideos | Patch breakdowns & mechanic testing |
+| Digital Car Addict | https://www.youtube.com/@DigitalCarAddict | Solo money guides & route testing |
+| TheProfessional | https://www.youtube.com/@TheProfessional | Income benchmarks & efficiency testing |
+
+### Tier 3 — Planning & Reference Tools
+| Source | URL | Use |
+|---|---|---|
+| GTA Base | https://www.gtabase.com/ | Vehicle & property databases |
+| GTA Online Mega Guide (Reddit) | https://www.reddit.com/r/gtaonline/wiki/ | Community FAQ & progression guides |
+
+### Data Confidence Rules
+- **Income rates**: Cross-check at least 2 Tier-2 sources before updating `modelConfig.js`
+- **Cooldowns**: Only trust Rockstar official or datamined values (TezFunz2). Community anecdotes must be verified by 3+ independent reports.
+- **Weekly events**: Always verify against Rockstar Newswire. Reddit megathread is secondary confirmation.
+- **Solo mechanics**: Prefer sources that show full unedited gameplay (not montages) for route/timing claims.

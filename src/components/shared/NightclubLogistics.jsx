@@ -37,7 +37,7 @@ export default function NightclubLogistics({ formData, setFormData }) {
   };
 
   // Smart Calculation Logic
-  const { activeSources, optimizedIncome, missedIncome, techAssignments, ownedCount } = useMemo(() => {
+  const { optimizedIncome, missedIncome, techAssignments, ownedCount } = useMemo(() => {
     const sources = formData.nightclubSources || {};
     const techs = Number(formData.nightclubTechs) || 0;
     
@@ -56,7 +56,6 @@ export default function NightclubLogistics({ formData, setFormData }) {
       : 0;
 
     return { 
-      activeSources: ownedSources, 
       optimizedIncome: income, 
       missedIncome: potentialNext,
       techAssignments: assigned.map(a => a.id),

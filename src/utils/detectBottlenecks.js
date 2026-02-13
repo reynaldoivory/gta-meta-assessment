@@ -212,7 +212,25 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       const expiryDate = new Date(bonus.expires);
       if (now_ts >= expiryDate.getTime()) return;
 
-      // Skip if it duplicates a weekly bonus already added (e.g., lunar stunt races)
+      // DEDUP: If a weekly bonus for the same activity exists, upgrade it instead of adding a duplicate.
+      // e.g., 3X Lunar Stunt Races (weekly) vs 6X Lunar Stunt Races (GTA+) — show only 6X.
+      const matchingWeeklyIdx = bottlenecks.findIndex(b => 
+        b.id === `weekly_event_${bonus.activity}` ||
+        (b.label && bonus.label && b.label.toLowerCase().includes(bonus.activity.replace(/_/g, ' ')))
+      );
+      if (matchingWeeklyIdx !== -1) {
+        // GTA+ multiplier is higher — upgrade the existing bottleneck in-place
+        const existing = bottlenecks[matchingWeeklyIdx];
+        if (bonus.multiplier > (existing.multiplier || 0)) {
+          existing.label = `\uD83D\uDC8E ${bonus.label}`;
+          existing.detail = `GTA+ enhanced (${bonus.multiplier}X vs base). Expires ${formatExpiry(bonus.expires)} (${Math.ceil((expiryDate.getTime() - now_ts) / (1000 * 60 * 60 * 24))} days left).`;
+          existing.savingsPerHour = bonus.estimatedHourlyRate || existing.savingsPerHour;
+          existing.impact = bonus.estimatedHourlyRate >= 200000 ? 'high' : existing.impact;
+        }
+        return; // Don't add a separate entry
+      }
+
+      // Skip if it exactly duplicates a weekly bonus already added
       const alreadyAdded = bottlenecks.some(b => b.id === `weekly_event_${bonus.activity}`);
       if (alreadyAdded) return;
 
@@ -759,7 +777,7 @@ const detectInfrastructureGaps = (params, formData, nightclubDiscountEvent) => {
 // TIER 4: DAILY/QUALITY OF LIFE
 // ============================================
 
-const detectQualityOfLife = (params, formData, incomePerHour, nightclubDiscountEvent) => {
+const detectQualityOfLife = (params, formData, incomePerHour, _nightclubDiscountEvent) => {
   const { hasGTAPlus, hasKosatka } = params;
   const bottlenecks = [];
 

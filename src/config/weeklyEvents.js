@@ -49,6 +49,9 @@ export const WEEKLY_EVENTS = {
       category: 'race',
       tag: 'lunar_new_year',
       gtaPlusMultiplier: 6,
+      // GTA+ members get 6X instead of 3X — dedup logic in detectBottlenecks
+      // should show only the highest active multiplier, not both.
+      gtaPlusLabel: '6X Lunar New Year Stunt Races (GTA+)',
     },
     communitySeries: {
       isActive: true,
@@ -66,8 +69,18 @@ export const WEEKLY_EVENTS = {
       note: 'Cayo Perico Heist primary target',
       soloFriendly: true,
       highValue: true,
-      estimatedHourlyRate: 1300000,
-      soloTip: 'Pink Diamond ($1.3M) makes even slow Cayo runs highly profitable. Run Cayo this week.',
+      // Realistic solo $/hr accounting for 144-min cooldown:
+      // Pink Diamond ~$1.3M payout * 0.8 bag fill * (60/144 runs/hr) ≈ $433k/hr effective.
+      // Fill cooldown with VIP Work + Security Contracts to reach ~$700-900k/hr blended.
+      estimatedHourlyRate: 433000,
+      soloTip: 'Pink Diamond ($1.3M) boosts payout significantly. Solo route: Longfin → grab secondaries at airstrip/north dock FIRST → Drainage Tunnel → primary → swim escape. Fill 144-min cooldown with 4X VIP Work or 2X Security Contracts.',
+      soloRoutes: [
+        { name: 'Longfin First', steps: 'Longfin → Airstrip/North Dock secondaries → Drainage Tunnel → Primary → Swim escape', reliability: 'high', notes: 'Best for filling bags while staying undetected. Scope secondaries during intel.' },
+        { name: 'Drainage Direct', steps: 'Drainage Tunnel → Primary + office safe/paintings → Exit dock for quick secondary top-up', reliability: 'medium', notes: 'Fastest compound clear but partial bag fill. Accept ~80% bag.' },
+        { name: 'Longfin Partial', steps: 'Longfin → Closest high-value dock stack only → Drainage → Primary → Escape', reliability: 'high', notes: 'Skip low-value cash stacks. Preserves stealth consistency over greed.' },
+      ],
+      cooldownMinutes: 144,
+      cooldownNote: 'Solo invite-only cooldown is 144 minutes (2h 24m). Fill with VIP Work / Security Contracts.',
     },
   },
   specialEvents: {
@@ -241,7 +254,7 @@ export const getWeeklyBonuses = () => {
   // Dynamically build from bonuses object for backward compatibility
   return Object.entries(WEEKLY_EVENTS.bonuses)
     .filter(([, bonus]) => bonus.isActive)
-    .map(([key, bonus]) => ({
+    .map(([, bonus]) => ({
       activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
       multiplier: `${bonus.multiplier}X`,
       note: bonus.label,

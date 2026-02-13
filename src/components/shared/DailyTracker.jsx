@@ -60,11 +60,11 @@ const shouldResetTasks = (lastResetTime) => {
   return now >= nextReset;
 };
 
-const DailyTracker = ({ hasNightclub, hasAgency }) => {
+const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
   const [lastResetTime, setLastResetTime] = useState(null);
 
-  // Load tasks from localStorage on mount
+  // Load tasks from localStorage on mount and sync with formData
   useEffect(() => {
     const saved = localStorage.getItem('dailyTracker');
     if (saved) {
@@ -82,12 +82,31 @@ const DailyTracker = ({ hasNightclub, hasAgency }) => {
             tasks: resetTasks,
             lastResetTime: Date.now(),
           }));
+          // Sync with form data when reset
+          if (setFormData) {
+            setFormData(prev => ({
+              ...prev,
+              dailyStashHouse: false,
+              dailyGsCache: false,
+              dailySafeCollect: false,
+            }));
+          }
         } else {
           // Load saved tasks
-          setTasks(parsed.tasks || CORE_DAILIES);
+          const loadedTasks = parsed.tasks || CORE_DAILIES;
+          setTasks(loadedTasks);
           setLastResetTime(savedResetTime);
+          // Sync with form data
+          if (setFormData && formData) {
+            setFormData(prev => ({
+              ...prev,
+              dailyStashHouse: loadedTasks[0]?.isCompleted || false,
+              dailyGsCache: loadedTasks[1]?.isCompleted || false,
+              dailySafeCollect: loadedTasks[2]?.isCompleted || false,
+            }));
+          }
         }
-      } catch (e) {
+      } catch {
         // Invalid data, use defaults
         setTasks(CORE_DAILIES);
       }
@@ -95,7 +114,7 @@ const DailyTracker = ({ hasNightclub, hasAgency }) => {
       // First time, set initial reset time
       setLastResetTime(Date.now());
     }
-  }, []);
+  }, [formData, setFormData]);
 
   // Filter tasks based on owned properties
   const availableTasks = tasks.filter(task => {
@@ -116,6 +135,20 @@ const DailyTracker = ({ hasNightclub, hasAgency }) => {
       tasks: updatedTasks,
       lastResetTime: lastResetTime || Date.now(),
     }));
+
+    // Sync with form data
+    if (setFormData) {
+      const stashCompleted = updatedTasks.find(t => t.id === 'stash_house')?.isCompleted || false;
+      const cacheCompleted = updatedTasks.find(t => t.id === 'gs_cache')?.isCompleted || false;
+      const safesCompleted = updatedTasks.find(t => t.id === 'wall_safes')?.isCompleted || false;
+      
+      setFormData(prev => ({
+        ...prev,
+        dailyStashHouse: stashCompleted,
+        dailyGsCache: cacheCompleted,
+        dailySafeCollect: safesCompleted,
+      }));
+    }
   };
 
   // Calculate total earnings from checked items

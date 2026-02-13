@@ -1,7 +1,7 @@
 // src/views/PriorityActionPlan.jsx
 import React, { useMemo, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
-import { buildCompactActionPlan, buildSessionPlan } from '../utils/actionPlanBuilder';
+import { buildCompactActionPlan, buildSessionPlan } from '../utils/actionPlanBuilder.ts';
 import { prioritizeActions } from '../utils/actionPriority';
 import { buildLLMPrompt, buildPlanCritiquePrompt, buildLLMJsonPayload, buildGoogleDocExport, buildWhatIfPrompt } from '../utils/buildLLMPrompt';
 import { getWeeklyBonuses } from '../config/weeklyEvents';

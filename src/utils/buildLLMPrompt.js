@@ -1,5 +1,5 @@
 // src/utils/buildLLMPrompt.js
-export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses = [] }) => {
+export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses: _weeklyBonuses = [] }) => {
   if (!assessmentResults) return '';
 
   const {
@@ -93,6 +93,15 @@ export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses = []
     '4. If the app is recommending anything outdated or suboptimal (for example, ignoring current weekly bonuses or GTA+ benefits), call that out and correct it.',
     '',
     'Respond in plain text, bullet points allowed, no roleplay.',
+    '',
+    '--- SOLO CONSTRAINTS (IMPORTANT) ---',
+    `Play mode: ${formData.playMode || 'invite'} (optimize all recommendations for this mode).`,
+    'Cayo Perico solo cooldown: 144 minutes (2h 24m) in invite-only sessions.',
+    'Solo drainage tunnel: Player reports difficulty filling bags while staying undetected.',
+    'Recommended solo Cayo routes: (1) Longfin → secondaries at airstrip/north dock FIRST → Drainage → primary → swim escape. (2) Drainage → primary + office safe → exit dock for partial secondary grab. (3) Longfin → closest high-value dock stack → Drainage → primary.',
+    'Acid Lab sell: works in private/invite-only sessions.',
+    'Associate/Bodyguard bonuses: NOT available solo in invite-only — deprioritize unless briefly joining a friend.',
+    'Fill Cayo cooldown with: 4X VIP Work (Headhunter/Sightseer loop) and 2X Security Contracts (GTA+ perk).',
   ].join('\n');
 };
 

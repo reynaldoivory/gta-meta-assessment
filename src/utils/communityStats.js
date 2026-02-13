@@ -127,7 +127,7 @@ export const compareToCommunity = (formData, assessmentResults) => {
   };
 };
 
-const calculatePercentile = (score, communityAvg) => {
+const calculatePercentile = (score, _communityAvg) => {
   const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
   const recent = pool.filter(e => e.timestamp > Date.now() - 30 * 24 * 60 * 60 * 1000);
   

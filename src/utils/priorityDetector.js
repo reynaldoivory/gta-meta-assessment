@@ -24,7 +24,7 @@ const PROPERTY_COSTS = {
  * @param {Object} gameState - Game state object (optional)
  * @returns {Object|null} Object with needsIt flag and estimatedCost, or null
  */
-const shouldUserBuy = (category, user, gameState = {}) => {
+const shouldUserBuy = (category, user, _gameState = {}) => {
   const formData = user.formData || user; // Support both formats
   
   // Map category to property flags and upgrade checks
@@ -140,7 +140,6 @@ export const detectCriticalOpportunities = (weeklyEvents = WEEKLY_EVENTS, user =
   if (weeklyEvents.bonuses && typeof weeklyEvents.bonuses === 'object') {
     Object.entries(weeklyEvents.bonuses).forEach(([key, bonus]) => {
       if (bonus.isActive && bonus.multiplier >= 3) {
-        const expiryDate = new Date(bonus.validUntil);
         activeBoosts.push({
           activity: key,
           multiplier: bonus.multiplier,

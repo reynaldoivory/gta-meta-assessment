@@ -180,7 +180,7 @@ export const NIGHTCLUB_INCOME = {
  * @returns {Object} Optimization analysis
  */
 
-const checkFloorIssues = (floors, nightclubState) => {
+const checkFloorIssues = (floors, _nightclubState) => {
   if (floors >= 5) {
     return null;
   }

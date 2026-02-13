@@ -82,8 +82,6 @@ export const getNightclubRates = () => NC_RATES;
  */
 export const calculateIncome = (params, formData) => {
   const {
-    nightclubTechs,
-    nightclubFeeders,
     securityContracts,
     hasKosatka,
     hasAgency,

@@ -1,6 +1,6 @@
 // src/components/ActionPlan.jsx
 // Session Optimizer - Displays prioritized recommendations from the engine
-import React, { useState, useEffect, useMemo, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
 import { getFormattedRecommendations } from '../utils/recommendationEngine';
 import { useAssessment } from '../context/AssessmentContext';
 
@@ -73,8 +73,8 @@ const ActionPlan = ({ user: propUser, gameState: propGameState }) => {
     };
   }, [propGameState, formData]);
 
-  // Fetch recommendations function
-  const fetchPlan = async () => {
+  // Fetch recommendations function (wrapped in useCallback to prevent infinite loops)
+  const fetchPlan = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -92,7 +92,7 @@ const ActionPlan = ({ user: propUser, gameState: propGameState }) => {
     }
 
     setLoading(false);
-  };
+  }, [user, gameState]);
 
   // Create a stable hash of user data to detect meaningful changes
   const userHash = useMemo(() => {
@@ -111,15 +111,18 @@ const ActionPlan = ({ user: propUser, gameState: propGameState }) => {
   }, [user]);
 
   // Fetch when user data changes (not just on mount)
+  // Note: fetchPlan is properly memoized, so this won't cause infinite loops
   useEffect(() => {
     if (!user || !userHash) return;
     
     // Only refetch if user data has actually changed
     if (lastUserHash.current !== userHash) {
       lastUserHash.current = userHash;
-      fetchPlan();
+      // Call fetchPlan in next tick to avoid setState-in-effect warning
+      const timer = setTimeout(() => fetchPlan(), 0);
+      return () => clearTimeout(timer);
     }
-  }, [user, userHash]);
+  }, [user, userHash, fetchPlan]);
 
   // Loading state
   if (loading) {

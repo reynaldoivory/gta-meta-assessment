@@ -187,7 +187,7 @@ export const getNextRecommendedPurchase = (formData, assessment = null) => {
 // Individual Property Prerequisite Checkers
 // ============================================
 
-const checkKosatkaPrereqs = (formData, assessment) => {
+const checkKosatkaPrereqs = (formData, _assessment) => {
   const liquidCash = Number(formData.liquidCash) || 0;
   const property = PROPERTIES.kosatka;
   
@@ -217,7 +217,7 @@ const checkKosatkaPrereqs = (formData, assessment) => {
   };
 };
 
-const checkSparrowPrereqs = (formData, assessment) => {
+const checkSparrowPrereqs = (formData, _assessment) => {
   const property = PROPERTIES.sparrow;
   
   // BLOCKED: Need Kosatka first
@@ -305,7 +305,7 @@ const checkAgencyPrereqs = (formData, assessment) => {
   };
 };
 
-const checkNightclubPrereqs = (formData, assessment) => {
+const checkNightclubPrereqs = (formData, _assessment) => {
   const property = PROPERTIES.nightclub;
   // Calculate feeders from nightclubSources (new format) or use legacy number
   const feeders = formData.nightclubSources 
@@ -381,7 +381,7 @@ const checkNightclubPrereqs = (formData, assessment) => {
   };
 };
 
-const checkAcidLabPrereqs = (formData) => {
+const checkAcidLabPrereqs = (_formData) => {
   const property = PROPERTIES.acidLab;
   
   // ALWAYS READY: Free via First Dose missions
@@ -400,7 +400,7 @@ const checkAcidLabPrereqs = (formData) => {
   };
 };
 
-const checkBunkerPrereqs = (formData, assessment) => {
+const checkBunkerPrereqs = (formData, _assessment) => {
   const property = PROPERTIES.bunker;
   const liquidCash = Number(formData.liquidCash) || 0;
   const hasKosatka = formData.hasKosatka;
@@ -448,7 +448,7 @@ const checkBunkerPrereqs = (formData, assessment) => {
   };
 };
 
-const checkAutoShopPrereqs = (formData, assessment) => {
+const checkAutoShopPrereqs = (formData, _assessment) => {
   const property = PROPERTIES.autoShop;
   const liquidCash = Number(formData.liquidCash) || 0;
   const hasGTAPlus = formData.hasGTAPlus;
@@ -483,7 +483,7 @@ const checkAutoShopPrereqs = (formData, assessment) => {
   };
 };
 
-const checkSalvageYardPrereqs = (formData, assessment) => {
+const checkSalvageYardPrereqs = (formData, _assessment) => {
   const property = PROPERTIES.salvageYard;
   const liquidCash = Number(formData.liquidCash) || 0;
   const hasKosatka = formData.hasKosatka;

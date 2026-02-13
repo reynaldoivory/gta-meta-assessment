@@ -104,11 +104,19 @@ const calculateCayoIncome = (formData, events, isEventActive) => {
 
     const config = MODEL_CONFIG.income?.cayo || {};
     const basePayout = config.basePayout ?? 700000;
-    // Assume ~75 min average run (prep + heist) for a typical player
-    const avgRunTime = 75; // minutes
-    const runsPerHour = 60 / avgRunTime;
+    // Solo cooldown is 144 minutes (2h 24m) in invite-only sessions.
+    // Average run (prep + finale) is ~75 min for a safe-pace player.
+    // Effective cycle = max(75, 144) = 144 min between payouts.
+    // This means ~0.42 runs/hr effective, NOT 0.8 runs/hr.
+    const cooldownMinutes = config.solo?.cooldownMinutes ?? 144;
+    const avgRunTime = 75; // minutes (prep + finale, safe pace)
+    const effectiveCycleTime = Math.max(avgRunTime, cooldownMinutes);
+    const runsPerHour = 60 / effectiveCycleTime;
 
-    income = basePayout * runsPerHour * multiplier;
+    // Bag fill: solo drainage tunnel players often can't fill bags while
+    // staying undetected. Use conservative ~80% bag fill estimate.
+    const bagFillFactor = 0.80;
+    income = basePayout * bagFillFactor * runsPerHour * multiplier;
   }
 
   return { income, multiplier, event };

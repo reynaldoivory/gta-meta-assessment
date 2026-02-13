@@ -169,6 +169,9 @@ const ensureDefaults = (migrated) => {
   if (migrated.hasWeedFarm === undefined) migrated.hasWeedFarm = false;
   if (migrated.hasHeliTours === undefined) migrated.hasHeliTours = false;
   if (migrated.sellsToStreetDealers === undefined) migrated.sellsToStreetDealers = false;
+  if (migrated.dailyStashHouse === undefined) migrated.dailyStashHouse = false;
+  if (migrated.dailyGsCache === undefined) migrated.dailyGsCache = false;
+  if (migrated.dailySafeCollect === undefined) migrated.dailySafeCollect = false;
   return migrated;
 };
 
@@ -228,6 +231,9 @@ export const AssessmentProvider = ({ children }) => {
     hasWeedFarm: false,      // Car Wash feeder business
     hasHeliTours: false,     // Car Wash feeder business
     sellsToStreetDealers: false, // Daily street dealer sells
+    dailyStashHouse: false,
+    dailyGsCache: false,
+    dailySafeCollect: false,
     claimedFreeCar: false,
     claimedWheelSpin: false,
     hasGTAPlus: false, playMode: 'invite',
@@ -443,6 +449,9 @@ export const AssessmentProvider = ({ children }) => {
       hasWeedFarm: false,
       hasHeliTours: false,
       sellsToStreetDealers: false,
+      dailyStashHouse: false,
+      dailyGsCache: false,
+      dailySafeCollect: false,
       claimedFreeCar: false,
       claimedWheelSpin: false,
       hasGTAPlus: false, playMode: 'invite',

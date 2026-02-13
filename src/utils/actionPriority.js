@@ -7,7 +7,7 @@
  * 4. Quick wins (timeHours < 1)
  * 5. Impact level
  */
-export const prioritizeActions = (bottlenecks, liquidCash, incomePerHour) => {
+export const prioritizeActions = (bottlenecks, _liquidCash, _incomePerHour) => {
   return [...bottlenecks].sort((a, b) => {
     // 1. URGENT (Expiring events - ALWAYS first, regardless of ROI)
     if (a.urgent && !b.urgent) return -1;

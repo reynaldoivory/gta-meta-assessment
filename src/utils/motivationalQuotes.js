@@ -79,7 +79,7 @@ export const getRandomQuote = () => {
  * @param {string} tier - Tier (S, A+, A, B, C, D)
  * @returns {string} Motivational message
  */
-export const getMotivationalMessage = (score, tier) => {
+export const getMotivationalMessage = (score, _tier) => {
   if (score >= 90) {
     return "🏆 You're in the top tier! You've mastered the meta. Keep optimizing!";
   } else if (score >= 80) {

@@ -1,10 +1,8 @@
 // src/components/SocialCardGenerator.jsx
-import React, { useRef } from 'react';
+import React from 'react';
 import { Download, Share2 } from 'lucide-react';
 
 const SocialCardGenerator = ({ formData, results }) => {
-  const cardRef = useRef(null);
-
   const generateImage = async () => {
     // Use html2canvas or similar library
     // For now, we'll create a downloadable text card

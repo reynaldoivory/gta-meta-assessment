@@ -1,14 +1,12 @@
 // src/components/GTA6Countdown.jsx
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, TrendingUp, Zap, AlertCircle } from 'lucide-react';
 
 const GTA6Countdown = () => {
-  // OFFICIAL: November 19, 2026 release date
-  const releaseDate = new Date('2026-11-19T00:00:00');
+  // OFFICIAL: November 19, 2026 release date (memoized to prevent recreating on every render)
+  const releaseDate = useMemo(() => new Date('2026-11-19T00:00:00'), []);
   
-  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft());
-
-  function calculateTimeLeft() {
+  const calculateTimeLeft = useCallback(() => {
     const now = new Date();
     const difference = releaseDate - now;
 
@@ -23,14 +21,16 @@ const GTA6Countdown = () => {
       minutes: Math.floor((difference / 1000 / 60) % 60),
       seconds: Math.floor((difference / 1000) % 60),
     };
-  }
+  }, [releaseDate]);
+  
+  const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 
   useEffect(() => {
     const timer = setInterval(() => {
       setTimeLeft(calculateTimeLeft());
     }, 1000);
     return () => clearInterval(timer);
-  }, []);
+  }, [calculateTimeLeft]);
 
   const funFacts = [
     "GTA 6 releases November 19, 2026 for PS5 and Xbox Series X|S!",

@@ -124,12 +124,19 @@ export const MODEL_CONFIG = {
     cayo: {
       basePayout: 700000,         // Average post-nerf payout (~$700k)
       tequilaPayout: 630000,       // Most common (60% drop rate)
+      pinkDiamondPayout: 1300000,  // Pink Diamond payout (boosted event weeks)
       masteryThreshold: 10,        // Runs needed for mastery
       masteryBonus: 1.1,          // 10% bonus when mastered
-      // Legacy structure for backward compatibility
+      bagFillFactor: 0.80,        // Solo drainage: ~80% bag fill (can't always fill undetected)
+      // Solo cooldown: 144 min (confirmed by 20+ community sources, Feb 2026)
+      // Co-op cooldown: 48 min
+      // Effective $/hr = payout * bagFill * (60 / max(runTime, cooldown))
       solo: {
-        basePayout: 1100000,      // $1.1M average solo payout
-        cooldownMinutes: 144,     // 2h 24m cooldown
+        basePayout: 1100000,      // $1.1M average solo payout (with decent secondary)
+        cooldownMinutes: 144,     // 2h 24m cooldown (invite-only, verified)
+        avgRunMinutes: 75,        // Safe-pace prep + finale (no elite assumption)
+        effectiveHourlyRate: 367000, // $700k * 0.8 * (60/144) ≈ $367k/hr solo-only
+        blendedHourlyRate: 800000,  // With VIP/Agency cooldown fillers: ~$800k/hr
         defaultEstimate: 300000   // Default estimate if no time entered
       },
       crew: {

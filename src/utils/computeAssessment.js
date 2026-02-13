@@ -123,8 +123,6 @@ const calculateHeistReadiness = (normalizedParams) => {
     sellsToStreetDealers,
     hasBunker,
     hasSalvageYard,
-    hasWeedFarm,
-    hasHeliTours,
     hasKosatka,
     hasCoke,
     hasMeth,

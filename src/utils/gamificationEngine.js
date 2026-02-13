@@ -186,7 +186,7 @@ const QUEST_DEFINITIONS = [...DAILY_QUESTS, ...WEEKLY_QUESTS, ...buildSpecialOps
 }, {});
 
 const buildQuestState = (quest) => {
-  const { condition, ...rest } = quest;
+  const { condition: _condition, ...rest } = quest;
   return {
     ...rest,
     completed: false,

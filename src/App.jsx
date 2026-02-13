@@ -1,4 +1,3 @@
-import React from 'react';
 import GTAAssessment from './components/GTAAssessment';
 import { ToastProvider } from './context/ToastContext';
 

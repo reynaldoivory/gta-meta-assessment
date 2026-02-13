@@ -1,26 +1,21 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+
+const loadLastSold = (hasAcidLab) => {
+  if (!hasAcidLab) return null;
+  const saved = localStorage.getItem('acidLabTracker');
+  if (!saved) return null;
+  try {
+    const parsed = JSON.parse(saved);
+    return parsed.lastSold ? new Date(parsed.lastSold) : null;
+  } catch {
+    return null;
+  }
+};
 
 const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   const [productionTime, setProductionTime] = useState(0);
-  const [lastSold, setLastSold] = useState(null);
+  const [lastSold, setLastSold] = useState(() => loadLastSold(hasAcidLab));
   const [suppliesNeeded, setSuppliesNeeded] = useState(false);
-
-  // Load from localStorage
-  useEffect(() => {
-    if (!hasAcidLab) return;
-    
-    const saved = localStorage.getItem('acidLabTracker');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (parsed.lastSold) {
-          setLastSold(new Date(parsed.lastSold));
-        }
-      } catch {
-        // Invalid data, ignore
-      }
-    }
-  }, [hasAcidLab]);
 
   // Calculate time since last sale
   useEffect(() => {

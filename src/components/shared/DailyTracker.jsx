@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 
 // Daily tasks configuration
 const CORE_DAILIES = [
@@ -52,17 +52,29 @@ const getNextResetTime = () => {
   return resetTime.getTime();
 };
 
+const getNowTimestamp = () => Date.now();
+
 // Check if tasks should be reset (past 6 AM UTC)
 const shouldResetTasks = (lastResetTime) => {
   if (!lastResetTime) return true;
-  const now = Date.now();
+  const now = getNowTimestamp();
   const nextReset = getNextResetTime();
   return now >= nextReset;
+};
+
+const calculateTimeUntilReset = () => {
+  const nextReset = getNextResetTime();
+  const now = getNowTimestamp();
+  const diff = nextReset - now;
+  const hours = Math.floor(diff / (1000 * 60 * 60));
+  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+  return { hours, minutes };
 };
 
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
   const [lastResetTime, setLastResetTime] = useState(null);
+  const [timeUntilReset, setTimeUntilReset] = useState({ hours: 0, minutes: 0 });
 
   // Load tasks from localStorage on mount and sync with formData
   useEffect(() => {
@@ -77,10 +89,10 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
           // Reset all tasks
           const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
           setTasks(resetTasks);
-          setLastResetTime(Date.now());
+          setLastResetTime(getNowTimestamp());
           localStorage.setItem('dailyTracker', JSON.stringify({
             tasks: resetTasks,
-            lastResetTime: Date.now(),
+            lastResetTime: getNowTimestamp(),
           }));
           // Sync with form data when reset
           if (setFormData) {
@@ -112,9 +124,16 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
       }
     } else {
       // First time, set initial reset time
-      setLastResetTime(Date.now());
+      setLastResetTime(getNowTimestamp());
     }
   }, [formData, setFormData]);
+
+  useEffect(() => {
+    const updateCountdown = () => setTimeUntilReset(calculateTimeUntilReset());
+    updateCountdown();
+    const timer = setInterval(updateCountdown, 60000);
+    return () => clearInterval(timer);
+  }, []);
 
   // Filter tasks based on owned properties
   const availableTasks = tasks.filter(task => {
@@ -133,7 +152,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     // Save to localStorage
     localStorage.setItem('dailyTracker', JSON.stringify({
       tasks: updatedTasks,
-      lastResetTime: lastResetTime || Date.now(),
+      lastResetTime: lastResetTime || getNowTimestamp(),
     }));
 
     // Sync with form data
@@ -156,17 +175,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     .filter((t) => t.isCompleted)
     .reduce((sum, t) => sum + t.rewards.cashEstimate, 0);
 
-  // Calculate time until next reset
-  const getTimeUntilReset = () => {
-    const nextReset = getNextResetTime();
-    const now = Date.now();
-    const diff = nextReset - now;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return { hours, minutes };
-  };
-
-  const { hours, minutes } = getTimeUntilReset();
+  const { hours, minutes } = timeUntilReset;
 
   if (availableTasks.length === 0) {
     return null; // Don't show if no tasks available

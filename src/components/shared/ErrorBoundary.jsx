@@ -1,6 +1,6 @@
 // src/components/shared/ErrorBoundary.jsx
 import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
+
 
 class ErrorBoundary extends React.Component {
   constructor(props) {

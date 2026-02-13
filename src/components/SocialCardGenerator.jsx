@@ -1,6 +1,5 @@
 // src/components/SocialCardGenerator.jsx
-import React from 'react';
-import { Download, Share2 } from 'lucide-react';
+
 
 const SocialCardGenerator = ({ formData, results }) => {
   const generateImage = async () => {

@@ -1,6 +1,5 @@
 // src/components/shared/WeeklyBonusBanner.jsx
-import React from 'react';
-import { Activity } from 'lucide-react';
+
 import { getWeeklyBonuses, WEEKLY_EVENTS } from '../../config/weeklyEvents';
 
 const WeeklyBonusBanner = () => {

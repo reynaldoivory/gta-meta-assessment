@@ -1,5 +1,5 @@
 // src/components/shared/StatBar.jsx
-import React from 'react';
+
 import PropTypes from 'prop-types';
 
 const StatBar = ({ label, value, onChange }) => {

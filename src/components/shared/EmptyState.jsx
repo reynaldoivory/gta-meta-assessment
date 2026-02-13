@@ -1,5 +1,5 @@
 // src/components/shared/EmptyState.jsx
-import React from 'react';
+
 import PropTypes from 'prop-types';
 
 const EmptyState = ({ 

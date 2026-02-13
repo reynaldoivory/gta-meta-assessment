@@ -4,17 +4,15 @@ import { checkStreak, getStreakMilestones } from '../utils/streakTracker';
 
 const StreakBanner = () => {
   // Initialize streak data on mount (using lazy initialization to avoid setState in effect)
-  const [streakData, setStreakData] = useState(() => checkStreak());
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [streakData] = useState(() => checkStreak());
+  const shouldCelebrate = !!(streakData?.isNewDay && streakData?.bonus);
+  const [showCelebration, setShowCelebration] = useState(shouldCelebrate);
 
-  // Handle celebration for new day bonus (separate effect to avoid setState-in-effect)
   useEffect(() => {
-    if (streakData?.isNewDay && streakData?.bonus) {
-      setShowCelebration(true);
-      const timer = setTimeout(() => setShowCelebration(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [streakData?.isNewDay, streakData?.bonus]);
+    if (!showCelebration) return;
+    const timer = setTimeout(() => setShowCelebration(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showCelebration]);
 
   if (!streakData) return null;
 

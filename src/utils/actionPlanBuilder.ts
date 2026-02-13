@@ -2,7 +2,7 @@
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
 
-import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, formatExpiry, getExpiryLabel } from '../config/weeklyEvents.js';
+import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
 import { checkGatekeeper } from './gatekeeperEngine.js';
@@ -722,7 +722,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
 
   if (!isAutoShopEventAvailable) return actions;
 
-  const shopCost = (_WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate ?? 835000) as number;0;
+  const shopCost = (_WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate ?? 835000) as number;
 
   if (!formData.hasAutoShop && cash >= shopCost) {
     const expiry = autoShopBonus?.gtaPlusValidUntil ?? autoShopBonus?.validUntil;

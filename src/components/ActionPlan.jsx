@@ -1,7 +1,7 @@
 // src/components/ActionPlan.jsx
 // Session Optimizer - Displays prioritized recommendations from the engine
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
-import { getFormattedRecommendations } from '../utils/recommendationEngine';
+import { getFormattedRecommendations } from '../utils/recommendationEngine.ts';
 import { useAssessment } from '../context/AssessmentContext';
 
 /**

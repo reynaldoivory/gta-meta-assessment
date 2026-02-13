@@ -9,7 +9,7 @@ import StatBar from '../components/shared/StatBar';
 import NightclubLogistics from '../components/shared/NightclubLogistics';
 import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
-import { _WEEKLY_EVENTS } from '../config/weeklyEvents';
+import { WEEKLY_EVENTS } from '../config/weeklyEvents';
 
 // HELPER: Format last saved
 const formatLastSaved = (date) => {

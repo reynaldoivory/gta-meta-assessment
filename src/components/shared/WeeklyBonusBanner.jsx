@@ -1,10 +1,10 @@
 // src/components/shared/WeeklyBonusBanner.jsx
 import React from 'react';
-import { Activity } from 'lucide-react';
+import { Activity, Lock } from 'lucide-react';
 import { getWeeklyBonuses, WEEKLY_EVENTS } from '../../config/weeklyEvents';
 
-const WeeklyBonusBanner = () => {
-  const bonuses = getWeeklyBonuses();
+const WeeklyBonusBanner = ({ hasGTAPlus = false }) => {
+  const bonuses = getWeeklyBonuses({ hasGTAPlus, includeGTAPlus: true });
 
   return (
     <div className="mb-4 rounded-2xl border border-orange-500/40 bg-gradient-to-r from-orange-900/40 to-yellow-900/30 p-4">
@@ -28,13 +28,23 @@ const WeeklyBonusBanner = () => {
         {bonuses.map((b, idx) => (
           <div
             key={idx}
-            className="rounded-lg bg-black/30 p-3 text-xs border border-orange-500/20"
+            className={`rounded-lg bg-black/30 p-3 text-xs border border-orange-500/20 relative ${
+              b.locked ? 'opacity-60 grayscale' : ''
+            }`}
           >
+            {b.locked && (
+              <div className="absolute top-2 right-2">
+                <Lock className="h-4 w-4 text-orange-400" />
+              </div>
+            )}
             <div className="text-[11px] font-semibold text-orange-300">
               {b.multiplier}
             </div>
             <div className="text-slate-100 text-sm">{b.activity}</div>
             <div className="mt-1 text-[11px] text-slate-400">{b.note}</div>
+            {b.locked && (
+              <div className="mt-1 text-[10px] text-yellow-300/80">GTA+ Required</div>
+            )}
           </div>
         ))}
       </div>

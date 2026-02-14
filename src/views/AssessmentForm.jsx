@@ -7,6 +7,7 @@ import { useAssessment } from '../context/AssessmentContext';
 import { Save, Trash2, AlertCircle, Check } from 'lucide-react';
 import StatBar from '../components/shared/StatBar';
 import NightclubLogistics from '../components/shared/NightclubLogistics';
+import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
 import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
 import { _WEEKLY_EVENTS } from '../config/weeklyEvents';
@@ -164,6 +165,11 @@ export default function AssessmentForm() {
             {renderSaveStatus(localStorageAvailable, isSaving, lastSaved)}
           </div>
         </div>
+      </div>
+
+      {/* WEEKLY BONUS BANNER - Always show with locked state for non-GTA+ users */}
+      <div className="max-w-7xl mx-auto">
+        <WeeklyBonusBanner hasGTAPlus={formData.hasGTAPlus} />
       </div>
 
       {/* MAIN 12-COLUMN GRID */}

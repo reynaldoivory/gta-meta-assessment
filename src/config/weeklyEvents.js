@@ -250,9 +250,11 @@ export const getEventExpiry = (eventKey, hasGTAPlus = false) => {
   return event.validUntil;
 };
 
-export const getWeeklyBonuses = () => {
+export const getWeeklyBonuses = (options = {}) => {
+  const { hasGTAPlus = false, includeGTAPlus = false } = options;
+  
   // Dynamically build from bonuses object for backward compatibility
-  return Object.entries(WEEKLY_EVENTS.bonuses)
+  const regularBonuses = Object.entries(WEEKLY_EVENTS.bonuses)
     .filter(([, bonus]) => bonus.isActive)
     .map(([, bonus]) => ({
       activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
@@ -260,4 +262,18 @@ export const getWeeklyBonuses = () => {
       note: bonus.label,
       isGTAPlus: bonus.gtaPlusOnly || false,
     }));
+  
+  // Add GTA+ monthly bonuses if includeGTAPlus is true
+  if (includeGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
+    const gtaPlusBonuses = WEEKLY_EVENTS.gtaPlus.monthlyBonuses.map(bonus => ({
+      activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''),
+      multiplier: `${bonus.multiplier}X`,
+      note: bonus.label,
+      isGTAPlus: true,
+      locked: !hasGTAPlus, // Add locked property for non-subscribers
+    }));
+    return [...regularBonuses, ...gtaPlusBonuses];
+  }
+  
+  return regularBonuses;
 };

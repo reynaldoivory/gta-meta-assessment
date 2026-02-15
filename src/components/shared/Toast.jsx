@@ -1,5 +1,5 @@
 // src/components/shared/Toast.jsx
-import React, { useEffect } from 'react';
+import { useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
 import PropTypes from 'prop-types';
 

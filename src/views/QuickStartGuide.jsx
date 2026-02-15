@@ -1,5 +1,5 @@
 // src/views/QuickStartGuide.jsx
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { WEEKLY_EVENTS } from '../config/weeklyEvents';
 import { Shield, DollarSign, Target, TrendingUp, Zap, CheckCircle2, X } from 'lucide-react';
@@ -230,7 +230,7 @@ const QuickStartGuide = () => {
         <div className="flex gap-2 mb-6 overflow-x-auto pb-2">
           {steps.map((step, idx) => (
             <button
-              key={idx}
+              key={step.title}
               onClick={() => setActiveStep(idx)}
               className={`px-4 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
                 activeStep === idx
@@ -259,8 +259,8 @@ const QuickStartGuide = () => {
           </div>
 
           <div className="space-y-2 mb-4">
-            {currentStep.tasks.map((task, idx) => (
-              <div key={idx} className="flex items-start gap-2 text-slate-200">
+            {currentStep.tasks.map((task) => (
+              <div key={`${currentStep.title}-${task}`} className="flex items-start gap-2 text-slate-200">
                 <span className="text-slate-500 mt-1">•</span>
                 <span>{task}</span>
               </div>
@@ -278,8 +278,8 @@ const QuickStartGuide = () => {
         <div className="bg-red-900/20 border border-red-500/30 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-red-400 mb-4">🚫 Common Mistakes to Avoid</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-            {commonMistakes.map((mistake, idx) => (
-              <div key={idx} className="text-sm text-slate-300">
+            {commonMistakes.map((mistake) => (
+              <div key={mistake} className="text-sm text-slate-300">
                 {mistake}
               </div>
             ))}

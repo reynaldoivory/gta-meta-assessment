@@ -1,6 +1,5 @@
 // src/components/GTAAssessment.jsx
 // The Router - Main Entry Point
-import React from 'react';
 import { AssessmentProvider, useAssessment } from '../context/AssessmentContext';
 import AssessmentForm from '../views/AssessmentForm';
 import AssessmentResults from '../views/AssessmentResults';

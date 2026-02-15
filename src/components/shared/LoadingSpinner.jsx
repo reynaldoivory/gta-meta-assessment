@@ -1,19 +1,18 @@
 // src/components/shared/LoadingSpinner.jsx
-import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+
+const STEPS = [
+  'Analyzing your stats...',
+  'Calculating income potential...',
+  'Comparing to community...',
+  'Building action plan...',
+  'Finalizing results...'
+];
 
 const LoadingSpinner = ({ message = 'Calculating...' }) => {
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState(0);
-  
-  const steps = [
-    'Analyzing your stats...',
-    'Calculating income potential...',
-    'Comparing to community...',
-    'Building action plan...',
-    'Finalizing results...'
-  ];
   
   useEffect(() => {
     const stepDuration = 400; // ms per step
@@ -21,9 +20,9 @@ const LoadingSpinner = ({ message = 'Calculating...' }) => {
     
     const interval = setInterval(() => {
       currentStep++;
-      if (currentStep < steps.length) {
+      if (currentStep < STEPS.length) {
         setStep(currentStep);
-        setProgress((currentStep / steps.length) * 100);
+        setProgress((currentStep / STEPS.length) * 100);
       } else {
         setProgress(100);
         clearInterval(interval);
@@ -49,7 +48,7 @@ const LoadingSpinner = ({ message = 'Calculating...' }) => {
         <h3 className="text-xl font-bold text-white mb-1">{message}</h3>
         
         {/* Current step */}
-        <p className="text-slate-400 text-sm mb-4 min-h-[20px]">{steps[step] || steps[steps.length - 1]}</p>
+        <p className="text-slate-400 text-sm mb-4 min-h-[20px]">{STEPS[step] || STEPS[STEPS.length - 1]}</p>
         
         {/* Progress bar */}
         <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">

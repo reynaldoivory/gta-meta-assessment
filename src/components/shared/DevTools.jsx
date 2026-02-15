@@ -1,6 +1,6 @@
 // src/components/shared/DevTools.jsx
 // Development-only debug panel
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAssessment } from '../../context/AssessmentContext';
 import { X, Code, Database } from 'lucide-react';
 

@@ -1,5 +1,5 @@
 // src/components/GTA6Countdown.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, TrendingUp, Zap, AlertCircle } from 'lucide-react';
 
 const GTA6Countdown = () => {

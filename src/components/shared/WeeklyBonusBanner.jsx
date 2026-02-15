@@ -1,5 +1,4 @@
 // src/components/shared/WeeklyBonusBanner.jsx
-import React from 'react';
 import { Activity, Lock } from 'lucide-react';
 import { getWeeklyBonuses, WEEKLY_EVENTS } from '../../config/weeklyEvents';
 
@@ -25,9 +24,9 @@ const WeeklyBonusBanner = ({ hasGTAPlus = false }) => {
         </span>
       </div>
       <div className="grid grid-cols-3 gap-3">
-        {bonuses.map((b, idx) => (
+        {bonuses.map((b) => (
           <div
-            key={idx}
+            key={b.activity}
             className={`rounded-lg bg-black/30 p-3 text-xs border border-orange-500/20 relative ${
               b.locked ? 'opacity-60 grayscale' : ''
             }`}

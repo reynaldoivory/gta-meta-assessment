@@ -1,20 +1,19 @@
 // src/components/gamification/StreakBanner.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { checkStreak, getStreakMilestones } from '../../utils/streakTracker';
 
 const StreakBanner = () => {
-  // Initialize streak data on mount (using lazy initialization to avoid setState in effect)
-  const [streakData, setStreakData] = useState(() => checkStreak());
-  const [showCelebration, setShowCelebration] = useState(false);
+  const [streakData] = useState(() => checkStreak());
+  const [showCelebration, setShowCelebration] = useState(
+    () => !!(streakData?.isNewDay && streakData?.bonus)
+  );
 
-  // Handle celebration for new day bonus (separate effect to avoid setState-in-effect)
+  // Auto-dismiss celebration after 3 seconds
   useEffect(() => {
-    if (streakData?.isNewDay && streakData?.bonus) {
-      setShowCelebration(true);
-      const timer = setTimeout(() => setShowCelebration(false), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [streakData?.isNewDay, streakData?.bonus]);
+    if (!showCelebration) return;
+    const timer = setTimeout(() => setShowCelebration(false), 3000);
+    return () => clearTimeout(timer);
+  }, [showCelebration]);
 
   if (!streakData) return null;
 

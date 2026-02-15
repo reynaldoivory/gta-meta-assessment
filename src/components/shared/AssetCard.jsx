@@ -1,5 +1,4 @@
 // src/components/shared/AssetCard.jsx
-import React from 'react';
 import PropTypes from 'prop-types';
 import { CheckCircle2 } from 'lucide-react';
 

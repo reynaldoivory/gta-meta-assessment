@@ -1,5 +1,5 @@
 // src/components/Confetti.jsx
-import React, { useEffect, useRef } from 'react';
+import { useEffect, useRef } from 'react';
 
 const Confetti = ({ active, onComplete }) => {
   const canvasRef = useRef(null);

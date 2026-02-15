@@ -1,5 +1,4 @@
 // src/components/calculators/SocialCardGenerator.jsx
-import React from 'react';
 import { Share2, Download } from 'lucide-react';
 
 const SocialCardGenerator = ({ formData, results }) => {

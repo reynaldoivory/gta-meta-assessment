@@ -1,5 +1,5 @@
 // src/context/ToastContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState } from 'react';
 import Toast from '../components/shared/Toast';
 
 const ToastContext = createContext(null);

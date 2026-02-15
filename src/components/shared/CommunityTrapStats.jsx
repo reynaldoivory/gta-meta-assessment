@@ -1,7 +1,6 @@
 // src/components/shared/CommunityTrapStats.jsx
 // Displays community trap occurrence rates and player comparison
 
-import React from 'react';
 import PropTypes from 'prop-types';
 import { Users, TrendingUp, TrendingDown, Trophy, AlertTriangle } from 'lucide-react';
 import { getTrapOccurrenceRates, getTrapAvoidanceStats } from '../../utils/communityStats';

@@ -17,6 +17,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - WeeklyBonusBanner now always renders (not conditionally for GTA+ users only)
 - `getWeeklyBonuses()` function now accepts options object: `{ hasGTAPlus, includeGTAPlus }`
 - GTA+ monthly bonuses separated from global weekly events into dedicated `gtaPlus.monthlyBonuses` array
+- Continued migration from JS/JSX components and utilities toward TS/TSX-typed architecture
+- Updated strategy flow for assessment/results/action-plan sections via extracted shared components and hooks
+- Updated economy guidance and verified pricing references to align with the latest Feb 2026 audit pass
 
 ### Fixed
 - GTA+ logic no longer bleeds into global weekly event bonuses

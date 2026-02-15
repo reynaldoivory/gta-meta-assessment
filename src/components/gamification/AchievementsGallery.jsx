@@ -1,5 +1,5 @@
 // src/components/gamification/AchievementsGallery.jsx
-import React, { useState, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import PropTypes from 'prop-types';
 import { Trophy, Filter, Lock, Star, ChevronUp, ChevronDown } from 'lucide-react';
 import { ACHIEVEMENTS, getAchievementProgress } from '../../utils/achievements';

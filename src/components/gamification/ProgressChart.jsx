@@ -1,5 +1,4 @@
 // src/components/ProgressChart.jsx
-import React from 'react';
 import {
   Chart as ChartJS,
   CategoryScale,

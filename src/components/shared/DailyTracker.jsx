@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 // Daily tasks configuration
 const CORE_DAILIES = [
@@ -60,59 +60,51 @@ const shouldResetTasks = (lastResetTime) => {
   return now >= nextReset;
 };
 
+const loadSavedTasks = () => {
+  const saved = localStorage.getItem('dailyTracker');
+  if (!saved) {
+    return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
+  }
+
+  try {
+    const parsed = JSON.parse(saved);
+
+    if (shouldResetTasks(parsed.lastResetTime)) {
+      const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
+      const resetTime = Date.now();
+      localStorage.setItem('dailyTracker', JSON.stringify({ tasks: resetTasks, lastResetTime: resetTime }));
+      return { tasks: resetTasks, resetTime, syncMode: 'reset' };
+    }
+
+    return {
+      tasks: parsed.tasks || CORE_DAILIES,
+      resetTime: parsed.lastResetTime,
+      syncMode: 'load',
+    };
+  } catch {
+    return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
+  }
+};
+
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
-  const [lastResetTime, setLastResetTime] = useState(null);
+  const [lastResetTime, setLastResetTime] = useState(() => Date.now());
 
   // Load tasks from localStorage on mount and sync with formData
   useEffect(() => {
-    const saved = localStorage.getItem('dailyTracker');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const savedResetTime = parsed.lastResetTime;
-        
-        // Check if we need to reset (new day)
-        if (shouldResetTasks(savedResetTime)) {
-          // Reset all tasks
-          const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
-          setTasks(resetTasks);
-          setLastResetTime(Date.now());
-          localStorage.setItem('dailyTracker', JSON.stringify({
-            tasks: resetTasks,
-            lastResetTime: Date.now(),
-          }));
-          // Sync with form data when reset
-          if (setFormData) {
-            setFormData(prev => ({
-              ...prev,
-              dailyStashHouse: false,
-              dailyGsCache: false,
-              dailySafeCollect: false,
-            }));
-          }
-        } else {
-          // Load saved tasks
-          const loadedTasks = parsed.tasks || CORE_DAILIES;
-          setTasks(loadedTasks);
-          setLastResetTime(savedResetTime);
-          // Sync with form data
-          if (setFormData && formData) {
-            setFormData(prev => ({
-              ...prev,
-              dailyStashHouse: loadedTasks[0]?.isCompleted || false,
-              dailyGsCache: loadedTasks[1]?.isCompleted || false,
-              dailySafeCollect: loadedTasks[2]?.isCompleted || false,
-            }));
-          }
-        }
-      } catch {
-        // Invalid data, use defaults
-        setTasks(CORE_DAILIES);
-      }
-    } else {
-      // First time, set initial reset time
-      setLastResetTime(Date.now());
+    const { tasks: loadedTasks, resetTime, syncMode } = loadSavedTasks();
+    setTasks(loadedTasks);
+    setLastResetTime(resetTime);
+
+    if (syncMode === 'reset' && setFormData) {
+      setFormData(prev => ({ ...prev, dailyStashHouse: false, dailyGsCache: false, dailySafeCollect: false }));
+    } else if (syncMode === 'load' && setFormData && formData) {
+      setFormData(prev => ({
+        ...prev,
+        dailyStashHouse: loadedTasks[0]?.isCompleted || false,
+        dailyGsCache: loadedTasks[1]?.isCompleted || false,
+        dailySafeCollect: loadedTasks[2]?.isCompleted || false,
+      }));
     }
   }, [formData, setFormData]);
 
@@ -133,7 +125,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     // Save to localStorage
     localStorage.setItem('dailyTracker', JSON.stringify({
       tasks: updatedTasks,
-      lastResetTime: lastResetTime || Date.now(),
+      lastResetTime: lastResetTime,
     }));
 
     // Sync with form data
@@ -157,16 +149,19 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     .reduce((sum, t) => sum + t.rewards.cashEstimate, 0);
 
   // Calculate time until next reset
-  const getTimeUntilReset = () => {
+  const nowRef = useRef(Date.now());
+  useEffect(() => { nowRef.current = Date.now(); }, [lastResetTime]);
+  const resetTimer = useMemo(() => {
     const nextReset = getNextResetTime();
-    const now = Date.now();
-    const diff = nextReset - now;
-    const hours = Math.floor(diff / (1000 * 60 * 60));
-    const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-    return { hours, minutes };
-  };
+    const diff = nextReset - nowRef.current;
+    return {
+      hours: Math.floor(diff / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lastResetTime triggers recalculation intentionally
+  }, [lastResetTime]);
 
-  const { hours, minutes } = getTimeUntilReset();
+  const { hours, minutes } = resetTimer;
 
   if (availableTasks.length === 0) {
     return null; // Don't show if no tasks available

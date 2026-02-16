@@ -12,6 +12,13 @@ This is a React 19 + Vite SPA that helps GTA Online players assess their in-game
 - **Testing:** Jest + jsdom
 - **Linting:** ESLint 9 (flat config)
 
+## Best Practices (2026)
+- Prefer pure functions and data-first transformations in `src/utils/`.
+- Keep component state minimal; derive values instead of duplicating state.
+- Co-locate types with the module that owns the data shape.
+- Use `satisfies` for config objects to keep inference while validating shape.
+- Favor `unknown` for external data and narrow with guards.
+
 ## Code Quality Rules
 
 ### File Size
@@ -30,6 +37,7 @@ This is a React 19 + Vite SPA that helps GTA Online players assess their in-game
 ## TypeScript Migration (Gradual)
 - New utility/logic files should be written in **TypeScript** (`.ts`).
 - New React components may remain `.jsx` for now — conversion is optional.
+- For new components with complex props, prefer `.tsx` and typed props.
 - When editing an existing `.js` utility file substantially, consider converting it to `.ts` if the change touches >50% of the file.
 - Avoid `any`. Use concrete types or `unknown` with narrowing.
 - Two files have already been migrated: `formValidation.ts`, `actionPlanBuilder.ts`.
@@ -46,6 +54,7 @@ This is a React 19 + Vite SPA that helps GTA Online players assess their in-game
 - Use **functional components** with hooks. No class components.
 - Prefer **named exports** for components and utilities.
 - Use **prop-types** for runtime prop validation on JSX components (already a dependency).
+- Use TypeScript types for TS/TSX components and utilities; keep `prop-types` only for `.jsx`.
 - Destructure props in function signatures.
 - Prefix unused parameters with `_`.
 - Keep imports organized: React/library imports first, then local imports.

@@ -9,9 +9,9 @@ export default {
   },
   testMatch: ['**/__tests__/**/*.js', '**/?(*.)+(spec|test).js'],
   collectCoverageFrom: [
-    'src/**/*.{js,jsx}',
+    'src/**/*.{js,jsx,ts,tsx}',
     '!src/main.jsx',
-    '!src/**/*.test.js'
+    '!src/**/*.test.{js,jsx,ts,tsx}'
   ]
 };
 

@@ -1,0 +1,6 @@
+models:
+  - name: DeepSeek R1 14B (Remote PC)
+    provider: ollama
+    model: deepseek-r1:14b
+    apiBase: http://192.168.50.176
+      # Replace with your PC's IP

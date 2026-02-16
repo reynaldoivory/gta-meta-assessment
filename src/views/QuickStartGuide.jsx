@@ -8,6 +8,9 @@ const QuickStartGuide = () => {
   const { setStep, formData } = useAssessment();
   const [activeStep, setActiveStep] = useState(0);
   const hasGTAPlus = formData.hasGTAPlus;
+  const activeBonuses = Object.values(WEEKLY_EVENTS?.bonuses || {}).filter(b => b?.isActive);
+  const isBonusWeek = activeBonuses.length > 0;
+  const isAutoShopBonusActive = WEEKLY_EVENTS?.bonuses?.autoShop?.isActive === true;
 
   // Base steps for non-GTA+ players
   const baseSteps = [
@@ -65,7 +68,9 @@ const QuickStartGuide = () => {
       ],
       time: "8 hours",
       income: "$5.5M+",
-      warning: "Cayo nerfed in 2023—tequila pays ~$630k total. Focus on weekly 2X bonuses."
+      warning: isBonusWeek
+        ? "Cayo nerfed in 2023—tequila pays ~$630k total. Focus on active weekly bonuses."
+        : "Cayo nerfed in 2023—tequila pays ~$630k total."
     },
     {
       title: "Hour 20-40: Build Passive Engine",
@@ -126,7 +131,7 @@ const QuickStartGuide = () => {
       ],
       time: "3 hours",
       income: "$1.5M+",
-      warning: "Use this only while the event bonuses are active."
+      warning: isBonusWeek ? "Use this only while the event bonuses are active." : null
     },
     {
       title: "Hour 6-15: Auto Shop Loop (GTA+)",
@@ -134,13 +139,22 @@ const QuickStartGuide = () => {
       tasks: [
         "🏬 Buy discounted Auto Shop (Mission Row/Strawberry, -50% GTA+)",
         "🧾 Ignore Customer Cars; use the contract whiteboard only",
-        "🏦 Fish for 'Union Depository Contract' when 2X is active",
-        "💰 Payout: ~$540k per run (2X GTA+ bonus, 20–30 minutes)",
-        "🎯 Target: ~1.0–1.1M/hour while the 2X event lasts"
+        ...(isAutoShopBonusActive
+          ? [
+              "🏦 Fish for 'Union Depository Contract' while the bonus is active",
+              "💰 Payout: ~$540k per run (20–30 minutes)",
+              "🎯 Target: ~1.0–1.1M/hour during the bonus",
+            ]
+          : [
+              "🏦 Union Depository Contract pays ~$300k (20–30 minutes)",
+              "🎯 Target: ~$400-600k/hour until Kosatka",
+            ])
       ],
       time: "9 hours",
-      income: "$9M+ (during 2X weeks)",
-      warning: "After event ends, this drops below Cayo in priority."
+      income: isAutoShopBonusActive ? "$9M+" : "$4-6M",
+      warning: isAutoShopBonusActive
+        ? "Prioritize this while the bonus is active."
+        : "Auto Shop is solid early, but Kosatka remains the long-term grind."
     },
     {
       title: "Hour 15-20: Transition to Kosatka",
@@ -193,7 +207,7 @@ const QuickStartGuide = () => {
   const commonMistakes = [
     "❌ Buying cars before businesses (luxury trap)",
     "❌ Running MC businesses solo (Post-Op torture)",
-    "❌ Ignoring weekly 2X-4X money events",
+    ...(isBonusWeek ? ["❌ Ignoring active weekly money bonuses"] : []),
     "❌ Playing in public sessions while grinding",
     "❌ Not maxing Strength/Flying early",
     "❌ Buying Facility before Kosatka",

@@ -5,7 +5,6 @@ import { useAssessment } from '../context/AssessmentContext';
 import { useToast } from '../context/ToastContext';
 import { soundEffects } from '../utils/soundEffects';
 import { fireConfetti } from '../utils/confettiEffects';
-import { getRandomQuote, getMotivationalMessage } from '../utils/motivationalQuotes';
 import { getProgressHistory } from '../utils/progressTracker';
 import { checkStreak } from '../utils/streakTracker';
 
@@ -129,8 +128,6 @@ const AssessmentResults = () => {
 
   const progressHistory = getProgressHistory();
   const streakInfo = checkStreak();
-  const quote = getRandomQuote();
-  const motivation = getMotivationalMessage(results.score, results.tier);
   
   // Calculate strength training needs
   const strengthPct = (Number(formData.strength) || 0) * 20;
@@ -650,19 +647,7 @@ const AssessmentResults = () => {
           </Suspense>
         </div>
 
-        {/* Motivational Quote */}
-        <div className="bg-gradient-to-r from-slate-900/60 to-slate-800/60 border border-slate-700 rounded-2xl p-6">
-          <div className="text-center">
-            <div className="text-2xl mb-3">💬</div>
-            <blockquote className="text-lg italic text-slate-300 mb-2">
-              "{quote.text}"
-            </blockquote>
-            <cite className="text-sm text-slate-500">— {quote.character}</cite>
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <div className="text-green-400 font-semibold">{motivation}</div>
-            </div>
-          </div>
-        </div>
+
       </div>
     </div>
   );

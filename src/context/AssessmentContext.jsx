@@ -71,11 +71,10 @@ const migrateNightclubStorage = (migrated) => {
   return migrated;
 };
 
-/** MIGRATION: lungCapacity -> stamina */
+/** MIGRATION: lungCapacity -> stamina (preserve both fields for UI) */
 const migrateStamina = (migrated) => {
   if (migrated.lungCapacity !== undefined && migrated.stamina === undefined) {
     migrated.stamina = migrated.lungCapacity;
-    delete migrated.lungCapacity;
     console.log('✅ Migrated Lung Capacity → Stamina');
   }
   return migrated;
@@ -160,6 +159,10 @@ const ensureDefaults = (migrated) => {
     };
   }
 
+  if (migrated.lungCapacity === undefined) {
+    migrated.lungCapacity = migrated.stamina ?? 0;
+  }
+
   // Clean up legacy Cayo fields from old saves
   delete migrated.cayoCompletions;
   delete migrated.cayoAvgTime;
@@ -168,6 +171,11 @@ const ensureDefaults = (migrated) => {
   // Ensure new fields have defaults
   if (migrated.hasWeedFarm === undefined) migrated.hasWeedFarm = false;
   if (migrated.hasHeliTours === undefined) migrated.hasHeliTours = false;
+  if (migrated.hasArcade === undefined) migrated.hasArcade = false;
+  if (migrated.hasArcadeMct === undefined) migrated.hasArcadeMct = false;
+  if (migrated.hasTerrorbyte === undefined) migrated.hasTerrorbyte = false;
+  if (migrated.hasOppressorMissiles === undefined) migrated.hasOppressorMissiles = false;
+  if (migrated.hasBrickade6x6 === undefined) migrated.hasBrickade6x6 = false;
   if (migrated.sellsToStreetDealers === undefined) migrated.sellsToStreetDealers = false;
   if (migrated.dailyStashHouse === undefined) migrated.dailyStashHouse = false;
   if (migrated.dailyGsCache === undefined) migrated.dailyGsCache = false;
@@ -196,7 +204,7 @@ export const AssessmentProvider = ({ children }) => {
   const [formData, setFormData] = useState({
     rank: '', timePlayed: '', timePlayedDays: '', timePlayedHours: '', timePlayedMinutes: '', timePlayedMode: 'parts', liquidCash: '0', 
     totalIncomeCollected: '', totalRPCollected: '',
-    strength: 0, flying: 0, shooting: 0, stealth: 0, stamina: 0, driving: 0,
+    strength: 0, flying: 0, shooting: 0, stealth: 0, stamina: 0, driving: 0, lungCapacity: 0,
     hasKosatka: false, hasSparrow: false,
     hasAgency: false, dreContractDone: false, payphoneUnlocked: false, securityContracts: '',
     hasAcidLab: false, acidLabUpgraded: false, 
@@ -218,13 +226,17 @@ export const AssessmentProvider = ({ children }) => {
       hasMule: false
     },
     hasSalvageYard: false, hasTowTruck: false,
-    hasSafehouse: false, hasRaiju: false, hasOppressor: false, hasArmoredKuruma: false,
+    hasSafehouse: false, hasRaiju: false, hasOppressor: false, hasOppressorMissiles: false, hasArmoredKuruma: false,
+    hasTerrorbyte: false,
+    hasBrickade6x6: false,
     hasBunker: false, 
     bunkerUpgraded: false, // Legacy field (kept for backward compatibility)
     bunkerEquipmentUpgrade: false,
     bunkerStaffUpgrade: false,
     bunkerSecurityUpgrade: false,
     hasAutoShop: false,
+    hasArcade: false,
+    hasArcadeMct: false,
     hasMansion: false,
     mansionType: '',
     hasCarWash: false,
@@ -437,12 +449,17 @@ export const AssessmentProvider = ({ children }) => {
       },
       hasSalvageYard: false, hasTowTruck: false,
       hasSafehouse: false, hasRaiju: false, hasOppressor: false, hasArmoredKuruma: false,
+      hasOppressorMissiles: false,
+      hasTerrorbyte: false,
+      hasBrickade6x6: false,
       hasBunker: false, 
       bunkerUpgraded: false,
       bunkerEquipmentUpgrade: false,
       bunkerStaffUpgrade: false,
       bunkerSecurityUpgrade: false,
       hasAutoShop: false,
+      hasArcade: false,
+      hasArcadeMct: false,
       hasMansion: false,
       mansionType: '',
       hasCarWash: false,

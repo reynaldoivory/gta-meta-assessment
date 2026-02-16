@@ -38,8 +38,9 @@ export const submitAnonymousStats = (formData, assessmentResults) => {
         formData.shooting +
         formData.stealth +
         formData.stamina +
-        formData.driving) /
-      6
+        formData.driving +
+        (formData.lungCapacity || 0)) /
+      7
     ).toFixed(1),
     
     cayoCompletions: Number(formData.cayoCompletions) || 0,

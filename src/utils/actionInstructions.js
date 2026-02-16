@@ -175,7 +175,7 @@ export const ACTION_INSTRUCTIONS = {
     warnings: [
       '✅ Method 1 is FREE and works for everyone',
       '⚠️ Don\'t buy a mansion JUST for strength - only buy at endgame ($15M+ net worth)',
-      '💡 Mansions unlock Master Control Terminal (manage all businesses from one place)',
+      '💡 Arcade unlocks Master Control Terminal (manage all businesses from one place)',
       '❌ MYTH DEBUNKED: "Strength only affects melee damage"',
       '   → FALSE: Strength is a damage resistance multiplier. Low strength = you take MORE damage from bullets, explosions, and falls.',
       '   → High strength = armor multiplier effect. Critical for surviving Auto Shop contracts, heists, and PVP.',
@@ -525,7 +525,7 @@ export const ACTION_INSTRUCTIONS = {
     },
     warnings: [
       '⚠️ DO NOT buy this if your net worth is < $15M',
-      '✅ Key features: Outdoor Gym (strength training), Master Control Terminal, Fast Travel',
+      '✅ Key features: Outdoor Gym (strength training), Fast Travel',
       '💡 Unlocks KnoWay Out missions (Avi Schwartzman storyline)',
       '❌ This is NOT a business - it generates $0 income',
       '🎥 Watch "Don\'t Buy The WRONG Mansion" video before purchasing',

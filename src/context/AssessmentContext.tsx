@@ -1,19 +1,19 @@
 // src/context/AssessmentContext.tsx
-import React, { createContext, useContext, useState, useEffect, useRef, useCallback, useMemo, ReactNode } from 'react';
-import { useDebounce } from '../utils/useDebounce';
-import { computeAssessment } from '../utils/computeAssessment';
+import React, { createContext, ReactNode, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
+import { migrateUserData } from '../utils/assessmentDataMigration';
+import { createInitialFormData, LEGACY_STORAGE_KEYS } from '../utils/assessmentFormDefaults';
 import { submitAnonymousStats, submitTrapStats } from '../utils/communityStats';
-import { detectTraps, getTrapSummary } from '../utils/trapDetector';
-import { saveProgressSnapshot, getProgressHistory } from '../utils/progressTracker';
+import { computeAssessment } from '../utils/computeAssessment';
+import {
+    applyAssessmentGamification,
+    GAMIFICATION_STORAGE_KEY,
+    loadGamificationState,
+} from '../utils/gamificationEngine';
+import { getProgressHistory, saveProgressSnapshot } from '../utils/progressTracker';
 import { soundEffects } from '../utils/soundEffects';
 import { recordAssessment } from '../utils/streakTracker';
-import {
-  applyAssessmentGamification,
-  loadGamificationState,
-  GAMIFICATION_STORAGE_KEY,
-} from '../utils/gamificationEngine';
-import { createInitialFormData, LEGACY_STORAGE_KEYS } from '../utils/assessmentFormDefaults';
-import { migrateUserData } from '../utils/assessmentDataMigration';
+import { detectTraps, getTrapSummary } from '../utils/trapDetector';
+import { useDebounce } from '../utils/useDebounce';
 
 // TODO: Import or define these types from your utils or types folder
 // import { FormDataType, ResultsType, GamificationState, GamificationSummary } from '../types/assessment.types';

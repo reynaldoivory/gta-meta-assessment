@@ -5,12 +5,14 @@ A comprehensive assessment and optimization tool for GTA Online players, built w
 ## ✨ Features
 
 ### Core Assessment
+
 - 🎯 Comprehensive GTA Online progress analysis
 - 📊 Score/tier system with bottleneck detection
 - 💰 Income calculation (active + passive)
 - 🎮 Heist readiness evaluation
 
 ### Gamification
+
 - 🏆 13 achievement badges
 - 🔥 Daily streak tracking
 - 📈 Progress over time charts
@@ -18,12 +20,14 @@ A comprehensive assessment and optimization tool for GTA Online players, built w
 - 🔊 Sound effects
 
 ### Export Tools
+
 - 📄 CSV exports (progress history + community stats)
 - 🤖 LLM prompt generators (3 types)
 - 📋 Google Doc formatted reports
 - 📱 Social media share cards
 
 ### Calculators
+
 - 💵 ROI calculator ("What are you saving for?")
 - 👥 Community comparison (percentile ranking)
 - 📉 Income breakdown visualizations
@@ -34,7 +38,7 @@ This project follows a **modular, context-driven architecture** designed for mai
 
 ### Project Structure
 
-```
+```text
 src/
 ├── components/
 │   ├── calculators/      # Business logic UI components
@@ -137,6 +141,7 @@ Each view is a **self-contained component** that consumes context:
 - **QuickStartGuide**: Onboarding guide (GTA+ aware)
 
 Views can be:
+
 - Tested independently
 - Lazy-loaded for performance
 - Swapped for A/B testing
@@ -154,12 +159,14 @@ Views can be:
 ## 📊 Data & Analytics
 
 ### Community Stats
+
 - **Local Storage**: All stats stored client-side (privacy-first)
 - **30-Day Window**: Only recent assessments included in averages
 - **CSV Export**: Download community stats for analysis
 - **Progress Tracking**: Historical snapshots for trend analysis
 
 ### CSV Exports
+
 - `exportCommunityStatsCSV()`: All community data
 - `exportProgressHistoryCSV()`: Your personal progress history
 
@@ -238,6 +245,7 @@ npm run build
 ```
 
 Outputs to `dist/` directory. Ready for deployment to:
+
 - Vercel
 - Netlify
 - GitHub Pages
@@ -248,24 +256,28 @@ Outputs to `dist/` directory. Ready for deployment to:
 Before deploying, verify these flows:
 
 ### ✅ Fresh User Flow
+
 1. Clear localStorage
 2. Fill form → Run assessment
 3. View results → Check action plan
 4. Verify streak tracker shows "Day 1"
 
 ### ✅ Returning User Flow
+
 1. Refresh page
 2. Verify form data restored
 3. Verify streak increments correctly
 4. Check progress history chart renders
 
 ### ✅ Edge Cases
+
 - User with 0 assets
 - Rank = 0, Cash = 0
 - GTA+ checked vs unchecked
 - Guide changes based on subscription
 
 ### ✅ Performance
+
 - Form values change rapidly (debouncing works)
 - Chart renders smoothly with 10+ snapshots
 - No console errors
@@ -283,6 +295,7 @@ Before deploying, verify these flows:
 ## 🐛 Error Handling
 
 The app includes:
+
 - **Error Boundary**: Catches React errors and shows a friendly message
 - **Form Validation**: Real-time validation with error messages
 - **Loading States**: Visual feedback during calculations
@@ -297,6 +310,7 @@ MIT License - Feel free to use this architecture as a template for your own proj
 ## 📦 Deployment
 
 ### Vercel (Recommended)
+
 ```bash
 npm install -g vercel
 vercel login
@@ -304,6 +318,7 @@ vercel deploy
 ```
 
 ### Netlify
+
 ```bash
 npm install -g netlify-cli
 netlify login
@@ -311,6 +326,7 @@ netlify deploy --prod
 ```
 
 ### GitHub Pages
+
 ```bash
 # Add to package.json
 "homepage": "https://yourusername.github.io/gta-assessment"
@@ -348,29 +364,33 @@ npm run deploy
 This app's income models, cooldowns, and meta recommendations are cross-checked against the following tiered sources. Weekly event data in `weeklyEvents.js` is updated manually each Thursday after Rockstar's newswire post.
 
 ### Tier 1 — Official (Ground Truth)
+
 | Source | URL | Use |
-|---|---|---|
-| Rockstar Newswire | https://www.rockstargames.com/newswire | Weekly bonus announcements |
-| GTA+ Benefits Page | https://www.rockstargames.com/gta-plus | GTA+ perks & monthly bonuses |
-| Rockstar Support | https://support.rockstargames.com | Confirmed cooldowns & mechanics |
+| ------ | --- | --- |
+| Rockstar Newswire | <https://www.rockstargames.com/newswire> | Weekly bonus announcements |
+| GTA+ Benefits Page | <https://www.rockstargames.com/gta-plus> | GTA+ perks & monthly bonuses |
+| Rockstar Support | <https://support.rockstargames.com> | Confirmed cooldowns & mechanics |
 
 ### Tier 2 — Community Cross-Checks (High Reliability)
+
 | Source | URL | Use |
-|---|---|---|
-| GTA Wiki (Fandom) | https://gta.fandom.com/wiki/The_Cayo_Perico_Heist | Payout tables, cooldown timers |
-| r/gtaonline subreddit | https://www.reddit.com/r/gtaonline/ | Weekly bonus megathreads, player-verified data |
-| TezFunz2 (Twitter/X) | https://x.com/TezFunz2 | Datamined event schedules & tunables |
-| GTA Series Videos | https://www.youtube.com/@GTASeriesVideos | Patch breakdowns & mechanic testing |
-| Digital Car Addict | https://www.youtube.com/@DigitalCarAddict | Solo money guides & route testing |
-| TheProfessional | https://www.youtube.com/@TheProfessional | Income benchmarks & efficiency testing |
+| ------ | --- | --- |
+| GTA Wiki (Fandom) | <https://gta.fandom.com/wiki/The_Cayo_Perico_Heist> | Payout tables, cooldown timers |
+| r/gtaonline subreddit | <https://www.reddit.com/r/gtaonline/> | Weekly bonus megathreads, player-verified data |
+| TezFunz2 (Twitter/X) | <https://x.com/TezFunz2> | Datamined event schedules & tunables |
+| GTA Series Videos | <https://www.youtube.com/@GTASeriesVideos> | Patch breakdowns & mechanic testing |
+| Digital Car Addict | <https://www.youtube.com/@DigitalCarAddict> | Solo money guides & route testing |
+| TheProfessional | <https://www.youtube.com/@TheProfessional> | Income benchmarks & efficiency testing |
 
 ### Tier 3 — Planning & Reference Tools
+
 | Source | URL | Use |
-|---|---|---|
-| GTA Base | https://www.gtabase.com/ | Vehicle & property databases |
-| GTA Online Mega Guide (Reddit) | https://www.reddit.com/r/gtaonline/wiki/ | Community FAQ & progression guides |
+| ------ | --- | --- |
+| GTA Base | <https://www.gtabase.com/> | Vehicle & property databases |
+| GTA Online Mega Guide (Reddit) | <https://www.reddit.com/r/gtaonline/wiki/> | Community FAQ & progression guides |
 
 ### Data Confidence Rules
+
 - **Income rates**: Cross-check at least 2 Tier-2 sources before updating `modelConfig.js`
 - **Cooldowns**: Only trust Rockstar official or datamined values (TezFunz2). Community anecdotes must be verified by 3+ independent reports.
 - **Weekly events**: Always verify against Rockstar Newswire. Reddit megathread is secondary confirmation.

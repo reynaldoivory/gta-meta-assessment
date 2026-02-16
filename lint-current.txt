@@ -1,0 +1,118 @@
+﻿
+> gta-meta-assessment@0.0.0 lint
+> eslint .
+
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\achievements.js
+  128:5  warning  Method 'condition' has a complexity of 12. Maximum allowed is 10  complexity
+  145:5  warning  Method 'condition' has a complexity of 12. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\actionInstructions.js
+  334:1  warning  File has too many lines (525). Maximum allowed is 300  max-lines
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\actionPlanBuilder.ts
+   292:57   warning  Arrow function has a complexity of 19. Maximum allowed is 10  complexity
+   351:57   warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+   352:1    warning  File has too many lines (1291). Maximum allowed is 300        max-lines
+   379:79   warning  Arrow function has a complexity of 32. Maximum allowed is 10  complexity
+   424:3    warning  Arrow function has a complexity of 20. Maximum allowed is 10  complexity
+   522:71   warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+   571:11   warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+   626:58   warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+   683:77   warning  Arrow function has a complexity of 18. Maximum allowed is 10  complexity
+   710:74   warning  Arrow function has a complexity of 42. Maximum allowed is 10  complexity
+   853:81   warning  Arrow function has a complexity of 18. Maximum allowed is 10  complexity
+   885:83   warning  Arrow function has a complexity of 19. Maximum allowed is 10  complexity
+   923:63   warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+   972:63   warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+  1145:73   warning  Arrow function has a complexity of 17. Maximum allowed is 10  complexity
+  1224:101  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  1338:13   warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\actionPriority.js
+  11:39  warning  Arrow function has a complexity of 21. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\buildLLMPrompt.js
+    2:101  warning  Arrow function has a complexity of 32. Maximum allowed is 10  complexity
+  108:83   warning  Arrow function has a complexity of 33. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\calculateIncome.js
+  83:51  warning  Arrow function has a complexity of 52. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\calculateScore.js
+  28:40  warning  Arrow function has a complexity of 24. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\communityStats.js
+  171:31  warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+  278:42  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  354:63  warning  Arrow function has a complexity of 18. Maximum allowed is 10  complexity
+  407:1   warning  File has too many lines (339). Maximum allowed is 300         max-lines
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\computeAssessment.js
+   12:38   warning  Arrow function has a complexity of 15. Maximum allowed is 10  complexity
+  110:52   warning  Arrow function has a complexity of 53. Maximum allowed is 10  complexity
+  217:67   warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+  247:100  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  368:1    warning  File has too many lines (356). Maximum allowed is 300         max-lines
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\csvExport.js
+  30:31  warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+  94:37  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\detectBottlenecks.js
+   19:54  warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+   86:30  warning  Arrow function has a complexity of 25. Maximum allowed is 10  complexity
+  211:56  warning  Arrow function has a complexity of 15. Maximum allowed is 10  complexity
+  270:46  warning  Arrow function has a complexity of 17. Maximum allowed is 10  complexity
+  305:48  warning  Arrow function has a complexity of 18. Maximum allowed is 10  complexity
+  380:1   warning  File has too many lines (692). Maximum allowed is 300         max-lines
+  410:50  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+  516:49  warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+  653:97  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\dynamicIncome.js
+   23:67  warning  Arrow function has a complexity of 21. Maximum allowed is 10  complexity
+  131:57  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  187:50  warning  Arrow function has a complexity of 19. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\eventHelpers.js
+  45:46  warning  Arrow function has a complexity of 14. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\gamificationEngine.js
+  355:85  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+  357:1   warning  File has too many lines (365). Maximum allowed is 300         max-lines
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\infrastructureAdvisor.js
+  343:64  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  412:1   warning  File has too many lines (462). Maximum allowed is 300         max-lines
+  446:65  warning  Arrow function has a complexity of 19. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\prerequisiteEngine.js
+   98:78  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+  379:1   warning  File has too many lines (425). Maximum allowed is 300         max-lines
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\priorityDetector.js
+  95:102  warning  Arrow function has a complexity of 20. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\recommendationEngine.js
+  192:55  warning  Arrow function has a complexity of 11. Maximum allowed is 10        complexity
+  249:59  warning  Arrow function has a complexity of 20. Maximum allowed is 10        complexity
+  306:74  warning  Async arrow function has a complexity of 54. Maximum allowed is 10  complexity
+  396:1   warning  File has too many lines (588). Maximum allowed is 300               max-lines
+  421:16  warning  Arrow function has a complexity of 11. Maximum allowed is 10        complexity
+  439:34  warning  Arrow function has a complexity of 12. Maximum allowed is 10        complexity
+  537:17  warning  Arrow function has a complexity of 24. Maximum allowed is 10        complexity
+  614:32  warning  Arrow function has a complexity of 43. Maximum allowed is 10        complexity
+  678:34  warning  Arrow function has a complexity of 29. Maximum allowed is 10        complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\taskMetrics.js
+   97:53  warning  Arrow function has a complexity of 23. Maximum allowed is 10  complexity
+  223:97  warning  Arrow function has a complexity of 11. Maximum allowed is 10  complexity
+
+C:\Users\chadl\source\repos\gta-meta-assessment\src\utils\trapDetector.js
+   87:68  warning  Arrow function has a complexity of 12. Maximum allowed is 10  complexity
+  282:49  warning  Arrow function has a complexity of 16. Maximum allowed is 10  complexity
+  454:1   warning  File has too many lines (495). Maximum allowed is 300         max-lines
+
+Γ£û 71 problems (0 errors, 71 warnings)
+

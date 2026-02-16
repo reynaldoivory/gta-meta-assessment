@@ -1,5 +1,3 @@
-// src/components/shared/EmptyState.jsx
-
 import PropTypes from 'prop-types';
 
 const EmptyState = ({ 

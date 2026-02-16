@@ -48,8 +48,4 @@ export const TASK_REQUIREMENTS = {
     }
 };
 
-export const ASSET_LIBRARY = {
-    'kosatka': { name: 'Kosatka Submarine', cost: 2200000, buyUrl: 'warstock' },
-    'agency': { name: 'Agency', cost: 2010000, buyUrl: 'dynasty8_exec' },
-    'arcade': { name: 'Arcade', cost: 1235000, buyUrl: 'mazebank_foreclosures' },
-};
+

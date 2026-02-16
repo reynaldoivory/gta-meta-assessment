@@ -51,7 +51,8 @@ const testGameState = {
       passiveRate: 11500
     }
   },
-  claimedBonuses: [], // No bonuses claimed yet\n};
+  claimedBonuses: [] // No bonuses claimed yet
+};
 
 async function runTest() {
   console.log('=== TESTING RECOMMENDATION ENGINE ===\n');
@@ -95,4 +96,4 @@ async function runTest() {
 }
 
 // Run the test
-runTest().catch(console.error);
+await runTest();

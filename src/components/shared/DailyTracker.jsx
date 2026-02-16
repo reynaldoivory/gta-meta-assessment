@@ -1,4 +1,6 @@
-import { useState, useEffect } from 'react';
+
+import PropTypes from 'prop-types';
+import { useState, useEffect, useMemo, useRef } from 'react';
 
 // Daily tasks configuration
 const CORE_DAILIES = [
@@ -62,105 +64,89 @@ const shouldResetTasks = (lastResetTime) => {
   return now >= nextReset;
 };
 
-const calculateTimeUntilReset = () => {
-  const nextReset = getNextResetTime();
-  const now = getNowTimestamp();
-  const diff = nextReset - now;
-  const hours = Math.floor(diff / (1000 * 60 * 60));
-  const minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
-  return { hours, minutes };
+const loadSavedTasks = () => {
+  const saved = localStorage.getItem('dailyTracker');
+  if (!saved) {
+    return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
+  }
+  try {
+    const parsed = JSON.parse(saved);
+    if (shouldResetTasks(parsed.lastResetTime)) {
+      const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
+      const resetTime = Date.now();
+      localStorage.setItem('dailyTracker', JSON.stringify({ tasks: resetTasks, lastResetTime: resetTime }));
+      return { tasks: resetTasks, resetTime, syncMode: 'reset' };
+    }
+    return {
+      tasks: parsed.tasks || CORE_DAILIES,
+      resetTime: parsed.lastResetTime,
+      syncMode: 'load',
+    };
+  } catch {
+    return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
+  }
+};
 };
 
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
-  const [lastResetTime, setLastResetTime] = useState(null);
-  const [timeUntilReset, setTimeUntilReset] = useState({ hours: 0, minutes: 0 });
+  const [lastResetTime, setLastResetTime] = useState(() => Date.now());
 
   // Load tasks from localStorage on mount and sync with formData
   useEffect(() => {
-    const saved = localStorage.getItem('dailyTracker');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const savedResetTime = parsed.lastResetTime;
-        
-        // Check if we need to reset (new day)
-        if (shouldResetTasks(savedResetTime)) {
-          // Reset all tasks
-          const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
-          setTasks(resetTasks);
-          setLastResetTime(getNowTimestamp());
-          localStorage.setItem('dailyTracker', JSON.stringify({
-            tasks: resetTasks,
-            lastResetTime: getNowTimestamp(),
-          }));
-          // Sync with form data when reset
-          if (setFormData) {
-            setFormData(prev => ({
-              ...prev,
-              dailyStashHouse: false,
-              dailyGsCache: false,
-              dailySafeCollect: false,
-            }));
-          }
-        } else {
-          // Load saved tasks
-          const loadedTasks = parsed.tasks || CORE_DAILIES;
-          setTasks(loadedTasks);
-          setLastResetTime(savedResetTime);
-          // Sync with form data
-          if (setFormData && formData) {
-            setFormData(prev => ({
-              ...prev,
-              dailyStashHouse: loadedTasks[0]?.isCompleted || false,
-              dailyGsCache: loadedTasks[1]?.isCompleted || false,
-              dailySafeCollect: loadedTasks[2]?.isCompleted || false,
-            }));
-          }
-        }
-      } catch {
-        // Invalid data, use defaults
-        setTasks(CORE_DAILIES);
-      }
-    } else {
-      // First time, set initial reset time
-      setLastResetTime(getNowTimestamp());
+    const { tasks: loadedTasks, resetTime, syncMode } = loadSavedTasks();
+    setTasks(loadedTasks);
+    setLastResetTime(resetTime);
+
+    if (syncMode === 'reset' && setFormData) {
+      setFormData(prev => ({ ...prev, dailyStashHouse: false, dailyGsCache: false, dailySafeCollect: false }));
+    } else if (syncMode === 'load' && setFormData && formData) {
+      setFormData(prev => ({
+        ...prev,
+        dailyStashHouse: loadedTasks[0]?.isCompleted || false,
+        dailyGsCache: loadedTasks[1]?.isCompleted || false,
+        dailySafeCollect: loadedTasks[2]?.isCompleted || false,
+      }));
+    }
+  }, [formData, setFormData]);
     }
   }, [formData, setFormData]);
 
-  useEffect(() => {
-    const updateCountdown = () => setTimeUntilReset(calculateTimeUntilReset());
-    updateCountdown();
-    const timer = setInterval(updateCountdown, 60000);
-    return () => clearInterval(timer);
-  }, []);
+
+  // Calculate time until next reset
+  const nowRef = useRef(Date.now());
+  useEffect(() => { nowRef.current = Date.now(); }, [lastResetTime]);
+  const resetTimer = useMemo(() => {
+    const nextReset = getNextResetTime();
+    const diff = nextReset - nowRef.current;
+    return {
+      hours: Math.floor(diff / (1000 * 60 * 60)),
+      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- lastResetTime triggers recalculation intentionally
+  }, [lastResetTime]);
 
   // Filter tasks based on owned properties
-  const availableTasks = tasks.filter(task => {
-    if (task.id === 'wall_safes' && !hasNightclub && !hasAgency) {
-      return false; // Hide if player doesn't own Nightclub or Agency
-    }
-    return true;
-  });
+  const availableTasks = tasks.filter(
+    (task) => task.id !== 'wall_safes' || hasNightclub || hasAgency
+  );
+
 
   const toggleTask = (id) => {
     const updatedTasks = tasks.map((task) =>
       task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
     );
     setTasks(updatedTasks);
-    
     // Save to localStorage
     localStorage.setItem('dailyTracker', JSON.stringify({
       tasks: updatedTasks,
-      lastResetTime: lastResetTime || getNowTimestamp(),
+      lastResetTime: lastResetTime,
     }));
-
     // Sync with form data
     if (setFormData) {
       const stashCompleted = updatedTasks.find(t => t.id === 'stash_house')?.isCompleted || false;
       const cacheCompleted = updatedTasks.find(t => t.id === 'gs_cache')?.isCompleted || false;
       const safesCompleted = updatedTasks.find(t => t.id === 'wall_safes')?.isCompleted || false;
-      
       setFormData(prev => ({
         ...prev,
         dailyStashHouse: stashCompleted,
@@ -175,7 +161,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     .filter((t) => t.isCompleted)
     .reduce((sum, t) => sum + t.rewards.cashEstimate, 0);
 
-  const { hours, minutes } = timeUntilReset;
+  const { hours, minutes } = resetTimer;
 
   if (availableTasks.length === 0) {
     return null; // Don't show if no tasks available
@@ -245,6 +231,20 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
       </details>
     </div>
   );
+};
+
+DailyTracker.propTypes = {
+  hasNightclub: PropTypes.bool,
+  hasAgency: PropTypes.bool,
+  formData: PropTypes.object,
+  setFormData: PropTypes.func,
+};
+
+DailyTracker.defaultProps = {
+  hasNightclub: false,
+  hasAgency: false,
+  formData: null,
+  setFormData: null,
 };
 
 export default DailyTracker;

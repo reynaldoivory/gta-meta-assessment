@@ -1,6 +1,51 @@
+<!-- markdownlint-disable MD022 MD031 MD032 MD036 MD009 -->
+
 # 🧪 Testing Guide - Meta Awareness System
 
 ## 🎯 Critical Test Cases
+
+### Test Case 0: GTA+ Locked Bonus Visibility ✅
+**New Feature - Locked State for Non-Subscribers**
+
+**Setup:**
+- Has GTA+: **No**
+- Weekly events have GTA+ monthly bonuses configured
+
+**Expected UI Behavior:**
+1. ✅ WeeklyBonusBanner always renders (not conditionally hidden)
+2. ✅ GTA+ exclusive bonuses show with **locked state**:
+   - Grayscale filter applied
+   - 60% opacity
+   - Lock icon (🔒) in top-right corner
+   - "GTA+ Required" label at bottom of tile
+3. ✅ Global bonuses render normally (full color, no lock)
+
+**Expected Logic Behavior:**
+1. ✅ GTA+ multipliers do NOT apply to payout calculations for non-subscribers
+2. ✅ `getWeeklyBonuses({ hasGTAPlus: false, includeGTAPlus: true })` returns bonuses with `locked: true`
+3. ✅ GTA+ bonuses isolated in `WEEKLY_EVENTS.gtaPlus.monthlyBonuses` array
+
+**How to Test:**
+```bash
+npm run dev
+# 1. Navigate to Assessment Form
+# 2. UNCHECK "GTA+ Subscriber" (or leave it unchecked)
+# 3. Observe WeeklyBonusBanner at top of form
+# 4. Verify locked tiles have grayscale + opacity + lock icon
+# 5. CHECK "GTA+ Subscriber"
+# 6. Verify tiles become full color with no lock icon
+```
+
+**Pass Criteria:**
+- [ ] WeeklyBonusBanner renders for both GTA+ and non-GTA+ users
+- [ ] Locked tiles have grayscale CSS filter
+- [ ] Locked tiles have opacity: 0.6 (60%)
+- [ ] Lock icon from lucide-react appears in top-right
+- [ ] "GTA+ Required" text appears at bottom of locked tiles
+- [ ] Global bonuses never show locked state
+- [ ] Toggling hasGTAPlus checkbox immediately updates locked state
+
+---
 
 ### Test Case 1: Event-Aware Recommendations ✅
 **The Original Issue - This is what we fixed**
@@ -295,7 +340,7 @@ if (strength < 60 && autoShopIncome > 0) {
 
 ## 📊 Test Results Template
 
-```
+```text
 Date: ___________
 Tester: ___________
 

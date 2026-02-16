@@ -1,20 +1,64 @@
-import { useState, useEffect, useMemo } from 'react';
+import PropTypes from 'prop-types';
 
-const loadLastSold = (hasAcidLab) => {
-  if (!hasAcidLab) return null;
-  const saved = localStorage.getItem('acidLabTracker');
-  if (!saved) return null;
-  try {
-    const parsed = JSON.parse(saved);
-    return parsed.lastSold ? new Date(parsed.lastSold) : null;
-  } catch {
-    return null;
-  }
+const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
+
+const getBorderClasses = (isReady, isNearFull) => {
+  if (isReady) return 'border-red-500 ring-2 ring-red-500/50';
+  if (isNearFull) return 'border-yellow-500';
+  return 'border-slate-700';
+};
+
+const getProgressBarClass = (isReady, isNearFull) => {
+  if (isReady) return 'bg-red-500';
+  if (isNearFull) return 'bg-yellow-500';
+  return 'bg-purple-500';
+};
+
+const getStatusText = ({ isReady, lastSold, percentFull, timeToFull, productionTime }) => {
+  if (isReady) return '⚠️ Production STOPPED (at max capacity)';
+  if (!lastSold) return 'Set last sale time to start tracking';
+  return `${Math.round(percentFull)}% full • Ready in ${Math.max(0, (timeToFull - productionTime).toFixed(1))} hrs`;
+};
+import PropTypes from 'prop-types';
+
+const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
+
+const getBorderClasses = (isReady, isNearFull) => {
+  if (isReady) return 'border-red-500 ring-2 ring-red-500/50';
+  if (isNearFull) return 'border-yellow-500';
+  return 'border-slate-700';
+};
+
+const getProgressBarClass = (isReady, isNearFull) => {
+  if (isReady) return 'bg-red-500';
+  if (isNearFull) return 'bg-yellow-500';
+  return 'bg-purple-500';
+};
+
+const getStatusText = ({ isReady, lastSold, percentFull, timeToFull, productionTime }) => {
+  if (isReady) return '⚠️ Production STOPPED (at max capacity)';
+  if (!lastSold) return 'Set last sale time to start tracking';
+  return `${Math.round(percentFull)}% full • Ready in ${Math.max(0, (timeToFull - productionTime).toFixed(1))} hrs`;
+>>>>>>> 2634cade7d3bc981a4587e186bd3c3e58c4c2109
 };
 
 const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   const [productionTime, setProductionTime] = useState(0);
+<<<<<<< HEAD
   const [lastSold, setLastSold] = useState(() => loadLastSold(hasAcidLab));
+=======
+  const [lastSold, setLastSold] = useState(() => {
+    if (!hasAcidLab) return null;
+    try {
+      const saved = localStorage.getItem('acidLabTracker');
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      return parsed.lastSold ? new Date(parsed.lastSold) : null;
+    } catch {
+      return null;
+    }
+  });
+>>>>>>> 2634cade7d3bc981a4587e186bd3c3e58c4c2109
   const [suppliesNeeded, setSuppliesNeeded] = useState(false);
 
   // Calculate time since last sale
@@ -27,14 +71,9 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
       const hours = elapsed / (1000 * 60 * 60);
       setProductionTime(hours);
 
-      // Alert when ready to sell (4 hours for upgraded)
-      const maxTime = acidLabUpgraded ? 4 : 6;
-      if (hours >= maxTime) {
-        setSuppliesNeeded(false); // Ready to sell
-      }
-      if (hours >= 4) {
-        setSuppliesNeeded(true); // Supplies might be depleted
-      }
+      const maxTime = getMaxTime(acidLabUpgraded);
+      const shouldNeedSupplies = hours >= 4 && hours < maxTime;
+      setSuppliesNeeded(shouldNeedSupplies);
     };
 
     updateTimer();
@@ -42,19 +81,17 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     return () => clearInterval(timer);
   }, [hasAcidLab, lastSold, acidLabUpgraded]);
 
-  // Render calculations (using useMemo to avoid recalculating on every render)
   const trackerData = useMemo(() => {
     const maxCapacity = acidLabUpgraded ? 335000 : 237500;
-    const timeToFull = acidLabUpgraded ? 4 : 6;
+    const timeToFull = getMaxTime(acidLabUpgraded);
     const currentValue = Math.min(maxCapacity, (productionTime / timeToFull) * maxCapacity);
     const percentFull = (productionTime / timeToFull) * 100;
     const isReady = productionTime >= timeToFull;
-    const isNearFull = productionTime >= timeToFull * 0.75; // 75% full
+    const isNearFull = productionTime >= timeToFull * 0.75;
     
     return { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull };
   }, [acidLabUpgraded, productionTime]);
 
-  // Early return AFTER all hooks
   if (!hasAcidLab) return null;
 
   const recordSale = () => {
@@ -65,13 +102,12 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   };
 
   const { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull } = trackerData;
+  const statusText = getStatusText({ isReady, lastSold, percentFull, timeToFull, productionTime });
+  const progressBarClass = getProgressBarClass(isReady, isNearFull);
+  const borderClasses = getBorderClasses(isReady, isNearFull);
 
   return (
-    <div className={`bg-slate-800 rounded-lg p-4 border ${
-      isReady ? 'border-red-500 ring-2 ring-red-500/50' : 
-      isNearFull ? 'border-yellow-500' : 
-      'border-slate-700'
-    }`}>
+    <div className={`bg-slate-800 rounded-lg p-4 border ${borderClasses}`}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-lg font-bold text-purple-200">🧪 Acid Lab Tracker</h3>
         {isReady && (
@@ -81,7 +117,6 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         )}
       </div>
 
-      {/* Progress Bar */}
       <div className="mb-4">
         <div className="flex justify-between text-sm mb-1">
           <span className="text-slate-400">Product Value</span>
@@ -91,24 +126,15 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         </div>
         <div className="w-full bg-slate-700 rounded-full h-3 overflow-hidden">
           <div 
-            className={`h-full transition-all duration-500 ${
-              isReady ? 'bg-red-500' :
-              isNearFull ? 'bg-yellow-500' :
-              'bg-purple-500'
-            }`}
+            className={`h-full transition-all duration-500 ${progressBarClass}`}
             style={{ width: `${Math.min(100, percentFull)}%` }}
           />
         </div>
         <div className="text-xs text-slate-400 mt-1">
-          {isReady 
-            ? '⚠️ Production STOPPED (at max capacity)' 
-            : lastSold
-              ? `${Math.round(percentFull)}% full • Ready in ${Math.max(0, (timeToFull - productionTime).toFixed(1))} hrs`
-              : 'Set last sale time to start tracking'}
+          {statusText}
         </div>
       </div>
 
-      {/* Supply Warning */}
       {suppliesNeeded && (
         <div className="mb-3 p-2 bg-yellow-900/30 border border-yellow-500/30 rounded">
           <p className="text-xs text-yellow-300">
@@ -117,7 +143,6 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         </div>
       )}
 
-      {/* Sale Info */}
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-slate-400">Private Session:</span>
@@ -133,7 +158,6 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         </div>
       </div>
 
-      {/* Action Buttons */}
       <div className="mt-4 space-y-2">
         <button
           onClick={recordSale}
@@ -152,7 +176,6 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
         )}
       </div>
 
-      {/* How to Sell Instructions */}
       <details className="mt-3 text-xs">
         <summary className="cursor-pointer text-slate-400 hover:text-slate-300">
           📋 How to Sell (Quick Guide)
@@ -167,6 +190,11 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
       </details>
     </div>
   );
+};
+
+AcidLabTracker.propTypes = {
+  hasAcidLab: PropTypes.bool,
+  acidLabUpgraded: PropTypes.bool,
 };
 
 export default AcidLabTracker;

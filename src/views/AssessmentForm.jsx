@@ -1,193 +1,20 @@
 // src/views/AssessmentForm.jsx - HEIST PLANNING BOARD
 // Complete redesign with 12-column grid layout, GTA aesthetics
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
-import { Save, Trash2, AlertCircle, Check } from 'lucide-react';
-import StatBar from '../components/shared/StatBar';
-import NightclubLogistics from '../components/shared/NightclubLogistics';
-import { TrapBlockingWarning } from '../components/shared/TrapWarnings';
-import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
-
-// HELPER: Format last saved
-const formatLastSaved = (date) => {
-  if (!date) return '';
-  const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 10) return 'just now';
-  if (seconds < 60) return `${seconds}s ago`;
-  const minutes = Math.floor(seconds / 60);
-  if (minutes < 60) return `${minutes}m ago`;
-  const hours = Math.floor(minutes / 60);
-  if (hours < 24) return `${hours}h ago`;
-  return date.toLocaleDateString();
-};
-
-const renderSaveStatus = (localStorageAvailable, isSaving, lastSaved) => {
-  if (!localStorageAvailable) return <span className="text-xs text-gta-red">⚠️ Private Mode</span>;
-  if (isSaving) return <span className="text-xs text-gta-gray animate-pulse">💾 Saving...</span>;
-  if (lastSaved) return <span className="text-xs text-gta-green">✓ Saved {formatLastSaved(lastSaved)}</span>;
-  return null;
-};
-
-// HELPER: Error border  
-const errorBorder = (errors, field) => 
-  errors?.[field] ? 'border-gta-red ring-2 ring-gta-red/20' : 'border-gta-green/50';
-
-const errorBorderSimple = (errors, field) =>
-  errors?.[field] ? 'border-gta-red' : 'border-gta-green/50';
-
-const hasAnyTimeParts = (formData) => (
-  [formData.timePlayedDays, formData.timePlayedHours]
-    .some(value => value !== '' && value !== undefined && value !== null)
-);
-
-const clampTimePart = (value, max) => {
-  if (value === '') return '';
-  const parsed = Number(value);
-  if (Number.isNaN(parsed)) return '';
-  const clamped = Math.min(Math.max(Math.floor(parsed), 0), max ?? Number.MAX_SAFE_INTEGER);
-  return String(clamped);
-};
-
-const calculateTotalHours = (days, hours, minutes = 0) => {
-  const total = days * 24 + hours + minutes / 60;
-  return Math.round(total);
-};
-
-const formatHours = (value) => {
-  if (!Number.isFinite(value)) return '0';
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-};
-
-// COMPONENT: Asset Toggle Card
-const AssetToggleCard = ({ label, emoji, cost, details, isOwned, onChange, children, compact = false, disabled = false }) => (
-  <div className={`bg-slate-800 border-2 ${isOwned ? 'border-gta-green bg-gradient-to-r from-gta-green/10 to-transparent' : 'border-slate-700'} rounded-lg transition-all ${compact ? 'p-3' : 'p-4'} ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-gta-green'}`}>
-    <label className="flex items-start gap-3 cursor-pointer">
-      <input 
-        type="checkbox" 
-        checked={isOwned} 
-        onChange={onChange}
-        disabled={disabled}
-        className="w-5 h-5 rounded mt-1 bg-slate-700 border-gta-green checked:bg-gta-green focus:ring-gta-green"
-      />
-      <div className="flex-1">
-        <div className={`font-bold flex items-center gap-2 ${compact ? 'text-sm' : ''}`}>
-          <span className="text-lg">{emoji}</span> {label}
-          {isOwned && <Check className="w-4 h-4 text-gta-green ml-auto" />}
-        </div>
-        {cost && <div className={`text-gta-gray ${compact ? 'text-xs' : 'text-sm'}`}>{cost}</div>}
-        {details && <div className={`text-gta-gray ${compact ? 'text-xs' : 'text-sm'}`}>{details}</div>}
-      </div>
-    </label>
-    {children && isOwned && <div className="mt-3 space-y-2">{children}</div>}
-  </div>
-);
-
-AssetToggleCard.propTypes = {
-  label: PropTypes.string.isRequired,
-  emoji: PropTypes.string.isRequired,
-  cost: PropTypes.string,
-  details: PropTypes.string,
-  isOwned: PropTypes.bool.isRequired,
-  onChange: PropTypes.func.isRequired,
-  children: PropTypes.node,
-  compact: PropTypes.bool,
-  disabled: PropTypes.bool,
-};
-
-const formatCurrency = (value) => {
-  if (!value || value === '') return '';
-  const num = Number(value);
-  if (Number.isNaN(num)) return value;
-  return num.toLocaleString('en-US');
-};
-
-const clearFieldError = (name, errors, setErrors) => {
-  if (errors?.[name]) {
-    setErrors(prev => {
-      const newErrors = { ...prev };
-      delete newErrors[name];
-      return newErrors;
-    });
-  }
-};
-
-const handleCheckboxChange = (name, checked, setFormData, errors, setErrors) => {
-  const propertyKey = name.replace('has', '').charAt(0).toLowerCase() + name.replace('has', '').slice(1);
-  setFormData(prev => {
-    const currentPurchaseDates = prev.purchaseDates || {};
-    const newPurchaseDates = { ...currentPurchaseDates };
-    if (checked && !newPurchaseDates[propertyKey]) {
-      newPurchaseDates[propertyKey] = Date.now();
-    }
-    return {
-      ...prev,
-      [name]: checked,
-      purchaseDates: newPurchaseDates,
-    };
-  });
-  clearFieldError(name, errors, setErrors);
-};
-
-// MAIN FORM COMPONENT
-export default function AssessmentForm() {
-  const { 
-    formData, setFormData, runAssessment, isCalculating,
-    isSaving, lastSaved, localStorageAvailable, manualSave, clearSavedData, errors, setErrors
-  } = useAssessment();
-  const formContainerRef = useRef(null);
-
-  const detectedTraps = useMemo(() => detectTraps(formData), [formData]);
-  const criticalTraps = detectedTraps.filter(t => t.severity === TRAP_SEVERITY.CRITICAL);
-  const cascadeTraps = detectedTraps.filter(t => t.isCascadeTrap);
-  const hasCriticalTrap = criticalTraps.length > 0;
-
-  const timePlayedHasParts = hasAnyTimeParts(formData);
-  const timePlayedMode = formData.timePlayedMode || 'parts';
-  const timePlayedTotal = useMemo(() => {
-    if (timePlayedHasParts) {
-      const days = Number(formData.timePlayedDays) || 0;
-      const hours = Number(formData.timePlayedHours) || 0;
-      const minutes = Number(formData.timePlayedMinutes) || 0;
-      return calculateTotalHours(days, hours, minutes);
-    }
-    const fallback = Number(formData.timePlayed);
-    return Number.isFinite(fallback) ? Math.round(fallback) : 0;
-  }, [formData, timePlayedHasParts]);
-
-  const handleInputChange = (e) => {
-    const { name, value, type, checked } = e.target;
-    if (type === 'checkbox' && name.startsWith('has')) {
-      handleCheckboxChange(name, checked, setFormData, errors, setErrors);
-      return;
-    }
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }));
-    clearFieldError(name, errors, setErrors);
-  };
-
-  const handleStatChange = (statKey, value) => {
-    setFormData(prev => ({ ...prev, [statKey]: value }));
-  };
-
-  const handleTimePlayedPartChange = (e) => {
-    const { name, value } = e.target;
-    const max = name === 'timePlayedHours' ? 23 : undefined;
-    const normalized = clampTimePart(value, max);
-
-    setFormData(prev => {
-      const next = { ...prev, [name]: normalized, timePlayedMinutes: '', timePlayedMode: 'parts' };
-      const hasParts = hasAnyTimeParts(next);
-      if (!hasParts) {
-        return { ...next, timePlayed: '' };
-      }
-
-      const days = Number(next.timePlayedDays) || 0;
-      const hours = Number(next.timePlayedHours) || 0;
-      const minutes = Number(next.timePlayedMinutes) || 0;
-      const totalHours = calculateTotalHours(days, hours, minutes);
-      return { ...next, timePlayed: String(totalHours) };
-    });
+import { Save, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
+import { BusinessMatrixPanel } from '../components/shared/BusinessMatrixPanel';
+import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSidebar';
+import { FinancialWorkbookPanel } from '../components/shared/FinancialWorkbookPanel';
+import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFinancialGuidePanel';
+        {/* =========== SIDEBAR (COL-SPAN-4): VITALS =========== */}
+        <>
+          {/* VITALS HEADER, RANK, CASH, LIFETIME, TIME, STATS, GTA+ STATUS (sidebar content) */}
+          {/* ...existing sidebar JSX content here... */}
+        </>
 
     clearFieldError('timePlayed', errors, setErrors);
   };
@@ -253,13 +80,20 @@ export default function AssessmentForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gta-dark p-4 md:p-8 font-body text-slate-200">
+    <div className="min-h-screen bg-transparent p-4 md:p-8 font-body text-slate-50">
       {/* HEADER: HEIST PLANNING BOARD */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between border-b-2 border-gta-green pb-4">
+      <div className="max-w-7xl mx-auto mb-8 animate-pop-in">
+        <div className="flex items-center justify-between pb-6 border-b-4 border-gradient-to-r from-primary-purple-500 via-primary-cyan-500 to-primary-orange-500">
           <div>
-            <h1 className="text-5xl font-bold text-white font-heading tracking-wider">HEIST PLANNING BOARD</h1>
-            <p className="text-gta-green text-sm mt-1">↳ Analyze your vitals & assets for operation success</p>
+            <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2 tracking-tight">
+              <span className="heading-gradient-purple">HEIST PLANNING</span>
+              <span className="text-primary-orange-400"> BOARD</span>
+            </h1>
+            <p className="text-primary-cyan-400 text-base font-bold flex items-center gap-2">
+              <span className="text-2xl">🎯</span>
+              {' '}
+              Analyze your vitals & assets for operation success
+            </p>
           </div>
           <div className="text-right">
             <div className="flex justify-end gap-3 mb-3">
@@ -267,18 +101,18 @@ export default function AssessmentForm() {
                 type="button"
                 onClick={manualSave}
                 disabled={!localStorageAvailable || isSaving}
-                className="px-3 py-1 bg-gta-green/20 hover:bg-gta-green/40 border border-gta-green/60 text-gta-green rounded text-xs transition flex items-center gap-1 disabled:opacity-50"
+                className="btn-secondary text-sm py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Save progress"
               >
-                <Save className="w-3 h-3" /> Save
+                <Save className="w-4 h-4 inline-block mr-2" /> Save
               </button>
               <button
                 type="button"
                 onClick={clearSavedData}
-                className="px-3 py-1 bg-gta-red/20 hover:bg-gta-red/40 border border-gta-red/60 text-gta-red rounded text-xs transition flex items-center gap-1"
+                className="px-4 py-2 rounded-xl font-bold text-accent-pink border-2 border-accent-pink/40 bg-accent-pink/10 hover:bg-accent-pink/20 transition-all duration-200 hover:scale-105 text-sm"
                 title="Clear all data"
               >
-                <Trash2 className="w-3 h-3" /> Clear
+                <Trash2 className="w-4 h-4 inline-block mr-2" /> Clear
               </button>
             </div>
             {renderSaveStatus(localStorageAvailable, isSaving, lastSaved)}
@@ -286,32 +120,15 @@ export default function AssessmentForm() {
         </div>
       </div>
 
+      {/* WEEKLY BONUS BANNER - Always show with locked state for non-GTA+ users */}
+      <div className="max-w-7xl mx-auto">
+        <WeeklyBonusBanner hasGTAPlus={formData.hasGTAPlus} />
+      </div>
+
       {/* MAIN 12-COLUMN GRID */}
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6" ref={formContainerRef}>
         
         {/* =========== SIDEBAR (COL-SPAN-4): VITALS =========== */}
-        <aside className="col-span-12 lg:col-span-4 space-y-6">
-          
-          {/* VITALS HEADER */}
-          <div className="bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green rounded-lg p-6 shadow-heist">
-            <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-1">Operative Vitals</h2>
-            <p className="text-xs text-gta-gray">Click bars to adjust</p>
-          </div>
-
-          {/* RANK, CASH, LIFETIME */}
-          <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-6 space-y-4">
-            <div>
-              <label htmlFor="rank" className="text-xs text-gta-gray font-bold uppercase block mb-2">Rank</label>
-              <input 
-                id="rank"
-                name="rank" 
-                type="number" 
-                placeholder="0"
-                value={formData.rank || ''} 
-                onChange={handleInputChange}
-                className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorder(errors, 'rank')}`}
-                min="0"
-                max="8000"
               />
             </div>
             
@@ -503,141 +320,68 @@ export default function AssessmentForm() {
               {formData.hasGTAPlus && <Check className="w-4 h-4 text-gta-green" />}
             </label>
           </div>
-        </aside>
+      		<AssessmentVitalsSidebar
+      			formData={formData}
+      			errors={errors}
+      			handleInputChange={handleInputChange}
+      			handleStatChange={handleStatChange}
+      		/>
 
         {/* =========== MAIN (COL-SPAN-8): ASSETS & OPERATIONS =========== */}
         <main className="col-span-12 lg:col-span-8 space-y-6">
           
           {/* ASSETS HEADER */}
-          <div className="bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green rounded-lg p-6 shadow-heist">
-            <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-1">Assets & Operations</h2>
-            <p className="text-xs text-gta-gray">Toggle owned properties</p>
-          </div>
-
-          {/* CRITICAL ALERTS */}
-          {cascadeTraps.length > 0 && (
-            <div className="space-y-3">
-              {cascadeTraps.map(trap => (
-                <TrapBlockingWarning key={trap.id} trap={trap} />
-              ))}
-            </div>
-          )}
-
-          {hasCriticalTrap && !cascadeTraps.length && (
-            <div className="p-4 bg-gta-red/10 border-2 border-gta-red rounded-lg">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="w-6 h-6 text-gta-red flex-shrink-0" />
-                <div>
-                  <h4 className="font-bold text-gta-red mb-1">⚠️ {criticalTraps.length} Critical Issue{criticalTraps.length === 1 ? '' : 's'}</h4>
-                  <ul className="text-sm text-slate-300 space-y-1">
-                    {criticalTraps.map(trap => <li key={trap.id}>• {trap.title}</li>)}
-                  </ul>
-                </div>
+          <section className="space-y-6">
+            <button
+              type="button"
+              onClick={() => togglePanel('operations')}
+              className="w-full bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green rounded-lg p-6 shadow-heist flex items-center justify-between text-left"
+            >
+              <div>
+                <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-1">Assets & Operations</h2>
+                <p className="text-xs text-gta-gray">Contains property matrix, workbook, and ledger.</p>
               </div>
-            </div>
-          )}
-
-          {/* INCOME ASSETS */}
-          <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-6 space-y-3">
-            <h3 className="text-lg font-bold text-gta-green font-heading uppercase">💰 Income Producers</h3>
-            
-            <AssetToggleCard 
-              label="Kosatka Submarine"
-              emoji="🚢"
-              cost="$2.2M"
-              isOwned={formData.hasKosatka || false}
-              onChange={() => handleInputChange({ target: { name: 'hasKosatka', type: 'checkbox', checked: !formData.hasKosatka } })}
-            >
-              {formData.hasKosatka && (
-                <label className="flex items-center gap-3 ml-6 p-2 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    name="hasSparrow"
-                    checked={formData.hasSparrow || false} 
-                    onChange={handleInputChange}
-                    className="w-4 h-4 rounded bg-slate-700 border-gta-green checked:bg-gta-green"
-                  />
-                  <span className="text-xs text-gta-gray">+ Sparrow Helicopter ($1.8M)</span>
-                </label>
+              {openPanels.operations ? (
+                <ChevronDown className="w-5 h-5 text-slate-300" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-slate-300" />
               )}
-            </AssetToggleCard>
+            </button>
 
-            <AssetToggleCard 
-              label="Acid Lab"
-              emoji="🧪"
-              cost="$750k"
-              isOwned={formData.hasAcidLab || false}
-              onChange={() => handleInputChange({ target: { name: 'hasAcidLab', type: 'checkbox', checked: !formData.hasAcidLab } })}
-            >
-              {formData.hasAcidLab && (
-                <label className="flex items-center gap-3 ml-6 p-2 cursor-pointer">
-                  <input 
-                    type="checkbox" 
-                    name="acidLabUpgraded"
-                    checked={formData.acidLabUpgraded || false}
-                    onChange={handleInputChange}
-                    className="w-4 h-4 rounded bg-slate-700 border-gta-green checked:bg-gta-green"
-                  />
-                  <span className="text-xs text-gta-gray">Equipment Upgrade ($250k)</span>
-                </label>
-              )}
-            </AssetToggleCard>
+            {openPanels.operations && (
+              <div className="space-y-6">
+                <BusinessMatrixPanel
+                  cascadeTraps={cascadeTraps}
+                  criticalTraps={criticalTraps}
+                  hasCriticalTrap={hasCriticalTrap}
+                />
 
-            <AssetToggleCard 
-              label="Bunker"
-              emoji="🔫"
-              cost="$1.375M"
-              isOwned={formData.hasBunker || false}
-              onChange={() => handleInputChange({ target: { name: 'hasBunker', type: 'checkbox', checked: !formData.hasBunker } })}
-            >
-              {formData.hasBunker && (
-                <div className="ml-6 space-y-2">
-                  <label className="flex items-center gap-3 p-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      name="bunkerEquipmentUpgrade"
-                      checked={formData.bunkerEquipmentUpgrade || false}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded bg-slate-700 border-gta-green checked:bg-gta-green"
-                    />
-                    <span className="text-xs text-gta-gray">Equipment Upgrade ($550k)</span>
-                  </label>
-                  <label className="flex items-center gap-3 p-2 cursor-pointer">
-                    <input 
-                      type="checkbox" 
-                      name="bunkerStaffUpgrade"
-                      checked={formData.bunkerStaffUpgrade || false}
-                      onChange={handleInputChange}
-                      className="w-4 h-4 rounded bg-slate-700 border-gta-green checked:bg-gta-green"
-                    />
-                    <span className="text-xs text-gta-gray">Staff Upgrade ($550k)</span>
-                  </label>
-                </div>
-              )}
-            </AssetToggleCard>
+                <section className="bg-gta-panel border border-gta-green/30 rounded-lg p-4">
+                  <button
+                    type="button"
+                    onClick={() => togglePanel('workbook')}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div>
+                      <h3 className="text-sm font-bold uppercase text-gta-green">Financial Workbook</h3>
+                      <p className="text-xs text-gta-gray mt-1">Hidden by default for a cleaner load view.</p>
+                    </div>
+                    {openPanels.workbook ? (
+                      <ChevronDown className="w-4 h-4 text-slate-300" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    )}
+                  </button>
 
-            <AssetToggleCard 
-              label="Nightclub"
-              emoji="🎭"
-              cost="$1.7M - $3.1M"
-              isOwned={formData.hasNightclub || false}
-              onChange={() => handleInputChange({ target: { name: 'hasNightclub', type: 'checkbox', checked: !formData.hasNightclub } })}
-            >
-              {formData.hasNightclub && <NightclubLogistics formData={formData} setFormData={setFormData} />}
-            </AssetToggleCard>
-
-            <AssetToggleCard 
-              label="Auto Shop"
-              emoji="🔧"
-              cost="$1.8M ($835k GTA+ discount)"
-              details="Union Depository: ~$300k per run"
-              isOwned={formData.hasAutoShop || false}
-              onChange={() => handleInputChange({ target: { name: 'hasAutoShop', type: 'checkbox', checked: !formData.hasAutoShop } })}
-            />
-          </div>
-
-          {/* VEHICLES & TOOLS */}
-          <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-6">
+                  {openPanels.workbook && (
+                    <div className="mt-4">
+                      <FinancialWorkbookPanel
+                        formData={formData}
+                        setFormData={setFormData}
+                      />
+                    </div>
+                  )}
+                </section>
             <h3 className="text-lg font-bold text-gta-green font-heading uppercase mb-4">🏍️ Vehicles & Tools</h3>
             <div className="grid grid-cols-2 gap-3">
               <AssetToggleCard 
@@ -854,6 +598,8 @@ export default function AssessmentForm() {
               </AssetToggleCard>
             </div>
           </div>
+        {/* End Properties & Services */}
+      </section>
 
           {/* DAILY CASH LOOP */}
           <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-6">
@@ -922,5 +668,3 @@ export default function AssessmentForm() {
     </div>
   );
 }
-
-AssessmentForm.propTypes = {};

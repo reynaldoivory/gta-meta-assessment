@@ -1,6 +1,5 @@
 // src/components/GTAAssessment.jsx
 // The Router - Main Entry Point
-import React from 'react';
 import { AssessmentProvider, useAssessment } from '../context/AssessmentContext';
 import AssessmentForm from '../views/AssessmentForm';
 import AssessmentResults from '../views/AssessmentResults';
@@ -37,9 +36,15 @@ const AssessmentRouter = () => {
 const GTAAssessment = () => (
   <ErrorBoundary>
     <AssessmentProvider>
-      <div className="min-h-screen bg-transparent font-body text-slate-100">
-        <AssessmentRouter />
-        <DevTools />
+      <div className="min-h-screen bg-transparent font-body text-slate-50">
+        {/* Animated background orbs */}
+        <div className="bg-orb-purple" style={{ top: '10%', left: '5%' }} />
+        <div className="bg-orb-cyan" style={{ top: '60%', right: '10%' }} />
+        
+        <div className="relative z-10">
+          <AssessmentRouter />
+          <DevTools />
+        </div>
       </div>
     </AssessmentProvider>
   </ErrorBoundary>

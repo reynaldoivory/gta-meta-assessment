@@ -1,16 +1,16 @@
 // src/utils/detectBottlenecks.js
 // Bottleneck detection logic extracted from computeAssessment.js
 
-import { MODEL_CONFIG } from './modelConfig.js';
 import { WEEKLY_EVENTS, formatExpiry, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
-import { 
-  calculateBunkerLeak, 
-  calculateNightclubOptimization,
+import {
   INFRASTRUCTURE_COSTS,
   NIGHTCLUB_FLOOR_AFK,
+  calculateBunkerLeak,
+  calculateNightclubOptimization,
   getDiscountedPrice,
 } from './infrastructureAdvisor.js';
+import { MODEL_CONFIG } from './modelConfig.js';
 
 // ============================================
 // TIER 0: URGENT EXPIRING EVENTS (Front of queue)
@@ -78,12 +78,10 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
   const bottlenecks = [];
 
   // Build event lookups dynamically from whatever events are active this week
-  // Event names come from WEEKLY_EVENTS config keys (e.g., 'deadlineDuet', 'oddJobs', 'methProduction')
-  // Discount events are named '${key}Discount' (e.g., 'bunkerPropertiesDiscount')
   const nightclubDiscountEvent = activeEvents.find(e => e.category === 'discount' && e.name.toLowerCase().includes('nightclub'));
 
-  // Create bottlenecks from ALL active bonus events (data-driven, no hardcoded names)
-  activeEvents.forEach(event => {
+  // Helper to process a single event
+  function processEvent(event) {
     // Skip discount events (handled separately below) and GTA+ monthly events
     if (event.category === 'discount' || event.category === 'gtaplus') return;
 
@@ -91,8 +89,7 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       ? new Date(event.expiryTimestamp).toISOString()
       : WEEKLY_EVENTS.meta.validUntil;
 
-    // --- Play-mode filtering ---
-    // If player is solo/invite-only and event requires multiplayer, demote or skip
+    // Play-mode filtering
     if (isSoloPlayer && event.requiresMultiplayer) {
       bottlenecks.push({
         id: `weekly_event_${event.name}`,
@@ -114,37 +111,33 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       return;
     }
 
-    // --- Impact assessment (considers $/hr, multiplier, and highValue flag) ---
-    let impactLevel;
-    if (event.highValue || event.multiplier >= 4 || event.hourlyRate >= 600000) {
+    // Impact assessment
+    let impactLevel = 'medium';
+    if (
+      event.highValue ||
+      event.multiplier >= 3 ||
+      event.hourlyRate >= 300000
+    ) {
       impactLevel = 'high';
-    } else if (event.multiplier >= 3 || event.hourlyRate >= 300000) {
-      impactLevel = 'high';
-    } else {
-      impactLevel = 'medium';
     }
 
-    // --- Build detailed solution text ---
-    let solutionText;
+    // Solution text
+    let solutionText = `Take advantage of ${event.label || event.name} before it expires.`;
     if (isSoloPlayer && event.soloTip) {
       solutionText = event.soloTip;
     } else if (event.hourlyRate > 0) {
       solutionText = `Take advantage of ${event.label || event.name} (~$${Math.round(event.hourlyRate / 1000)}k/hr) before it expires.`;
-    } else {
-      solutionText = `Take advantage of ${event.label || event.name} before it expires.`;
     }
 
-    // --- Build detail text (no duplicate days-left) ---
+    // Detail text
     const hourlyRateNote = event.hourlyRate > 0
       ? ` Est. ~$${Math.round(event.hourlyRate / 1000)}k/hr.`
       : '';
-    let multiplierNote;
+    let multiplierNote = `${event.multiplier}X bonus active.`;
     if (event.multiplier > 1) {
       multiplierNote = `${event.multiplier}X bonus active \u2014 prioritize this over normal activities.`;
     } else if (event.highValue) {
       multiplierNote = 'High-value opportunity \u2014 prioritize this week.';
-    } else {
-      multiplierNote = `${event.multiplier}X bonus active.`;
     }
 
     bottlenecks.push({
@@ -163,7 +156,12 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       hoursLeft: event.hoursLeft,
       daysLeft: event.daysLeft,
     });
-  });
+  }
+
+  // Process all events
+  for (const event of activeEvents) {
+    processEvent(event);
+  }
   
   // Combat Prep Reminder for Rank < 100 during combat-heavy events
   // Logic aligned with buildSmartActionPlan for consistency
@@ -216,7 +214,7 @@ const detectIncomeLeaks = (params, now, activeEvents) => {
       // e.g., 3X Lunar Stunt Races (weekly) vs 6X Lunar Stunt Races (GTA+) — show only 6X.
       const matchingWeeklyIdx = bottlenecks.findIndex(b => 
         b.id === `weekly_event_${bonus.activity}` ||
-        (b.label && bonus.label && b.label.toLowerCase().includes(bonus.activity.replace(/_/g, ' ')))
+        (b.label && bonus.label && b.label.toLowerCase().includes(bonus.activity.replaceAll('_', ' ')))
       );
       if (matchingWeeklyIdx !== -1) {
         // GTA+ multiplier is higher — upgrade the existing bottleneck in-place

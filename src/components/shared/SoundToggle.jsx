@@ -1,5 +1,5 @@
 // src/components/shared/SoundToggle.jsx
-import React, { useState, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { Volume2, VolumeX } from 'lucide-react';
 import { isSoundEnabled, setSoundEnabled } from '../../utils/gamificationEngine';
 

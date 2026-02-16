@@ -1,6 +1,6 @@
 // src/components/shared/DevTools.jsx
 // Development-only debug panel
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useAssessment } from '../../context/AssessmentContext';
 import { X, Code, Database } from 'lucide-react';
 
@@ -113,7 +113,7 @@ const DevTools = () => {
                 <button
                   onClick={() => {
                     localStorage.clear();
-                    window.location.reload();
+                    globalThis.location.reload();
                   }}
                   className="mt-4 w-full px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs"
                 >

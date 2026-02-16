@@ -1,19 +1,18 @@
 // src/components/shared/LoadingSpinner.jsx
-import React, { useState, useEffect } from 'react';
-import { Loader2 } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
+
+const STEPS = [
+  'Analyzing your stats...',
+  'Calculating income potential...',
+  'Comparing to community...',
+  'Building action plan...',
+  'Finalizing results...'
+];
 
 const LoadingSpinner = ({ message = 'Calculating...' }) => {
   const [progress, setProgress] = useState(0);
   const [step, setStep] = useState(0);
-  
-  const steps = [
-    'Analyzing your stats...',
-    'Calculating income potential...',
-    'Comparing to community...',
-    'Building action plan...',
-    'Finalizing results...'
-  ];
   
   useEffect(() => {
     const stepDuration = 400; // ms per step
@@ -21,9 +20,9 @@ const LoadingSpinner = ({ message = 'Calculating...' }) => {
     
     const interval = setInterval(() => {
       currentStep++;
-      if (currentStep < steps.length) {
+      if (currentStep < STEPS.length) {
         setStep(currentStep);
-        setProgress((currentStep / steps.length) * 100);
+        setProgress((currentStep / STEPS.length) * 100);
       } else {
         setProgress(100);
         clearInterval(interval);
@@ -34,27 +33,41 @@ const LoadingSpinner = ({ message = 'Calculating...' }) => {
   }, []);
   
   return (
-    <div className="fixed inset-0 bg-slate-950/80 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl p-8 flex flex-col items-center gap-4 min-w-[320px]">
-        {/* Spinning loader */}
-        <div className="relative w-16 h-16 mb-2">
-          <div className="absolute inset-0 border-4 border-blue-500/20 rounded-full" />
+    <div className="fixed inset-0 bg-surface-dark/90 backdrop-blur-md flex items-center justify-center z-50">
+      <div className="card-enterprise max-w-md w-full animate-pop-in">
+        {/* Triple-ring spinning loader with 3 colors */}
+        <div className="relative w-24 h-24 mx-auto mb-6">
+          {/* Outer ring - Purple */}
           <div 
-            className="absolute inset-0 border-4 border-transparent border-t-blue-500 rounded-full animate-spin"
-            style={{ animationDuration: '0.8s' }}
+            className="absolute inset-0 border-4 border-transparent border-t-primary-purple-500 rounded-full animate-spin"
+            style={{ animationDuration: '1.2s' }}
           />
+          {/* Middle ring - Cyan */}
+          <div 
+            className="absolute inset-2 border-4 border-transparent border-t-primary-cyan-500 rounded-full animate-spin"
+            style={{ animationDuration: '0.9s', animationDirection: 'reverse' }}
+          />
+          {/* Inner ring - Orange */}
+          <div 
+            className="absolute inset-4 border-4 border-transparent border-t-primary-orange-500 rounded-full animate-spin"
+            style={{ animationDuration: '0.6s' }}
+          />
+          {/* Center glow dot */}
+          <div className="absolute inset-0 flex items-center justify-center">
+            <div className="w-4 h-4 bg-gradient-to-r from-primary-purple-500 via-primary-cyan-500 to-primary-orange-500 rounded-full animate-pulse-glow shadow-glow-purple" />
+          </div>
         </div>
         
         {/* Message */}
-        <h3 className="text-xl font-bold text-white mb-1">{message}</h3>
+        <h3 className="text-2xl font-display font-bold text-center mb-4 heading-gradient-purple">{message}</h3>
         
         {/* Current step */}
-        <p className="text-slate-400 text-sm mb-4 min-h-[20px]">{steps[step] || steps[steps.length - 1]}</p>
+        <p className="text-slate-300 text-sm mb-4 min-h-[20px] font-medium">{STEPS[step] || STEPS[STEPS.length - 1]}</p>
         
-        {/* Progress bar */}
-        <div className="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+        {/* Progress bar - Rounded shape with gradient */}
+        <div className="w-full h-3 bg-surface-elevated rounded-full overflow-hidden border border-primary-purple-500/30">
           <div 
-            className="h-full bg-gradient-to-r from-blue-500 to-purple-500 transition-all duration-300 ease-out"
+            className="h-full bg-gradient-to-r from-primary-purple-500 via-primary-cyan-500 to-primary-orange-500 transition-all duration-500 ease-out rounded-full shadow-glow-purple"
             style={{ width: `${progress}%` }}
           />
         </div>

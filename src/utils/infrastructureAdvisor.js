@@ -83,7 +83,7 @@ export const NIGHTCLUB_FLOOR_AFK = {
  * @param {string} category - 'nightclub', 'bunker', etc.
  * @returns {number} Discount percentage (0-1)
  */
-export const getCurrentDiscount = (category) => {
+const getCurrentDiscount = (category) => {
   const now = Date.now();
   
   if (category === 'nightclub' || category === 'nightclubUpgrades') {
@@ -122,7 +122,7 @@ export const getDiscountedPrice = (basePrice, category) => {
  */
 const _bunkerBase = MODEL_CONFIG.income.passive.bunkerBase;       // $30,000
 const _bunkerMax = MODEL_CONFIG.income.bunker.upgraded.perHour;  // $75,000
-export const BUNKER_INCOME = {
+const BUNKER_INCOME = {
   unupgraded: _bunkerBase,                                       // $30k/hr
   equipmentOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.55), // ~$55k/hr
   staffOnly: Math.round(_bunkerBase + (_bunkerMax - _bunkerBase) * 0.4),     // ~$48k/hr
@@ -163,15 +163,6 @@ export const calculateBunkerLeak = (bunkerState) => {
     missingEquipment: !bunkerState.equipmentUpgrade,
     missingStaff: !bunkerState.staffUpgrade,
   };
-};
-
-/**
- * Nightclub efficiency calculations
- */
-export const NIGHTCLUB_INCOME = {
-  basePerTech: 10000, // $/hr per tech with upgraded NC
-  unupgradedPenalty: 0.5, // 50% less without upgrades
-  maxTechs: 5,
 };
 
 /**
@@ -307,7 +298,7 @@ const checkVehicleIssues = (nightclubState, floors, techs) => {
     issues.push({
       id: 'nc_mule_trap',
       severity: 'critical',
-      label: '⚠️ MULE CUSTOM TRAP',
+      label: 'Ã¢Å¡Â Ã¯Â¸Â MULE CUSTOM TRAP',
       detail: 'You bought the Mule Custom. It\'s slow and buggy. You still need the Pounder for large sales.',
       isTrap: true,
     });
@@ -395,7 +386,7 @@ export const calculateNightclubOptimization = (nightclubState) => {
  * @param {string} playStyle - 'nightclub_only', 'active_mc', 'hybrid'
  * @returns {Object} Over-investment analysis
  */
-export const detectMCOverInvestment = (mcState, playStyle = 'nightclub_only') => {
+const detectMCOverInvestment = (mcState, playStyle = 'nightclub_only') => {
   if (playStyle !== 'nightclub_only') {
     return { hasOverInvestment: false, wastedMoney: 0, businesses: [] };
   }
@@ -464,7 +455,7 @@ export const generateInfrastructureRecommendations = (formData) => {
           category: 'bunker',
           priority: 1,
           type: 'INFRASTRUCTURE',
-          title: '🏭 Buy Bunker Equipment Upgrade',
+          title: 'Ã°Å¸ÂÂ­ Buy Bunker Equipment Upgrade',
           cost: INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade,
           benefit: `+$${(bunkerLeak.potentialIncome - BUNKER_INCOME.unupgraded).toLocaleString()}/hr passive`,
           why: `You're earning $${bunkerLeak.currentIncome.toLocaleString()}/hr instead of $${bunkerLeak.potentialIncome.toLocaleString()}/hr. 300% income increase.`,
@@ -480,7 +471,7 @@ export const generateInfrastructureRecommendations = (formData) => {
           category: 'bunker',
           priority: 2,
           type: 'INFRASTRUCTURE',
-          title: '🏭 Buy Bunker Staff Upgrade',
+          title: 'Ã°Å¸ÂÂ­ Buy Bunker Staff Upgrade',
           cost: INFRASTRUCTURE_COSTS.bunker.staffUpgrade,
           benefit: 'Faster production speed',
           why: 'Required for "Buy Supplies" strategy to be profitable.',
@@ -520,7 +511,7 @@ export const generateInfrastructureRecommendations = (formData) => {
         category: 'nightclub',
         priority: rec.priority,
         type: rec.isCritical ? 'CRITICAL' : 'INFRASTRUCTURE',
-        title: rec.isCritical ? `⚠️ ${rec.label}` : `🎭 ${rec.label}`,
+        title: rec.isCritical ? `Ã¢Å¡Â Ã¯Â¸Â ${rec.label}` : `Ã°Å¸Å½Â­ ${rec.label}`,
         cost: rec.cost,
         originalCost: rec.originalCost,
         isDiscounted: rec.isDiscounted,
@@ -565,7 +556,7 @@ export const generateInfrastructureRecommendations = (formData) => {
       category: 'mc',
       priority: 10, // Low priority - just informational
       type: 'INFO',
-      title: '📊 MC Over-Investment Detected',
+      title: 'Ã°Å¸â€œÅ  MC Over-Investment Detected',
       why: mcOverInvestment.advice,
       wastedMoney: mcOverInvestment.wastedMoney,
       urgency: 'LOW',
@@ -577,33 +568,3 @@ export const generateInfrastructureRecommendations = (formData) => {
   return recommendations.sort((a, b) => a.priority - b.priority);
 };
 
-/**
- * Get summary of infrastructure health
- * @param {Object} formData - Full form data
- * @returns {Object} Infrastructure health summary
- */
-export const getInfrastructureHealth = (formData) => {
-  const recommendations = generateInfrastructureRecommendations(formData);
-  
-  const critical = recommendations.filter(r => r.urgency === 'CRITICAL' || r.type === 'CRITICAL');
-  const urgent = recommendations.filter(r => r.urgency === 'URGENT' && r.type !== 'CRITICAL');
-  const normal = recommendations.filter(r => !['CRITICAL', 'URGENT'].includes(r.urgency));
-  
-  const totalCost = recommendations
-    .filter(r => r.cost && r.type !== 'WARNING' && r.type !== 'INFO')
-    .reduce((sum, r) => sum + r.cost, 0);
-  
-  const discountedItems = recommendations.filter(r => r.isDiscounted);
-  const totalSavings = discountedItems.reduce((sum, r) => sum + (r.originalCost - r.cost), 0);
-  
-  return {
-    score: Math.max(0, 100 - (critical.length * 30) - (urgent.length * 15) - (normal.length * 5)),
-    criticalCount: critical.length,
-    urgentCount: urgent.length,
-    totalRecommendations: recommendations.length,
-    totalCost,
-    totalSavings,
-    hasActiveDiscounts: discountedItems.length > 0,
-    recommendations,
-  };
-};

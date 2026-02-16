@@ -1,13 +1,14 @@
 // src/components/gamification/StreakBanner.jsx
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { checkStreak, getStreakMilestones } from '../../utils/streakTracker';
 
 const StreakBanner = () => {
-  // Initialize streak data on mount (using lazy initialization to avoid setState in effect)
   const [streakData] = useState(() => checkStreak());
-  const shouldCelebrate = !!(streakData?.isNewDay && streakData?.bonus);
-  const [showCelebration, setShowCelebration] = useState(shouldCelebrate);
+  const [showCelebration, setShowCelebration] = useState(
+    () => !!(streakData?.isNewDay && streakData?.bonus)
+  );
 
+  // Auto-dismiss celebration after 3 seconds
   useEffect(() => {
     if (!showCelebration) return;
     const timer = setTimeout(() => setShowCelebration(false), 3000);
@@ -50,9 +51,9 @@ const StreakBanner = () => {
           </div>
           
           <div className="flex gap-2">
-            {milestones.slice(0, 3).map((m, idx) => (
+            {milestones.slice(0, 3).map((m) => (
               <div
-                key={idx}
+                key={m.days}
                 className={`text-2xl transition-all ${m.unlocked ? 'opacity-100 scale-110' : 'opacity-20 grayscale'}`}
                 title={m.title}
               >

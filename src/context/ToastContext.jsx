@@ -1,5 +1,6 @@
 // src/context/ToastContext.jsx
-import React, { createContext, useContext, useState } from 'react';
+import PropTypes from 'prop-types';
+import { createContext, useContext, useMemo, useState } from 'react';
 import Toast from '../components/shared/Toast';
 
 const ToastContext = createContext(null);
@@ -15,9 +16,11 @@ export const ToastProvider = ({ children }) => {
   const removeToast = (id) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
+
+  const providerValue = useMemo(() => ({ showToast }), []);
   
   return (
-    <ToastContext.Provider value={{ showToast }}>
+    <ToastContext.Provider value={providerValue}>
       {children}
       
       {/* Toast container */}
@@ -34,6 +37,10 @@ export const ToastProvider = ({ children }) => {
       </div>
     </ToastContext.Provider>
   );
+};
+
+ToastProvider.propTypes = {
+  children: PropTypes.node.isRequired,
 };
 
 export const useToast = () => {

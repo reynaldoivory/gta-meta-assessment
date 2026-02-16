@@ -1,4 +1,4 @@
-// src/utils/dynamicIncome.js
+﻿// src/utils/dynamicIncome.js
 // Dynamic income calculation with weekly event multipliers
 
 import { WEEKLY_EVENTS, getWeeklyBonuses, formatExpiry } from '../config/weeklyEvents';
@@ -52,7 +52,7 @@ const calculateAutoShopIncome = (formData, events, isEventActive) => {
         };
       }
     }
-    // No auto_shop monthly bonus this month — skip GTA+ Auto Shop boost
+    // No auto_shop monthly bonus this month â€” skip GTA+ Auto Shop boost
   } else if (autoShopBonus?.isActive && isEventActive) {
     // Weekly event for non-GTA+ members (use new structure)
     multiplier = autoShopBonus.multiplier || 2;
@@ -115,7 +115,7 @@ const calculateCayoIncome = (formData, events, isEventActive) => {
 
     // Bag fill: solo drainage tunnel players often can't fill bags while
     // staying undetected. Use conservative ~80% bag fill estimate.
-    const bagFillFactor = 0.80;
+    const bagFillFactor = 0.8;
     income = basePayout * bagFillFactor * runsPerHour * multiplier;
   }
 
@@ -334,3 +334,4 @@ export const checkStatRequirements = (formData, requirements) => {
     missing,
   };
 };
+

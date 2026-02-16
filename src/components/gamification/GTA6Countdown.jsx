@@ -1,5 +1,5 @@
 // src/components/GTA6Countdown.jsx
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, TrendingUp, Zap, AlertCircle } from 'lucide-react';
 
 const GTA6Countdown = () => {
@@ -92,9 +92,9 @@ const GTA6Countdown = () => {
             { label: 'Hours', value: timeLeft.hours },
             { label: 'Minutes', value: timeLeft.minutes },
             { label: 'Seconds', value: timeLeft.seconds },
-          ].map((unit, idx) => (
+          ].map((unit) => (
             <div
-              key={idx}
+              key={unit.label}
               className="bg-black/40 backdrop-blur-sm rounded-xl p-4 text-center border border-purple-500/20"
             >
               <div className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400 font-mono">

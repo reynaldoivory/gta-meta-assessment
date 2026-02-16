@@ -22,27 +22,27 @@ const CommunityTrapStats = ({ formData, currentTraps }) => {
   const trapRates = [
     { 
       name: 'Nightclub Trap (0 feeders)', 
-      rate: parseInt(occurrenceRates.nightclubTrap),
+      rate: Number.parseInt(occurrenceRates.nightclubTrap, 10),
       description: 'Players who bought Nightclub without feeder businesses',
     },
     { 
       name: 'Unupgraded Bunker', 
-      rate: parseInt(occurrenceRates.unupgradedBunker),
+      rate: Number.parseInt(occurrenceRates.unupgradedBunker, 10),
       description: 'Bunker owners without equipment upgrade',
     },
     { 
       name: 'Cayo Burnout', 
-      rate: parseInt(occurrenceRates.cayoBurnout),
+      rate: Number.parseInt(occurrenceRates.cayoBurnout, 10),
       description: 'Kosatka owners showing efficiency decay',
     },
     { 
       name: 'Unupgraded Acid Lab', 
-      rate: parseInt(occurrenceRates.unupgradedAcidLab),
+      rate: Number.parseInt(occurrenceRates.unupgradedAcidLab, 10),
       description: 'Acid Lab owners without equipment upgrade',
     },
     { 
       name: 'Unused Kosatka', 
-      rate: parseInt(occurrenceRates.unusedKosatka),
+      rate: Number.parseInt(occurrenceRates.unusedKosatka, 10),
       description: 'Kosatka owners who never ran Cayo Perico',
     },
   ].sort((a, b) => b.rate - a.rate);
@@ -108,11 +108,11 @@ const CommunityTrapStats = ({ formData, currentTraps }) => {
       
       {/* Trap Occurrence Rates */}
       <div className="space-y-1">
-        {trapRates.map((trap, idx) => {
+        {trapRates.map((trap) => {
           const rateClass = getRateClass(trap.rate);
           
           return (
-            <div key={idx} className="trap-rate-item group" title={trap.description}>
+            <div key={trap.name} className="trap-rate-item group" title={trap.description}>
               <span className="trap-name">{trap.name}</span>
               <div className="trap-rate">
                 <div className="rate-bar">
@@ -138,7 +138,7 @@ const CommunityTrapStats = ({ formData, currentTraps }) => {
         </div>
         <div className="flex justify-between mt-1">
           <span>Avg Lost Income:</span>
-          <span className="text-red-400">${parseInt(occurrenceRates.averageLostIncome).toLocaleString()}/hr</span>
+          <span className="text-red-400">${Number.parseInt(occurrenceRates.averageLostIncome, 10).toLocaleString()}/hr</span>
         </div>
         {occurrenceRates.sampleSize > 0 && (
           <div className="flex justify-between mt-1">

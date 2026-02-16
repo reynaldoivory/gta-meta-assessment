@@ -1,4 +1,5 @@
 // src/components/ProgressChart.jsx
+import PropTypes from 'prop-types';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -156,6 +157,17 @@ const ProgressChart = ({ history }) => {
       <Line data={data} options={options} />
     </div>
   );
+};
+
+ProgressChart.propTypes = {
+  history: PropTypes.arrayOf(
+    PropTypes.shape({
+      timestamp: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+      score: PropTypes.number.isRequired,
+      incomePerHour: PropTypes.number.isRequired,
+      rank: PropTypes.number.isRequired,
+    })
+  ),
 };
 
 export default ProgressChart;

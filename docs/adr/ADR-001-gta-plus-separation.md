@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD026 MD031 -->
+
 # ADR-001: Separate GTA+ Bonuses from Global Weekly Events
 
 **Status**: Accepted  

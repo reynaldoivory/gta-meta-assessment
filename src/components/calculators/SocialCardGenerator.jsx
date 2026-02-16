@@ -1,4 +1,5 @@
 // src/components/calculators/SocialCardGenerator.jsx
+import PropTypes from 'prop-types';
 import { Share2, Download } from 'lucide-react';
 
 const SocialCardGenerator = ({ formData, results }) => {
@@ -108,6 +109,18 @@ const SocialCardGenerator = ({ formData, results }) => {
       </button>
     </div>
   );
+};
+
+SocialCardGenerator.propTypes = {
+  formData: PropTypes.shape({
+    rank: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+  }).isRequired,
+  results: PropTypes.shape({
+    tier: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    score: PropTypes.number.isRequired,
+    incomePerHour: PropTypes.number.isRequired,
+    heistReadyPercent: PropTypes.number.isRequired,
+  }),
 };
 
 export default SocialCardGenerator;

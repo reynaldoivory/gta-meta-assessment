@@ -1,5 +1,17 @@
 // src/components/Confetti.jsx
+import PropTypes from 'prop-types';
 import { useEffect, useRef } from 'react';
+
+const secureRandom = () => {
+  const cryptoApi = globalThis.crypto;
+  if (!cryptoApi?.getRandomValues) {
+    return 0.5;
+  }
+
+  const buffer = new Uint32Array(1);
+  cryptoApi.getRandomValues(buffer);
+  return buffer[0] / 4294967296;
+};
 
 const Confetti = ({ active, onComplete }) => {
   const canvasRef = useRef(null);
@@ -19,13 +31,13 @@ const Confetti = ({ active, onComplete }) => {
 
     for (let i = 0; i < 150; i++) {
       confetti.push({
-        x: Math.random() * canvas.width,
-        y: Math.random() * canvas.height - canvas.height,
-        r: Math.random() * 6 + 4,
-        d: Math.random() * 10 + 5,
-        color: colors[Math.floor(Math.random() * colors.length)],
-        tilt: Math.random() * 10 - 10,
-        tiltAngleIncremental: Math.random() * 0.07 + 0.05,
+        x: secureRandom() * canvas.width,
+        y: secureRandom() * canvas.height - canvas.height,
+        r: secureRandom() * 6 + 4,
+        d: secureRandom() * 10 + 5,
+        color: colors[Math.floor(secureRandom() * colors.length)],
+        tilt: secureRandom() * 10 - 10,
+        tiltAngleIncremental: secureRandom() * 0.07 + 0.05,
         tiltAngle: 0,
       });
     }
@@ -55,8 +67,8 @@ const Confetti = ({ active, onComplete }) => {
 
       if (confetti.length > 0) {
         animationFrame = requestAnimationFrame(draw);
-      } else {
-        if (onComplete) onComplete();
+      } else if (onComplete) {
+        onComplete();
       }
     }
 
@@ -78,6 +90,11 @@ const Confetti = ({ active, onComplete }) => {
       style={{ width: '100%', height: '100%' }}
     />
   );
+};
+
+Confetti.propTypes = {
+  active: PropTypes.bool,
+  onComplete: PropTypes.func,
 };
 
 export default Confetti;

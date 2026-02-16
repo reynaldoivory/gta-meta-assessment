@@ -27,7 +27,7 @@ const TRAP_FIXES_KEY = 'gta_trap_fixes';
  * Get trap history from localStorage
  * @returns {Array} Array of historical trap records
  */
-export const getTrapHistory = () => {
+const getTrapHistory = () => {
   try {
     return JSON.parse(localStorage.getItem(TRAP_HISTORY_KEY) || '[]');
   } catch (e) {
@@ -55,7 +55,7 @@ const saveTrapHistory = (history) => {
  * @param {Object} trap - The detected trap
  * @param {Object} formData - Player form data at time of detection
  */
-export const recordTrapDetection = (trap, formData) => {
+const recordTrapDetection = (trap, formData) => {
   const history = getTrapHistory();
   const existingIndex = history.findIndex(h => 
     h.trapId === trap.id && !h.fixedAt
@@ -84,7 +84,7 @@ export const recordTrapDetection = (trap, formData) => {
  * @param {Object} formData - Current form data
  * @param {Object} assessment - Current assessment results
  */
-export const recordTrapFix = (trapId, formData, assessment = null) => {
+const recordTrapFix = (trapId, formData, assessment = null) => {
   const history = getTrapHistory();
   const trapIndex = history.findIndex(h => 
     h.trapId === trapId && !h.fixedAt
@@ -117,7 +117,7 @@ export const recordTrapFix = (trapId, formData, assessment = null) => {
  * Get list of fixed traps for celebration display
  * @returns {Array} Array of fixed trap records
  */
-export const getTrapFixes = () => {
+const getTrapFixes = () => {
   try {
     return JSON.parse(localStorage.getItem(TRAP_FIXES_KEY) || '[]');
   } catch (e) {
@@ -180,48 +180,6 @@ export const checkForFixedTraps = (currentTraps, formData, assessment) => {
 };
 
 /**
- * Get trap statistics for community display
- * @returns {Object} Trap statistics
- */
-export const getTrapStats = () => {
-  const history = getTrapHistory();
-  const fixes = getTrapFixes();
-  
-  // Count occurrences by trap type
-  const trapCounts = {};
-  history.forEach(h => {
-    trapCounts[h.trapId] = (trapCounts[h.trapId] || 0) + 1;
-  });
-  
-  // Most common traps
-  const sortedTraps = Object.entries(trapCounts)
-    .sort((a, b) => b[1] - a[1])
-    .slice(0, 5);
-  
-  return {
-    totalTrapsDetected: history.length,
-    totalTrapsFixed: fixes.length,
-    fixRate: history.length > 0 ? Math.round((fixes.length / history.length) * 100) : 0,
-    mostCommonTraps: sortedTraps,
-    averageFixTime: calculateAverageFixTime(history),
-  };
-};
-
-/**
- * Calculate average time to fix traps (in hours)
- */
-const calculateAverageFixTime = (history) => {
-  const fixedTraps = history.filter(h => h.fixedAt);
-  if (fixedTraps.length === 0) return null;
-  
-  const totalHours = fixedTraps.reduce((sum, h) => {
-    return sum + ((h.fixedAt - h.detectedAt) / (1000 * 60 * 60));
-  }, 0);
-  
-  return Math.round(totalHours / fixedTraps.length);
-};
-
-/**
  * Helper: Detect Mule without Pounder trap (Scenario A)
  */
 const detectMuleWithoutPounderTrap = (formData, floors, hasMule, hasPounder) => {
@@ -231,8 +189,8 @@ const detectMuleWithoutPounderTrap = (formData, floors, hasMule, hasPounder) => 
   return {
     id: 'nc_mule_missing_pounder',
     severity: isCurrentlyAffected ? TRAP_SEVERITY.CRITICAL : TRAP_SEVERITY.MEDIUM,
-    title: '🚫 Delivery Vehicle Trap (Mule)',
-    icon: '🚛',
+    title: 'ðŸš« Delivery Vehicle Trap (Mule)',
+    icon: 'ðŸš›',
     problem: isCurrentlyAffected 
       ? 'You own the Mule Custom but NOT the Pounder Custom. The Mule is slow, buggy, and gets stuck easily.'
       : 'You own the Mule Custom but NOT the Pounder Custom. Currently safe with 1 floor (72 max crates), but if you expand floors, you\'ll be forced to use the slow Mule.',
@@ -260,8 +218,8 @@ const detectMuleWithPounderTrap = (formData, floors, hasMule, hasPounder) => {
   return {
     id: 'nc_mule_avoidance',
     severity: TRAP_SEVERITY.MEDIUM,
-    title: '⚠️ Avoid the Mule Custom',
-    icon: '🚛',
+    title: 'âš ï¸ Avoid the Mule Custom',
+    icon: 'ðŸš›',
     problem: 'You own the Mule Custom. The game will force you to use it for medium sales (90-180 crates).',
     cost: 'Slower deliveries when stock is between 90-180',
     lostPerHour: 0,
@@ -302,8 +260,8 @@ const detectLowValueAssignmentTrap = (formData) => {
   return {
     id: 'nc_inefficient_assignment',
     severity: TRAP_SEVERITY.HIGH,
-    title: '📉 Low-Value Nightclub Assignment',
-    icon: '📉',
+    title: 'ðŸ“‰ Low-Value Nightclub Assignment',
+    icon: 'ðŸ“‰',
     problem: 'You have technicians assigned to Weed or Documents (Low Value) while missing High Value businesses.',
     cost: `Losing ~$${Math.round(potentialGain).toLocaleString()}/hr per low-value assignment`,
     lostPerHour: Math.round(potentialGain),
@@ -323,7 +281,7 @@ const detectLowValueAssignmentTrap = (formData) => {
  * NIGHTCLUB-SPECIFIC TRAP DETECTORS
  * Detects delivery vehicle issues and inefficient technician assignments
  */
-export const detectNightclubTraps = (formData) => {
+const detectNightclubTraps = (formData) => {
   if (!formData.hasNightclub) return [];
   
   const floors = Number(formData.nightclubFloors) || 1;
@@ -388,8 +346,8 @@ const detectCascadeTrap = (formData, techs, feeders, maxIncome) => {
   return {
     id: 'nightclub_cascade_trap',
     severity: TRAP_SEVERITY.CRITICAL,
-    title: '🚨 DOUBLE Nightclub Trap',
-    icon: '🏢',
+    title: 'ðŸš¨ DOUBLE Nightclub Trap',
+    icon: 'ðŸ¢',
     isCascadeTrap: true, // Flag for extra prominence in UI
     problem: `You spent $${totalWaste.toLocaleString()} on Nightclub + ${techs} technician${techs === 1 ? '' : 's'}, but have 0 feeder businesses`,
     cost: `Wasted $${wastedOnTechs.toLocaleString()} on technicians that CANNOT WORK`,
@@ -424,19 +382,19 @@ const detectNoFeedersTrap = (formData, feeders, maxIncome) => {
   return {
     id: 'nightclub_no_feeders',
     severity: TRAP_SEVERITY.CRITICAL,
-    title: '🚨 Nightclub Trap: Zero Income',
-    icon: '🏢',
+    title: 'ðŸš¨ Nightclub Trap: Zero Income',
+    icon: 'ðŸ¢',
     problem: `Your Nightclub earns $0/hr because you have no feeder businesses connected`,
     cost: `Losing $${maxIncome.toLocaleString()}/hr in potential income`,
     lostPerHour: maxIncome,
-    solution: 'Buy MC businesses FIRST: Cocaine ($975k) → Meth ($910k) → Cash ($845k). Then assign technicians.',
+    solution: 'Buy MC businesses FIRST: Cocaine ($975k) â†’ Meth ($910k) â†’ Cash ($845k). Then assign technicians.',
     reasoning: 'Nightclub technicians produce goods from linked businesses. No businesses = no production = no income.',
     timeToFix: '3-4 hours (business setup + Nightclub assignment)',
     requiredSteps: [
       { step: 'Buy Cocaine Lockup ($975k)', reason: 'Cocaine is highest-earning nightclub product ($10k/hr)' },
       { step: 'Buy Meth Lab ($910k)', reason: 'Meth is second-highest earner ($8.5k/hr)' },
       { step: 'Buy Counterfeit Cash Factory ($845k)', reason: 'Solid third feeder for balanced production' },
-      { step: 'Return to Nightclub → Assign technicians', reason: 'Each tech works one business passively' },
+      { step: 'Return to Nightclub â†’ Assign technicians', reason: 'Each tech works one business passively' },
     ],
     fixCost: 975000 + 910000 + 845000, // ~$2.7M for 3 MC businesses
   };
@@ -451,8 +409,8 @@ const detectLowFeedersTrap = (formData, techs, feeders, currentIncome, efficienc
   return {
     id: 'nightclub_low_feeders',
     severity: TRAP_SEVERITY.HIGH,
-    title: '⚠️ Nightclub Under-Optimized',
-    icon: '🏢',
+    title: 'âš ï¸ Nightclub Under-Optimized',
+    icon: 'ðŸ¢',
     problem: `Nightclub earning $${currentIncome.toLocaleString()}/hr (${efficiency.toFixed(0)}% efficiency) with only ${feeders} feeder business${feeders === 1 ? '' : 'es'}`,
     cost: `Losing $${lostIncome.toLocaleString()}/hr vs full setup`,
     lostPerHour: lostIncome,
@@ -480,8 +438,8 @@ const detectLowTechsTrap = (formData, techs, feeders, lostIncome, techCost) => {
   return {
     id: 'nightclub_low_techs',
     severity: TRAP_SEVERITY.HIGH,
-    title: '⚠️ Nightclub Missing Technicians',
-    icon: '🏢',
+    title: 'âš ï¸ Nightclub Missing Technicians',
+    icon: 'ðŸ¢',
     problem: `You have ${feeders} feeder businesses but only ${techs} technician${techs === 1 ? '' : 's'} hired`,
     cost: `Losing $${lostIncome.toLocaleString()}/hr - technicians aren't assigned!`,
     lostPerHour: lostIncome,
@@ -545,8 +503,8 @@ const detectUnupgradedBunkerTrap = (formData) => {
   return {
     id: 'bunker_unupgraded',
     severity: TRAP_SEVERITY.HIGH,
-    title: '⚠️ Unupgraded Bunker',
-    icon: '🏭',
+    title: 'âš ï¸ Unupgraded Bunker',
+    icon: 'ðŸ­',
     problem: `Your bunker earns $${baseIncome.toLocaleString()}/hr. Upgraded bunker earns $${upgradedIncome.toLocaleString()}/hr`,
     cost: `Losing $${lostIncome.toLocaleString()}/hr by not upgrading`,
     lostPerHour: lostIncome,
@@ -579,8 +537,8 @@ const detectUnupgradedAcidLabTrap = (formData) => {
   return {
     id: 'acid_lab_unupgraded',
     severity: TRAP_SEVERITY.MEDIUM,
-    title: '💊 Unupgraded Acid Lab',
-    icon: '🧪',
+    title: 'ðŸ’Š Unupgraded Acid Lab',
+    icon: 'ðŸ§ª',
     problem: `Your Acid Lab earns $${baseIncome.toLocaleString()}/hr. Upgraded earns $${Math.round(upgradedIncome).toLocaleString()}/hr`,
     cost: `Losing $${Math.round(lostIncome).toLocaleString()}/hr by not upgrading`,
     lostPerHour: Math.round(lostIncome),
@@ -609,8 +567,8 @@ const detectMissingSparrowTrap = (formData, totalWealth) => {
   return {
     id: 'missing_sparrow',
     severity: TRAP_SEVERITY.HIGH,
-    title: '🚁 Missing Sparrow Helicopter',
-    icon: '🚁',
+    title: 'ðŸš Missing Sparrow Helicopter',
+    icon: 'ðŸš',
     problem: 'You own Kosatka but no Sparrow - wasting ~15+ minutes per heist prep run',
     cost: 'Losing significant time on heist preps and freeroam travel',
     lostPerHour: 200000, // Estimated opportunity cost
@@ -620,7 +578,7 @@ const detectMissingSparrowTrap = (formData, totalWealth) => {
     requiredSteps: [
       'Enter Kosatka submarine',
       'Access interaction menu (M on PC)',
-      'Navigate to Kosatka → Moon Pool → Sparrow',
+      'Navigate to Kosatka â†’ Moon Pool â†’ Sparrow',
       'Purchase Sparrow ($1,815,000)',
     ],
     fixCost: sparrowCost,
@@ -637,8 +595,8 @@ const detectIncompleteAgencyTrap = (formData) => {
   return {
     id: 'agency_incomplete',
     severity: TRAP_SEVERITY.MEDIUM,
-    title: '💼 Agency Contract Incomplete',
-    icon: '💼',
+    title: 'ðŸ’¼ Agency Contract Incomplete',
+    icon: 'ðŸ’¼',
     problem: 'You own an Agency but haven\'t completed The Contract (Dr. Dre)',
     cost: 'Missing $1M one-time payout + unlocks Payphone Hits ($255k/hr)',
     lostPerHour: 0, // One-time, not per hour
@@ -701,12 +659,3 @@ export const getTrapSummary = (traps) => {
   };
 };
 
-/**
- * Get the single most critical trap to show prominently
- * @param {Array} traps - Array of detected traps
- * @returns {Object|null} The most critical trap or null
- */
-export const getMostCriticalTrap = (traps) => {
-  if (!traps || traps.length === 0) return null;
-  return traps[0]; // Already sorted by severity
-};

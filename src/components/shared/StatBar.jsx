@@ -8,13 +8,6 @@ const StatBar = ({ label, value, onChange }) => {
     onChange(bar === value ? Math.max(0, bar - 1) : bar);
   };
 
-  const handleKeyDown = (e, bar) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      handleBarClick(bar);
-    }
-  };
-
   return (
     <div className="mb-2">
       <div className="flex justify-between items-end mb-1">
@@ -23,12 +16,10 @@ const StatBar = ({ label, value, onChange }) => {
       </div>
       <div className="flex gap-1 h-3 cursor-pointer group" aria-label={`${label} stat bar`}>
         {bars.map((bar) => (
-          <div 
+          <button
+            type="button"
             key={bar}
             onClick={() => handleBarClick(bar)}
-            onKeyDown={(e) => handleKeyDown(e, bar)}
-            tabIndex={0}
-            role="button"
             aria-label={`Set ${label} to ${bar} bars`}
             className={`flex-1 rounded-sm transition-all duration-200 ${
               bar <= value 

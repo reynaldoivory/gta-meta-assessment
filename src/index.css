@@ -1,12 +1,25 @@
-@import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  --font-body: 'Space Grotesk', system-ui, sans-serif;
-  --font-display: 'Rajdhani', 'Space Grotesk', sans-serif;
+  /* Enterprise Kid-Friendly Design System */
+  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
+  
+  /* 3 Primary Colors */
+  --color-primary-purple: #a855f7;
+  --color-primary-cyan: #22d3ee;
+  --color-primary-orange: #fb923c;
+  
+  /* Surface colors */
+  --color-surface-dark: #0f0918;
+  --color-surface-card: #1a1128;
+  --color-surface-elevated: #251a35;
+  
   color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -19,16 +32,21 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--font-body);
-  color: #e2e8f0;
+  color: #f1f5f9;
+  
+  /* Vibrant, Playful Gradient Background */
   background:
-    radial-gradient(1200px circle at 10% -20%, rgba(34, 211, 238, 0.14), transparent 60%),
-    radial-gradient(900px circle at 90% 10%, rgba(168, 85, 247, 0.18), transparent 60%),
-    linear-gradient(180deg, #0b0b11 0%, #0f172a 55%, #020617 100%);
+    radial-gradient(1400px circle at 15% -10%, rgba(168, 85, 247, 0.18), transparent 50%),
+    radial-gradient(1000px circle at 85% 10%, rgba(34, 211, 238, 0.16), transparent 50%),
+    radial-gradient(800px circle at 50% 100%, rgba(251, 146, 60, 0.12), transparent 50%),
+    linear-gradient(180deg, #0f0918 0%, #1a1128 50%, #0f0918 100%);
   background-attachment: fixed;
+  background-size: 100% 100%;
 }
 
 button {
   font-family: inherit;
+  font-weight: 600;
 }
 
 #root {
@@ -38,9 +56,98 @@ button {
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: 0.04em;
+  letter-spacing: -0.02em;
+  font-weight: 700;
 }
 
 .font-body {
   font-family: var(--font-body);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Enterprise Components Base Styles */
+@layer components {
+  /* Primary Button - Purple gradient with glow */
+  .btn-primary {
+    @apply px-6 py-3 rounded-2xl font-bold text-white;
+    @apply bg-gradient-to-r from-primary-purple-600 to-primary-purple-500;
+    @apply shadow-glow-purple hover:shadow-glow-purple;
+    @apply transform transition-all duration-200;
+    @apply hover:scale-105 active:scale-95;
+    @apply border-2 border-primary-purple-400/30;
+  }
+  
+  /* Secondary Button - Cyan */
+  .btn-secondary {
+    @apply px-6 py-3 rounded-2xl font-bold text-white;
+    @apply bg-gradient-to-r from-primary-cyan-600 to-primary-cyan-500;
+    @apply shadow-glow-cyan hover:shadow-glow-cyan;
+    @apply transform transition-all duration-200;
+    @apply hover:scale-105 active:scale-95;
+    @apply border-2 border-primary-cyan-400/30;
+  }
+  
+  /* Accent Button - Orange */
+  .btn-accent {
+    @apply px-6 py-3 rounded-2xl font-bold text-white;
+    @apply bg-gradient-to-r from-primary-orange-600 to-primary-orange-500;
+    @apply shadow-glow-orange hover:shadow-glow-orange;
+    @apply transform transition-all duration-200;
+    @apply hover:scale-105 active:scale-95;
+    @apply border-2 border-primary-orange-400/30;
+  }
+  
+  /* Card - Elevated with subtle glow */
+  .card-enterprise {
+    @apply bg-surface-card rounded-2xl p-6;
+    @apply border border-primary-purple-500/20;
+    @apply shadow-float backdrop-blur-sm;
+    @apply transition-all duration-300;
+    @apply hover:shadow-float-lg hover:border-primary-purple-500/40;
+  }
+  
+  /* Badge/Pill - Circular shape */
+  .badge {
+    @apply inline-flex items-center justify-center;
+    @apply px-3 py-1 rounded-full text-xs font-bold;
+    @apply border-2;
+  }
+  
+  .badge-purple {
+    @apply badge bg-primary-purple-500/20 text-primary-purple-400 border-primary-purple-500/40;
+  }
+  
+  .badge-cyan {
+    @apply badge bg-primary-cyan-500/20 text-primary-cyan-400 border-primary-cyan-500/40;
+  }
+  
+  .badge-orange {
+    @apply badge bg-primary-orange-500/20 text-primary-orange-400 border-primary-orange-500/40;
+  }
+  
+  /* Input fields - Rounded with focus glow */
+  .input-enterprise {
+    @apply w-full px-4 py-3 rounded-xl;
+    @apply bg-surface-elevated border-2 border-primary-purple-500/30;
+    @apply text-white placeholder-slate-400;
+    @apply focus:outline-none focus:border-primary-purple-400;
+    @apply focus:shadow-glow-purple;
+    @apply transition-all duration-200;
+  }
+  
+  /* Headers with gradient text */
+  .heading-gradient-purple {
+    @apply font-display font-bold;
+    @apply bg-gradient-to-r from-primary-purple-400 to-primary-cyan-400;
+    @apply bg-clip-text text-transparent;
+  }
+  
+  .heading-gradient-fire {
+    @apply font-display font-bold;
+    @apply bg-gradient-to-r from-primary-orange-400 to-accent-pink;
+    @apply bg-clip-text text-transparent;
+  }
 }

@@ -1,12 +1,14 @@
 // src/views/AssessmentForm.jsx - HEIST PLANNING BOARD
 // Complete redesign with 12-column grid layout, GTA aesthetics
 
-import { useRef, useMemo } from 'react';
+import { useRef, useMemo, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
-import { Save, Trash2 } from 'lucide-react';
+import { Save, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
-import { AssessmentAssetsPanel } from '../components/shared/AssessmentAssetsPanel';
+import { BusinessMatrixPanel } from '../components/shared/BusinessMatrixPanel';
 import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSidebar';
+import { FinancialWorkbookPanel } from '../components/shared/FinancialWorkbookPanel';
+import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFinancialGuidePanel';
 import { detectTraps, TRAP_SEVERITY } from '../utils/trapDetector';
 
 // HELPER: Format last saved
@@ -68,6 +70,18 @@ export default function AssessmentForm() {
   const criticalTraps = detectedTraps.filter(t => t.severity === TRAP_SEVERITY.CRITICAL);
   const cascadeTraps = detectedTraps.filter(t => t.isCascadeTrap);
   const hasCriticalTrap = criticalTraps.length > 0;
+  const [openPanels, setOpenPanels] = useState({
+    operations: true,
+    workbook: false,
+    enterpriseGuide: false,
+  });
+
+  const togglePanel = (panel) => {
+    setOpenPanels((prev) => ({
+      ...prev,
+      [panel]: !prev[panel],
+    }));
+  };
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -84,13 +98,20 @@ export default function AssessmentForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gta-dark p-4 md:p-8 font-body text-slate-200">
+    <div className="min-h-screen bg-transparent p-4 md:p-8 font-body text-slate-50">
       {/* HEADER: HEIST PLANNING BOARD */}
-      <div className="max-w-7xl mx-auto mb-8">
-        <div className="flex items-center justify-between border-b-2 border-gta-green pb-4">
+      <div className="max-w-7xl mx-auto mb-8 animate-pop-in">
+        <div className="flex items-center justify-between pb-6 border-b-4 border-gradient-to-r from-primary-purple-500 via-primary-cyan-500 to-primary-orange-500">
           <div>
-            <h1 className="text-5xl font-bold text-white font-heading tracking-wider">HEIST PLANNING BOARD</h1>
-            <p className="text-gta-green text-sm mt-1">↳ Analyze your vitals & assets for operation success</p>
+            <h1 className="text-5xl md:text-6xl font-display font-black text-white mb-2 tracking-tight">
+              <span className="heading-gradient-purple">HEIST PLANNING</span>
+              <span className="text-primary-orange-400"> BOARD</span>
+            </h1>
+            <p className="text-primary-cyan-400 text-base font-bold flex items-center gap-2">
+              <span className="text-2xl">🎯</span>
+              {' '}
+              Analyze your vitals & assets for operation success
+            </p>
           </div>
           <div className="text-right">
             <div className="flex justify-end gap-3 mb-3">
@@ -98,18 +119,18 @@ export default function AssessmentForm() {
                 type="button"
                 onClick={manualSave}
                 disabled={!localStorageAvailable || isSaving}
-                className="px-3 py-1 bg-gta-green/20 hover:bg-gta-green/40 border border-gta-green/60 text-gta-green rounded text-xs transition flex items-center gap-1 disabled:opacity-50"
+                className="btn-secondary text-sm py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
                 title="Save progress"
               >
-                <Save className="w-3 h-3" /> Save
+                <Save className="w-4 h-4 inline-block mr-2" /> Save
               </button>
               <button
                 type="button"
                 onClick={clearSavedData}
-                className="px-3 py-1 bg-gta-red/20 hover:bg-gta-red/40 border border-gta-red/60 text-gta-red rounded text-xs transition flex items-center gap-1"
+                className="px-4 py-2 rounded-xl font-bold text-accent-pink border-2 border-accent-pink/40 bg-accent-pink/10 hover:bg-accent-pink/20 transition-all duration-200 hover:scale-105 text-sm"
                 title="Clear all data"
               >
-                <Trash2 className="w-3 h-3" /> Clear
+                <Trash2 className="w-4 h-4 inline-block mr-2" /> Clear
               </button>
             </div>
             {renderSaveStatus(localStorageAvailable, isSaving, lastSaved)}
@@ -137,19 +158,87 @@ export default function AssessmentForm() {
         <main className="col-span-12 lg:col-span-8 space-y-6">
           
           {/* ASSETS HEADER */}
-          <div className="bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green rounded-lg p-6 shadow-heist">
-            <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-1">Assets & Operations</h2>
-            <p className="text-xs text-gta-gray">Toggle owned properties</p>
-          </div>
+          <section className="space-y-6">
+            <button
+              type="button"
+              onClick={() => togglePanel('operations')}
+              className="w-full bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green rounded-lg p-6 shadow-heist flex items-center justify-between text-left"
+            >
+              <div>
+                <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-1">Assets & Operations</h2>
+                <p className="text-xs text-gta-gray">Contains property matrix, workbook, and ledger.</p>
+              </div>
+              {openPanels.operations ? (
+                <ChevronDown className="w-5 h-5 text-slate-300" />
+              ) : (
+                <ChevronRight className="w-5 h-5 text-slate-300" />
+              )}
+            </button>
 
-          <AssessmentAssetsPanel
-            formData={formData}
-            handleInputChange={handleInputChange}
-            setFormData={setFormData}
-            cascadeTraps={cascadeTraps}
-            criticalTraps={criticalTraps}
-            hasCriticalTrap={hasCriticalTrap}
-          />
+            {openPanels.operations && (
+              <div className="space-y-6">
+                <BusinessMatrixPanel
+                  cascadeTraps={cascadeTraps}
+                  criticalTraps={criticalTraps}
+                  hasCriticalTrap={hasCriticalTrap}
+                />
+
+                <section className="bg-gta-panel border border-gta-green/30 rounded-lg p-4">
+                  <button
+                    type="button"
+                    onClick={() => togglePanel('workbook')}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div>
+                      <h3 className="text-sm font-bold uppercase text-gta-green">Financial Workbook</h3>
+                      <p className="text-xs text-gta-gray mt-1">Hidden by default for a cleaner load view.</p>
+                    </div>
+                    {openPanels.workbook ? (
+                      <ChevronDown className="w-4 h-4 text-slate-300" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    )}
+                  </button>
+
+                  {openPanels.workbook && (
+                    <div className="mt-4">
+                      <FinancialWorkbookPanel
+                        formData={formData}
+                        setFormData={setFormData}
+                      />
+                    </div>
+                  )}
+                </section>
+
+                <section className="bg-gta-panel border border-gta-green/30 rounded-lg p-4">
+                  <button
+                    type="button"
+                    onClick={() => togglePanel('enterpriseGuide')}
+                    className="w-full flex items-center justify-between text-left"
+                  >
+                    <div>
+                      <h3 className="text-sm font-bold uppercase text-gta-green">📊 VIEW LEDGER</h3>
+                      <p className="text-xs text-gta-gray mt-1">Open CFO Mode financial sheets and heat controls.</p>
+                    </div>
+                    {openPanels.enterpriseGuide ? (
+                      <ChevronDown className="w-4 h-4 text-slate-300" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                    )}
+                  </button>
+
+                  {openPanels.enterpriseGuide && (
+                    <div className="mt-4">
+                      <EnterpriseFinancialGuidePanel
+                        formData={formData}
+                        setFormData={setFormData}
+                      />
+                    </div>
+                  )}
+                </section>
+              </div>
+            )}
+          </section>
 
           {/* FOOTER: TIME PLAYED & SUBMIT */}
           <div className="space-y-6 mt-8 pt-6 border-t border-gta-green/30">

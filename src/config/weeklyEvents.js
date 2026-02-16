@@ -229,26 +229,7 @@ export const isEventActive = () => {
   return new Date() < new Date(WEEKLY_EVENTS.meta.validUntil);
 };
 
-// Legacy support for old structure
-export const isEventStale = () => {
-  return new Date() > new Date(WEEKLY_EVENTS.meta.validUntil);
-};
 
-// Helper function for expiry checks
-export const getEventExpiry = (eventKey, hasGTAPlus = false) => {
-  const event = WEEKLY_EVENTS.bonuses[eventKey];
-  if (!event) return null;
-
-  // GTA+ monthly bonuses may have a longer expiry
-  if (hasGTAPlus) {
-    const monthlyBonus = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses?.find(
-      b => b.activity === eventKey || event.label?.toLowerCase().includes(b.activity.replace('_', ' '))
-    );
-    if (monthlyBonus?.expires) return monthlyBonus.expires;
-  }
-
-  return event.validUntil;
-};
 
 export const getWeeklyBonuses = (options = {}) => {
   const { hasGTAPlus = false, includeGTAPlus = false } = options;

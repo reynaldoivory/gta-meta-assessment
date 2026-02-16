@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import { useState, useEffect, useMemo, useRef } from 'react';
 
 // Daily tasks configuration
@@ -109,12 +110,9 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   }, [formData, setFormData]);
 
   // Filter tasks based on owned properties
-  const availableTasks = tasks.filter(task => {
-    if (task.id === 'wall_safes' && !hasNightclub && !hasAgency) {
-      return false; // Hide if player doesn't own Nightclub or Agency
-    }
-    return true;
-  });
+  const availableTasks = tasks.filter(
+    (task) => task.id !== 'wall_safes' || hasNightclub || hasAgency
+  );
 
   const toggleTask = (id) => {
     const updatedTasks = tasks.map((task) =>
@@ -231,6 +229,20 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
       </details>
     </div>
   );
+};
+
+DailyTracker.propTypes = {
+  hasNightclub: PropTypes.bool,
+  hasAgency: PropTypes.bool,
+  formData: PropTypes.object,
+  setFormData: PropTypes.func,
+};
+
+DailyTracker.defaultProps = {
+  hasNightclub: false,
+  hasAgency: false,
+  formData: null,
+  setFormData: null,
 };
 
 export default DailyTracker;

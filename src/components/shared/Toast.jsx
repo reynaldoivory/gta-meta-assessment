@@ -11,10 +11,10 @@ const toastIcons = {
 };
 
 const toastColors = {
-  success: 'bg-green-900/90 border-green-500/50 text-green-100',
-  error: 'bg-red-900/90 border-red-500/50 text-red-100',
-  warning: 'bg-yellow-900/90 border-yellow-500/50 text-yellow-100',
-  info: 'bg-blue-900/90 border-blue-500/50 text-blue-100',
+  success: 'bg-gradient-to-r from-accent-green/90 to-primary-cyan-600/90 border-accent-green shadow-glow-cyan text-white',
+  error: 'bg-gradient-to-r from-accent-pink/90 to-primary-orange-600/90 border-accent-pink shadow-glow-orange text-white',
+  warning: 'bg-gradient-to-r from-primary-orange-500/90 to-accent-gold/90 border-primary-orange-500 shadow-glow-orange text-white',
+  info: 'bg-gradient-to-r from-primary-purple-600/90 to-primary-cyan-600/90 border-primary-purple-500 shadow-glow-purple text-white',
 };
 
 const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
@@ -27,8 +27,8 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
   
   return (
     <div className={`
-      flex items-center gap-3 px-4 py-3 rounded-lg border backdrop-blur-sm
-      shadow-lg animate-slide-in-right
+      flex items-center gap-3 px-5 py-4 rounded-2xl border-2 backdrop-blur-md
+      animate-pop-in font-bold
       ${toastColors[type]}
     `}>
       <Icon className="w-5 h-5 flex-shrink-0" />

@@ -51,9 +51,9 @@ const StreakBanner = () => {
           </div>
           
           <div className="flex gap-2">
-            {milestones.slice(0, 3).map((m, idx) => (
+            {milestones.slice(0, 3).map((m) => (
               <div
-                key={idx}
+                key={m.days}
                 className={`text-2xl transition-all ${m.unlocked ? 'opacity-100 scale-110' : 'opacity-20 grayscale'}`}
                 title={m.title}
               >

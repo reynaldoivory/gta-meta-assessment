@@ -38,16 +38,21 @@ IncomeBar.propTypes = {
 export const ResultsScoreCard = ({
   results, totalHours, timePartsLabel, shouldShowTimePlayed,
 }) => (
-  <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
+  <div className="card-enterprise animate-pop-in">
     <div className="flex items-center justify-between mb-6">
-      <h2 className="font-display text-2xl font-bold text-white">Assessment Results</h2>
-      <div className={`text-3xl font-bold ${results.tierColor || 'text-yellow-400'}`}>
-        Tier {results.tier}
+      <h2 className="font-display text-3xl font-black heading-gradient-purple">Assessment Results</h2>
+      <div className="flex items-center gap-3">
+        <div className="text-5xl font-display font-black heading-gradient-fire">
+          Tier {results.tier}
+        </div>
+        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary-purple-500 to-primary-orange-500 flex items-center justify-center shadow-glow-purple animate-pulse-glow">
+          <span className="text-2xl">🏆</span>
+        </div>
       </div>
     </div>
 
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-      <div className="bg-black/30 p-4 rounded-lg">
+      <div className="bg-gradient-to-br from-primary-purple-500/20 to-primary-cyan-500/10 p-5 rounded-xl border-2 border-primary-purple-500/30">
         <div className="text-sm text-slate-400 mb-1">Score</div>
         <div className="text-3xl font-bold text-white">{results.score}/100</div>
       </div>

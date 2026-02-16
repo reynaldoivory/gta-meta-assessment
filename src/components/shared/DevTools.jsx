@@ -113,7 +113,7 @@ const DevTools = () => {
                 <button
                   onClick={() => {
                     localStorage.clear();
-                    window.location.reload();
+                    globalThis.location.reload();
                   }}
                   className="mt-4 w-full px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs"
                 >

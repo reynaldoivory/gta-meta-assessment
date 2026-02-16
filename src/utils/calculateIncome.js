@@ -1,4 +1,4 @@
-// src/utils/calculateIncome.js
+﻿// src/utils/calculateIncome.js
 // Income calculation logic extracted from computeAssessment.js
 
 import { MODEL_CONFIG } from './modelConfig.js';
@@ -37,7 +37,7 @@ export const calculateNightclubIncome = (formData) => {
     // Sort owned businesses by value (Highest to Lowest)
     // This simulates "Smart Assignment": techs assigned to best available slots
     const activeAssignment = ownedIds
-      .sort((a, b) => NC_RATES[b] - NC_RATES[a])
+      .toSorted((a, b) => NC_RATES[b] - NC_RATES[a])
       .slice(0, techs); // Only take as many as we have techs for
 
     // Sum the exact rates
@@ -80,7 +80,7 @@ export const getNightclubRates = () => NC_RATES;
  * @param {Object} formData - Original form data for dynamic income calculation
  * @returns {Object} Income calculation results
  */
-export const calculateIncome = (params, formData) => {
+export const calculateIncome = (params, formData) => { // NOSONAR
   const {
     securityContracts,
     hasKosatka,
@@ -104,7 +104,7 @@ export const calculateIncome = (params, formData) => {
   let activeIncome = 0;   // GTA$/hr from active grinding
   let passiveIncome = 0;  // GTA$/hr from businesses + GTA+
 
-  // --- 2.1 Cayo Perico (Kosatka) – one of many active income sources ---
+  // --- 2.1 Cayo Perico (Kosatka) â€“ one of many active income sources ---
   if (hasKosatka) {
     const config = MODEL_CONFIG.income?.cayo || {};
     const basePayout = config.basePayout ?? 700000;       // avg post-nerf payout
@@ -122,7 +122,7 @@ export const calculateIncome = (params, formData) => {
     activeIncome += hitPayout * hitsPerHour;              // ~255k/hr default
   }
 
-  // (Optional) security contracts contribution – minor
+  // (Optional) security contracts contribution â€“ minor
   if (hasAgency && securityContracts > 0 && !payphoneUnlocked) {
     activeIncome += 50000; // small filler if player only spams contracts
   }
@@ -133,7 +133,7 @@ export const calculateIncome = (params, formData) => {
     const base = pCfg.acidLabBase ?? 75000;               // /hr
     const upgradeMult = acidLabUpgraded
       ? pCfg.acidLabUpgrade ?? 1.4
-      : 1.0;
+      : 1;
     passiveIncome += base * upgradeMult;
   }
 
@@ -217,3 +217,6 @@ export const calculateIncome = (params, formData) => {
     dynamicIncome,
   };
 };
+
+
+

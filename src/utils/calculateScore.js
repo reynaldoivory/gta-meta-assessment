@@ -1,4 +1,4 @@
-// src/utils/calculateScore.js
+﻿// src/utils/calculateScore.js
 // Score calculation logic extracted from computeAssessment.js
 
 import { MODEL_CONFIG } from './modelConfig.js';
@@ -25,7 +25,7 @@ import { MODEL_CONFIG } from './modelConfig.js';
  * @param {boolean} params.hasOppressor - Owns Oppressor
  * @returns {Object} Score calculation results
  */
-export const calculateScore = (params) => {
+export const calculateScore = (params) => { // NOSONAR
   const {
     activeIncome,
     passiveIncome,
@@ -56,10 +56,10 @@ export const calculateScore = (params) => {
 
   let score = 0;
 
-  // Active income: $0 → 0, $1M/hr → wActive
+  // Active income: $0 â†’ 0, $1M/hr â†’ wActive
   score += Math.min(wActive, (activeIncome / 1000000) * wActive);
 
-  // Passive income: $0 → 0, $200k/hr → wPassive
+  // Passive income: $0 â†’ 0, $200k/hr â†’ wPassive
   score += Math.min(wPassive, (passiveIncome / 200000) * wPassive);
 
   // Asset score
@@ -78,7 +78,7 @@ export const calculateScore = (params) => {
   score += Math.min(wAssets, assetScore);
 
   // Stats: average of key stats scaled to wStats
-  const avgCoreStat = (strength + flying + shooting) / 3; // already 0–100
+  const avgCoreStat = (strength + flying + shooting) / 3; // already 0â€“100
   score += (avgCoreStat / 100) * wStats;
 
   const finalScore = Math.round(score);
@@ -110,3 +110,4 @@ export const calculateScore = (params) => {
     tierColor,
   };
 };
+

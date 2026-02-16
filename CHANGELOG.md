@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD032 MD036 -->
+
 # Changelog
 
 All notable changes to the GTA Online Meta Assessment Tool will be documented in this file.

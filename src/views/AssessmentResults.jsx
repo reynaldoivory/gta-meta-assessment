@@ -40,22 +40,29 @@ const AssessmentResults = () => {
   if (!results) return null;
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-100 font-sans">
-      <div className="max-w-4xl mx-auto space-y-6">
+    <div className="min-h-screen bg-transparent p-4 md:p-6 text-slate-50 font-body">
+      <div className="max-w-5xl mx-auto space-y-6">
         <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
         {/* Top Navigation */}
-        <div className="flex justify-between items-center bg-slate-900/80 p-4 rounded-xl border border-slate-700">
+        <div className="card-enterprise flex justify-between items-center animate-pop-in">
           <button
             onClick={() => setStep('form')}
-            className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
+            className="btn-secondary text-sm py-2 px-4"
           >
-            <ArrowLeft className="w-4 h-4" /> Edit Data
+            <ArrowLeft className="w-4 h-4 inline-block mr-2" />
+            {' '}
+            Edit Data
           </button>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-4">
             <SoundToggle />
-            <div className="font-display text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-              Tier {results.tier} • Score {results.score}
+            <div className="flex items-center gap-3">
+              <div className="font-display text-xl font-black heading-gradient-purple">
+                Tier {results.tier}
+              </div>
+              <div className="badge-orange font-mono text-sm">
+                Score {results.score}
+              </div>
             </div>
           </div>
         </div>

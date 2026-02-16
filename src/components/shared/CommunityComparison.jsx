@@ -3,7 +3,7 @@ import React, { Suspense } from 'react';
 import PropTypes from 'prop-types';
 import { DollarSign, TrendingUp } from 'lucide-react';
 import { getCommunityAverages, compareToCommunity, exportCommunityStatsCSV, getProgressOverTime } from '../../utils/communityStats';
-import { downloadCSV } from '../../utils/csvExport';
+import { downloadCSV, exportProgressHistoryCSV } from '../../utils/csvExport';
 import { soundEffects } from '../../utils/soundEffects';
 
 const ProgressChart = React.lazy(() => import('../gamification/ProgressChart'));
@@ -59,6 +59,17 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
     }
   };
 
+  const handleExportProgress = () => {
+    const csv = exportProgressHistoryCSV();
+    if (csv) {
+      downloadCSV(csv, `gta-progress-history-${new Date().toISOString().split('T')[0]}.csv`);
+      soundEffects.cashRegister();
+      showToast('Progress history exported successfully!', 'success');
+    } else {
+      showToast('No progress history to export yet', 'warning');
+    }
+  };
+
   return (
     <>
       <div className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-cyan-500/30 rounded-2xl p-6">
@@ -106,12 +117,20 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
           <div className="text-xs text-slate-500 italic">
             ℹ️ Community stats are stored locally in your browser only. No data is sent to any server.
           </div>
-          <button
-            onClick={handleExport}
-            className="px-4 py-2 bg-cyan-900/40 hover:bg-cyan-900/70 text-cyan-100 rounded-lg border border-cyan-500/40 text-xs transition-all"
-          >
-            📊 Export CSV
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={handleExportProgress}
+              className="px-4 py-2 bg-green-900/40 hover:bg-green-900/70 text-green-100 rounded-lg border border-green-500/40 text-xs transition-all"
+            >
+              📈 Export Progress CSV
+            </button>
+            <button
+              onClick={handleExport}
+              className="px-4 py-2 bg-cyan-900/40 hover:bg-cyan-900/70 text-cyan-100 rounded-lg border border-cyan-500/40 text-xs transition-all"
+            >
+              📊 Export Community CSV
+            </button>
+          </div>
         </div>
       </div>
 

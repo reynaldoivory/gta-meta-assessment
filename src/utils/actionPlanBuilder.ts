@@ -1,8 +1,9 @@
-// src/utils/actionPlanBuilder.ts
+﻿// src/utils/actionPlanBuilder.ts
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
+/* eslint-disable @typescript-eslint/no-explicit-any, complexity, max-lines */
 
-import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, formatExpiry, getExpiryLabel } from '../config/weeklyEvents.js';
+import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
 import { checkGatekeeper } from './gatekeeperEngine.js';
@@ -10,7 +11,6 @@ import { generateInfrastructureRecommendations, getNightclubTechnicianCost } fro
 
 // Type assertions for .js modules (until converted to TypeScript)
 const _checkGatekeeper = checkGatekeeper as (action: any, user: any, now: number) => any;
-const _WEEKLY_EVENTS = _rawWEEKLY_EVENTS as any;
 const WEEKLY_EVENTS = _rawWEEKLY_EVENTS as any;
 const _generateInfrastructureRecommendations = generateInfrastructureRecommendations as (formData: any) => any[];
 const _getNightclubTechnicianCost = getNightclubTechnicianCost as (level: number) => number;
@@ -22,18 +22,7 @@ const _isExpiringCritical = isExpiringCritical as (expiry: number, now: number) 
 // Types & Interfaces
 // ======================================================================
 
-export interface Task {
-  eventId?: string;
-  id?: string;
-  title?: string;
-  tags?: string[];
-  basePayout?: number;
-  baseDuration?: number;
-  dynamicPayout?: boolean;
-  [key: string]: any;
-}
-
-export interface UserStats {
+interface UserStats {
   flying: number;
   strength: number;
   shooting: number;
@@ -82,73 +71,11 @@ export interface FormData {
   [key: string]: any;
 }
 
-export interface User {
+interface User {
   gtaPlus?: boolean;
   formData?: FormData;
   assets?: string[];
   stats?: UserStats;
-  [key: string]: any;
-}
-
-export interface GameState {
-  businesses?: {
-    nightclub?: {
-      accumulatedValue?: number;
-    };
-  };
-  [key: string]: any;
-}
-
-export interface WeeklyBonus {
-  isActive: boolean;
-  gtaPlusOnly?: boolean;
-  gtaPlusMultiplier?: number;
-  baseMultiplier?: number;
-  multiplier?: number;
-  validUntil?: string;
-  gtaPlusValidUntil?: string;
-  [key: string]: any;
-}
-
-export interface WeeklyEvents {
-  bonuses?: {
-    autoShop?: WeeklyBonus;
-    businessBattles?: WeeklyBonus;
-    nightclubGoods?: WeeklyBonus;
-    nightclubSafe?: WeeklyBonus;
-    mansionRaid?: WeeklyBonus;
-    paperTrail?: WeeklyBonus;
-    [key: string]: WeeklyBonus | undefined;
-  };
-  discounts?: {
-    autoShop?: { priceEstimate: number; isActive: boolean; [key: string]: any };
-    nightclubUpgrades?: { validUntil?: string; [key: string]: any };
-    [key: string]: any;
-  };
-  gtaPlus?: {
-    monthlyBonuses?: Array<{
-      activity: string;
-      multiplier?: number;
-      expires: string;
-    }>;
-  };
-  meta?: {
-    displayDate?: string;
-    validUntil?: string;
-    [key: string]: any;
-  };
-  activeBoosts?: Array<{
-    activity: string;
-    expires: string;
-    multiplier?: number;
-  }>;
-  [key: string]: any;
-}
-
-export interface GatekeeperResult {
-  status: 'LOCKED' | 'WARNING' | 'PASS';
-  reason?: string;
-  score_penalty?: number;
   [key: string]: any;
 }
 
@@ -196,7 +123,7 @@ export interface Action {
   [key: string]: any;
 }
 
-export interface Results {
+interface Results {
   bottlenecks?: Bottleneck[];
   [key: string]: any;
 }
@@ -204,24 +131,6 @@ export interface Results {
 // ======================================================================
 // Constants
 // ======================================================================
-
-const ACTIVITY_MAPPING: Record<string, string[]> = {
-  business_battles: ['business_battle', 'business battle', 'freemode'],
-  nightclub_goods: ['nightclub', 'nc_sell', 'nightclub goods'],
-  nightclub_safe: ['nightclub_safe', 'nightclub safe', 'nc_safe'],
-  mansion_raid: ['mansion_raid', 'mansion raid'],
-  auto_shop_finales: ['auto_shop', 'auto shop', 'robbery contract'],
-  paper_trail: ['paper_trail', 'paper trail', 'operation paper trail'],
-};
-
-const KEY_TO_ACTIVITY: Record<string, string> = {
-  autoShop: 'auto_shop_finales',
-  paperTrail: 'paper_trail',
-  businessBattles: 'business_battles',
-  nightclubGoods: 'nightclub_goods',
-  nightclubSafe: 'nightclub_safe',
-  mansionRaid: 'mansion_raid',
-};
 
 const META_BENCHMARKS = {
   cayoTime: 45,
@@ -238,137 +147,11 @@ const parseMinutes = (timeToComplete?: string): number | null => {
   if (!timeToComplete) return null;
   const str = timeToComplete.toLowerCase();
   const hrMatch = /^(\d+(\.\d+)?)\s*h/.exec(str);
-  if (hrMatch) return Math.round(parseFloat(hrMatch[1]) * 60);
+  if (hrMatch) return Math.round(Number.parseFloat(hrMatch[1]) * 60);
   const minMatch = /^(\d+(\.\d+)?)\s*m/.exec(str);
-  if (minMatch) return Math.round(parseFloat(minMatch[1]));
+  if (minMatch) return Math.round(Number.parseFloat(minMatch[1]));
   const anyNumber = /^(\d+(\.\d+)?)/.exec(str);
-  return anyNumber ? Math.round(parseFloat(anyNumber[1])) : null;
-};
-
-const taskMatchesActivity = (task: Task, activity: string): boolean => {
-  const mapping = ACTIVITY_MAPPING[activity] ?? [activity];
-  const taskId = (task.eventId ?? '').toLowerCase();
-  const taskTitle = (task.title ?? '').toLowerCase();
-  const taskTags = (task.tags ?? []).map(t => t.toLowerCase());
-
-  return mapping.some(keyword =>
-    taskId.includes(keyword.toLowerCase()) ||
-    taskTitle.includes(keyword.toLowerCase()) ||
-    taskTags.some(tag => tag.includes(keyword.toLowerCase()))
-  );
-};
-
-// ======================================================================
-// Weekly Boost Helpers (complexity < 15)
-// ======================================================================
-
-const applyArrayBoosts = (
-  task: Task,
-  boosts: Array<{ activity: string; expires: string; multiplier?: number }>,
-  now: number
-): { multiplier: number; timeRemaining: number | null } => {
-  let multiplier = 1;
-  let timeRemaining: number | null = null;
-
-  for (const boost of boosts) {
-    if (!taskMatchesActivity(task, boost.activity)) continue;
-    const expiryDate = new Date(boost.expires).getTime();
-    if (now >= expiryDate) continue;
-    const boostMultiplier = boost.multiplier ?? 1;
-    if (boostMultiplier > multiplier) {
-      multiplier = boostMultiplier;
-      timeRemaining = expiryDate - now;
-    }
-  }
-  return { multiplier, timeRemaining };
-};
-
-const applyObjectBoosts = (
-  task: Task,
-  bonuses: Record<string, WeeklyBonus | undefined>,
-  user: User,
-  now: number
-): { multiplier: number; timeRemaining: number | null } => {
-  let multiplier = 1;
-  let timeRemaining: number | null = null;
-
-  for (const [key, bonus] of Object.entries(bonuses)) {
-    if (!bonus) continue;
-    if (!bonus.isActive) continue;
-    if (bonus.gtaPlusOnly && !user?.gtaPlus) continue;
-
-    const activityKey = KEY_TO_ACTIVITY[key] ?? key;
-    if (!taskMatchesActivity(task, activityKey)) continue;
-
-    const expiryDate = user?.gtaPlus && bonus.gtaPlusValidUntil
-      ? new Date(bonus.gtaPlusValidUntil).getTime()
-      : new Date(bonus.validUntil!).getTime();
-    if (now >= expiryDate) continue;
-
-    let taskMultiplier: number;
-    if (typeof bonus.multiplier === 'number') {
-      taskMultiplier = bonus.multiplier;
-    } else if (user?.gtaPlus && bonus.gtaPlusMultiplier) {
-      taskMultiplier = bonus.gtaPlusMultiplier;
-    } else {
-      taskMultiplier = bonus.baseMultiplier ?? 1;
-    }
-
-    if (taskMultiplier > multiplier) {
-      multiplier = taskMultiplier;
-      timeRemaining = expiryDate - now;
-    }
-  }
-  return { multiplier, timeRemaining };
-};
-
-const applyMonthlyBoosts = (
-  task: Task,
-  monthlyBonuses: Array<{ activity: string; multiplier?: number; expires: string }>,
-  now: number
-): { multiplier: number; timeRemaining: number | null } => {
-  let multiplier = 1;
-  let timeRemaining: number | null = null;
-
-  for (const bonus of monthlyBonuses) {
-    if (!taskMatchesActivity(task, bonus.activity)) continue;
-    const expiryDate = new Date(bonus.expires).getTime();
-    if (now >= expiryDate) continue;
-    const bonusMultiplier = bonus.multiplier ?? 1;
-    if (bonusMultiplier > multiplier) {
-      multiplier = bonusMultiplier;
-      timeRemaining = expiryDate - now;
-    }
-  }
-  return { multiplier, timeRemaining };
-};
-
-export const applyWeeklyBoosts = (
-  task: Task,
-  weeklyEvents: WeeklyEvents | null | undefined,
-  user: User
-): { multiplier: number; timeRemaining: number | null } => {
-  if (!weeklyEvents) return { multiplier: 1, timeRemaining: null };
-  const now = Date.now();
-
-  let best = { multiplier: 1, timeRemaining: null as number | null };
-
-  if (Array.isArray(weeklyEvents.activeBoosts)) {
-    const arr = applyArrayBoosts(task, weeklyEvents.activeBoosts, now);
-    if (arr.multiplier > best.multiplier) best = arr;
-  }
-
-  if (weeklyEvents.bonuses && typeof weeklyEvents.bonuses === 'object') {
-    const obj = applyObjectBoosts(task, _WEEKLY_EVENTS.bonuses as any, user, now);
-    if (obj.multiplier > best.multiplier) best = obj;
-  }
-
-  if (user?.gtaPlus && weeklyEvents.gtaPlus?.monthlyBonuses) {
-    const monthly = applyMonthlyBoosts(task, weeklyEvents.gtaPlus.monthlyBonuses, now);
-    if (monthly.multiplier > best.multiplier) best = monthly;
-  }
-
-  return best;
+  return anyNumber ? Math.round(Number.parseFloat(anyNumber[1])) : null;
 };
 
 // ======================================================================
@@ -399,85 +182,6 @@ const buildUserProfile = (user: User): { stats: UserStats; assets: string[] } =>
   };
 
   return { stats, assets };
-};
-
-const calculateBaseScore = (task: Task, gameState?: GameState): number => {
-  if (task.dynamicPayout && gameState?.businesses?.nightclub?.accumulatedValue) {
-    return gameState.businesses.nightclub.accumulatedValue;
-  }
-  return task.basePayout ?? 0;
-};
-
-export const calculateCompoundEfficiency = (
-  task: Task,
-  user: User,
-  gameState?: GameState,
-  weeklyEvents?: WeeklyEvents
-): {
-  score: number;
-  reasoning: string[];
-  warnings: string[];
-  gatekeeperResult: GatekeeperResult;
-  multiplier: number;
-  timeRemaining: number | null;
-} => {
-  const reasoning: string[] = [];
-  const warnings: string[] = [];
-
-  const taskId = task.eventId ?? task.id ?? '';
-  const userProfile = buildUserProfile(user);
-  const gatekeeperResult = _checkGatekeeper(taskId, userProfile, Date.now()) as any;
-  const viabilityMultiplier = gatekeeperResult.score_penalty ?? 1;
-
-  if (gatekeeperResult.status === 'LOCKED') {
-    reasoning.push(`🔒 ${gatekeeperResult.reason}`);
-    warnings.push(`Cannot complete: ${gatekeeperResult.reason}`);
-    return {
-      score: 0,
-      reasoning,
-      warnings,
-      gatekeeperResult,
-      multiplier: 0,
-      timeRemaining: null,
-    };
-  }
-
-  if (gatekeeperResult.status === 'WARNING') {
-    reasoning.push(`⚠️ ${gatekeeperResult.reason} (${(viabilityMultiplier * 100).toFixed(0)}% efficiency)`);
-    warnings.push(gatekeeperResult.reason);
-  }
-
-  let score = calculateBaseScore(task, gameState) * viabilityMultiplier;
-  if (task.dynamicPayout) {
-    reasoning.push(`Sell accumulated goods: $${score.toLocaleString()}`);
-  }
-
-  const hasGtaPlus = !!(user?.gtaPlus || user?.formData?.gtaPlus || user?.hasGTAPlus);
-  const boost = applyWeeklyBoosts(task, weeklyEvents, { ...user, gtaPlus: hasGtaPlus });
-
-  if (boost.multiplier > 1) {
-    const original = score;
-    score *= boost.multiplier;
-    reasoning.push(
-      `🎉 ${boost.multiplier}x Event: $${original.toLocaleString()} → $${Math.round(score).toLocaleString()}`
-    );
-    if (boost.timeRemaining && boost.timeRemaining < 48 * 60 * 60 * 1000) {
-      const hoursLeft = Math.round(boost.timeRemaining / (1000 * 60 * 60));
-      warnings.push(`⏰ This ${boost.multiplier}x bonus expires in ${hoursLeft} hours!`);
-    }
-  } else if (reasoning.length === 0 && task.basePayout && task.basePayout > 0) {
-    const hourlyRate = Math.round((task.basePayout / (task.baseDuration ?? 60)) * 60);
-    reasoning.push(`Base payout: $${task.basePayout.toLocaleString()} ($${hourlyRate.toLocaleString()}/hr)`);
-  }
-
-  return {
-    score: Math.round(score),
-    reasoning,
-    warnings,
-    gatekeeperResult,
-    multiplier: boost.multiplier,
-    timeRemaining: boost.timeRemaining,
-  };
 };
 
 // ======================================================================
@@ -679,7 +383,7 @@ const bottleneckToAction = (bottleneck: Bottleneck, now: number): Action => {
 // Priority Score Calculation (flattened, complexity < 15)
 // ======================================================================
 
-export const calculatePriorityScore = (action: Action, now: number): number => {
+const calculatePriorityScore = (action: Action, now: number): number => {
   let score = 0;
 
   if (action.expiresAt && isExpiringCritical(action.expiresAt, now)) score += 15000;
@@ -706,7 +410,7 @@ export const calculatePriorityScore = (action: Action, now: number): number => {
 // Smart Action Plan Builders (complexity < 15 each)
 // ======================================================================
 
-const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
+const buildAutoShopActions = (formData: FormData, now: number): Action[] => { // NOSONAR
   const actions: Action[] = [];
   const daysLeft = getDaysRemaining();
   const cash = Number(formData.liquidCash) || 0;
@@ -714,7 +418,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
   const hasGTAPlus = !!formData.hasGTAPlus;
   const playerRank = Number(formData.rank) || 0;
 
-  const autoShopBonus = _WEEKLY_EVENTS.bonuses?.autoShop as any;
+  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop as any;
   const isAutoShopEventAvailable =
     daysLeft > 0 &&
     autoShopBonus?.isActive &&
@@ -722,7 +426,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
 
   if (!isAutoShopEventAvailable) return actions;
 
-  const shopCost = (_WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate ?? 835000) as number;0;
+  const shopCost = (WEEKLY_EVENTS.discounts?.autoShop?.priceEstimate ?? 835000) as number;
 
   if (!formData.hasAutoShop && cash >= shopCost) {
     const expiry = autoShopBonus?.gtaPlusValidUntil ?? autoShopBonus?.validUntil;
@@ -730,13 +434,13 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
       priority: 0,
       urgency: 'URGENT',
       type: 'PURCHASE',
-      title: `⚡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate ?? 'this week'})`,
-      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks $1.3M‑$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
+      title: `Ã¢Å¡Â¡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate ?? 'this week'})`,
+      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks $1.3MÃ¢â‚¬â€˜$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
       cost: shopCost,
-      earnings: '$1.3M‑$1.5M/hr',
+      earnings: '$1.3MÃ¢â‚¬â€˜$1.5M/hr',
       timeRemaining: `${daysLeft} days`,
       timeToComplete: '15 minutes (purchase + setup)',
-      potentialEarnings: `$4‑5M in ${daysLeft} days`,
+      potentialEarnings: `$4Ã¢â‚¬â€˜5M in ${daysLeft} days`,
       expiresAt: expiry ? new Date(expiry).getTime() : null,
     });
     return actions;
@@ -760,12 +464,12 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
         priority: 0,
         urgency: 'URGENT',
         type: 'MISSION',
-        title: '🔥 Grind Auto Shop Robbery Contracts (2X Event)',
-        why: `Zero prep, ~$540‑600k per 20‑25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0‑1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
+        title: 'Ã°Å¸â€Â¥ Grind Auto Shop Robbery Contracts (2X Event)',
+        why: `Zero prep, ~$540Ã¢â‚¬â€˜600k per 20Ã¢â‚¬â€˜25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0Ã¢â‚¬â€˜1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
         solution:
-          'Rotation: Union Depository finale → Client vehicle delivery (also 2X) while staff preps → Repeat. Eliminates downtime.',
-        timeToComplete: '20‑25 min per finale, ~$540‑600k payout',
-        earnings: '$1.0‑1.5M/hr (realistic)',
+          'Rotation: Union Depository finale Ã¢â€ â€™ Client vehicle delivery (also 2X) while staff preps Ã¢â€ â€™ Repeat. Eliminates downtime.',
+        timeToComplete: '20Ã¢â‚¬â€˜25 min per finale, ~$540Ã¢â‚¬â€˜600k payout',
+        earnings: '$1.0Ã¢â‚¬â€˜1.5M/hr (realistic)',
         timeRemaining: expiryText,
         potentialEarnings: `$${(daysLeftAutoShop * 10 * 1.8).toFixed(1)}M potential over next ${daysLeftAutoShop} days`,
         strategy: 'Eliminates downtime between contracts. Highest $/hr in game right now.',
@@ -779,8 +483,8 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
           ? 'Mansion Gym (Private)'
           : 'Pier Pressure (Beach)';
         const timeToComplete = formData.hasMansion
-          ? '20‑30 mins'
-          : '60‑75 mins';
+          ? '20Ã¢â‚¬â€˜30 mins'
+          : '60Ã¢â‚¬â€˜75 mins';
         const methodDetails = formData.hasMansion
           ? 'Use the punching bag minigame in your gym. This is the only fast, legit method.'
           : `Launch "Pier Pressure" alone. Go to the boardwalk. Punch pedestrians. Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
@@ -792,7 +496,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
           priority: 0,
           urgency: 'BLOCKER',
           type: 'STAT',
-          title: `🚨 FIX STRENGTH (${strengthPct}% → 60%+)`,
+          title: `Ã°Å¸Å¡Â¨ FIX STRENGTH (${strengthPct}% Ã¢â€ â€™ 60%+)`,
           why: `You will fail the Auto Shop finale with low strength. You take too much damage.`,
           impact: 'CRITICAL',
           cost: 0,
@@ -810,14 +514,14 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
           priority: 0,
           urgency: 'URGENT',
           type: 'GRIND',
-          title: `⚡ FARM UNION DEPOSITORY CONTRACT (${daysLeftAutoShop} days left)`,
-          why: 'This is the highest paying activity in the game right now. Union Depository Contract pays ~$540‑600k (with 2X bonus) in ~20‑25 mins. No cooldown – repeat endlessly. Beats Cayo Perico this week.',
-          earnings: '$1.3M‑$1.5M/hr',
+          title: `Ã¢Å¡Â¡ FARM UNION DEPOSITORY CONTRACT (${daysLeftAutoShop} days left)`,
+          why: 'This is the highest paying activity in the game right now. Union Depository Contract pays ~$540Ã¢â‚¬â€˜600k (with 2X bonus) in ~20Ã¢â‚¬â€˜25 mins. No cooldown Ã¢â‚¬â€œ repeat endlessly. Beats Cayo Perico this week.',
+          earnings: '$1.3MÃ¢â‚¬â€˜$1.5M/hr',
           timeRemaining: `${daysLeftAutoShop} days`,
           timeToComplete: '25 mins per contract (repeatable)',
           method:
             'Select "Union Depository Contract" from Auto Shop board. If not available, do a short contract to refresh the board.',
-          potentialEarnings: `$4‑5M by event end`,
+          potentialEarnings: `$4Ã¢â‚¬â€˜5M by event end`,
           expiresAt: autoShopExpiry,
         });
       }
@@ -829,19 +533,19 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
     const needed = shopCost - cash;
     const bestGrindIncome = 466_000;
     const hoursNeeded = needed / bestGrindIncome;
-    const autoShopExpiry = (_WEEKLY_EVENTS.bonuses?.autoShop as any)?.gtaPlusValidUntil
-      ? new Date((_WEEKLY_EVENTS.bonuses.autoShop as any).gtaPlusValidUntil).getTime()
+    const autoShopExpiry = (WEEKLY_EVENTS.bonuses?.autoShop as any)?.gtaPlusValidUntil
+      ? new Date((WEEKLY_EVENTS.bonuses.autoShop as any).gtaPlusValidUntil).getTime()
       : null;
 
     actions.push({
       priority: 0,
       urgency: 'GRIND NOW',
       type: 'GRIND',
-      title: `⚡ GRIND FOR AUTO SHOP (${daysLeft} days left)`,
+      title: `Ã¢Å¡Â¡ GRIND FOR AUTO SHOP (${daysLeft} days left)`,
       why: `Auto Shop 2X event ends in ${daysLeft} days. You need $${(needed / 1000).toFixed(0)}k more (${hoursNeeded.toFixed(1)} hours of grinding). Buy it before the event ends!`,
       cost: needed,
       timeToComplete: `${hoursNeeded.toFixed(1)} hours`,
-      potentialEarnings: `$4‑5M after purchase`,
+      potentialEarnings: `$4Ã¢â‚¬â€˜5M after purchase`,
       expiresAt: autoShopExpiry,
     });
   }
@@ -851,28 +555,30 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => {
 
 const buildBusinessBattlesActions = (formData: FormData, now: number): Action[] => {
   const actions: Action[] = [];
-  const bbExpiry = (_WEEKLY_EVENTS.bonuses?.businessBattles as any)?.validUntil
-    ? new Date((_WEEKLY_EVENTS.bonuses.businessBattles as any).validUntil).getTime()
+  const bbExpiry = (WEEKLY_EVENTS.bonuses?.businessBattles as any)?.validUntil
+    ? new Date((WEEKLY_EVENTS.bonuses.businessBattles as any).validUntil).getTime()
     : null;
-  const bbActive = !!(_WEEKLY_EVENTS.bonuses?.businessBattles as any)?.isActive && bbExpiry != null && bbExpiry > now;
+  const bbActive = !!(WEEKLY_EVENTS.bonuses?.businessBattles as any)?.isActive && bbExpiry != null && bbExpiry > now;
 
   if (!bbActive) return actions;
 
   const hoursLeft = Math.ceil((bbExpiry - now) / (1000 * 60 * 60));
   const daysLeftBB = Math.ceil(hoursLeft / 24);
   const urgencyText = hoursLeft < 48 ? `${hoursLeft} hours left` : `${daysLeftBB} days left`;
+  const expiryLabel = getExpiryLabel(bbExpiry ? new Date(bbExpiry).toISOString() : WEEKLY_EVENTS.meta?.validUntil ?? '');
+  const whyText = formData.hasNightclub
+    ? `4X Business Battles + 4X Nightclub Goods ${expiryLabel} (${urgencyText}). Your Nightclub profits massively from won battles. Stack between Auto Shop cooldowns.`
+    : `4X Business Battles ${expiryLabel} (${urgencyText}). Even without Nightclub, battles pay 4X goods. Consider buying Nightclub at discount this week!`;
 
   actions.push({
     priority: 1,
     urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
     type: 'FREEMODE',
-    title: '⚡ Contest Business Battles (4X This Week!)',
-    why: formData.hasNightclub
-      ? `4X Business Battles + 4X Nightclub Goods ${getExpiryLabel(bbExpiry ? new Date(bbExpiry).toISOString() : _WEEKLY_EVENTS.meta?.validUntil ?? '')} (${urgencyText}). Your Nightclub profits massively from won battles. Stack between Auto Shop cooldowns.`
-      : `4X Business Battles ${getExpiryLabel(bbExpiry ? new Date(bbExpiry).toISOString() : _WEEKLY_EVENTS.meta?.validUntil ?? '')} (${urgencyText}). Even without Nightclub, battles pay 4X goods. Consider buying Nightclub at discount this week!`,
+    title: 'Ã¢Å¡Â¡ Contest Business Battles (4X This Week!)',
+    why: whyText,
     solution: 'Join Business Battles in Freemode (every ~15 mins). Goods go to your Nightclub at 4X value. Best stacking activity.',
-    timeToComplete: '5‑10 min per battle',
-    earnings: '$200‑400k per battle + 4X Nightclub goods',
+    timeToComplete: '5Ã¢â‚¬â€˜10 min per battle',
+    earnings: '$200Ã¢â‚¬â€˜400k per battle + 4X Nightclub goods',
     timeRemaining: urgencyText,
     expiresAt: bbExpiry,
     category: 'freemode',
@@ -883,11 +589,11 @@ const buildBusinessBattlesActions = (formData: FormData, now: number): Action[] 
 
 const buildNightclubDiscountActions = (formData: FormData, now: number): Action[] => {
   const actions: Action[] = [];
-  const ncDiscountExpiry = (_WEEKLY_EVENTS.discounts?.nightclubUpgrades as any)?.validUntil
-    ? new Date((_WEEKLY_EVENTS.discounts.nightclubUpgrades as any).validUntil).getTime()
+  const ncDiscountExpiry = (WEEKLY_EVENTS.discounts?.nightclubUpgrades as any)?.validUntil
+    ? new Date((WEEKLY_EVENTS.discounts.nightclubUpgrades as any).validUntil).getTime()
     : null;
   const ncDiscountActive =
-    !!(_WEEKLY_EVENTS.discounts?.nightclubUpgrades as any) &&
+    !!(WEEKLY_EVENTS.discounts?.nightclubUpgrades as any) &&
     ncDiscountExpiry != null &&
     ncDiscountExpiry > now;
 
@@ -907,8 +613,8 @@ const buildNightclubDiscountActions = (formData: FormData, now: number): Action[
     priority: 1,
     urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
     type: 'PURCHASE',
-    title: '💰 Buy Nightclub Upgrades (40% OFF!)',
-    why: `Your Nightclub isn't optimized. 40% off upgrades ${getExpiryLabel(ncDiscountExpiry ? new Date(ncDiscountExpiry).toISOString() : _WEEKLY_EVENTS.meta?.validUntil ?? '')} (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
+    title: 'Ã°Å¸â€™Â° Buy Nightclub Upgrades (40% OFF!)',
+    why: `Your Nightclub isn't optimized. 40% off upgrades ${getExpiryLabel(ncDiscountExpiry ? new Date(ncDiscountExpiry).toISOString() : WEEKLY_EVENTS.meta?.validUntil ?? '')} (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
     solution: 'Buy Equipment Upgrade + Staff Upgrade from Nightclub computer. They boost production speed significantly.',
     timeToComplete: '5 minutes',
     savings: '~$600k savings',
@@ -927,7 +633,7 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
   const autoShop2XActive =
     formData.hasAutoShop &&
     hasGTAPlus &&
-    (_WEEKLY_EVENTS.bonuses?.autoShop as any)?.isActive;
+    (WEEKLY_EVENTS.bonuses?.autoShop as any)?.isActive;
 
   if (!autoShop2XActive || playerRank >= 100 || strengthPct >= 100) return actions;
 
@@ -938,10 +644,10 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
       priority: 2,
       urgency: 'HIGH',
       type: 'PREPARATION',
-      title: '💪 Max Strength Before Auto Shop Finales',
+      title: 'Ã°Å¸â€™Âª Max Strength Before Auto Shop Finales',
       why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is ${strengthPct}% (low). You take extra damage. Max strength first.`,
       solution: '1. Max Strength (30 min via Pier Pressure or Mansion Gym). 2. Then stock 10+ Snacks + 10 Super Heavy Armor.',
-      timeToComplete: '30‑40 min one‑time investment',
+      timeToComplete: '30Ã¢â‚¬â€˜40 min oneÃ¢â‚¬â€˜time investment',
       impact: 'Prevents wasted time on failed missions',
       note: 'Do this before grinding Auto Shop.',
     });
@@ -950,10 +656,10 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
       priority: 2,
       urgency: 'MEDIUM',
       type: 'PREPARATION',
-      title: '🛡️ Stock Snacks & Armor for Auto Shop',
+      title: 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â Stock Snacks & Armor for Auto Shop',
       why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is good (${strengthPct}%), but stock up on supplies.`,
       solution: 'Stock 10+ Snacks + 10 Super Heavy Armor. Visit Agency armory for free snacks if owned.',
-      timeToComplete: '10‑15 min one‑time investment',
+      timeToComplete: '10Ã¢â‚¬â€˜15 min oneÃ¢â‚¬â€˜time investment',
       impact: 'Prevents wasted time on failed missions',
     });
   }
@@ -971,11 +677,11 @@ const buildInfrastructureActions = (formData: FormData, cash: number): Action[] 
   criticalInfra.slice(0, 2).forEach((rec: any, index: number) => {
     if (rec.cost && cash < rec.cost) return;
 
-    let emoji = '🏭';
-    if (rec.isTrap) emoji = '⚠️';
-    else if (rec.isDiscounted) emoji = '💰';
-    else if (rec.category === 'nightclub') emoji = '🎭';
-    else if (rec.category === 'bunker') emoji = '🔫';
+    let emoji = 'Ã°Å¸ÂÂ­';
+    if (rec.isTrap) emoji = 'Ã¢Å¡Â Ã¯Â¸Â';
+    else if (rec.isDiscounted) emoji = 'Ã°Å¸â€™Â°';
+    else if (rec.category === 'nightclub') emoji = 'Ã°Å¸Å½Â­';
+    else if (rec.category === 'bunker') emoji = 'Ã°Å¸â€Â«';
 
     const priorityBoost = rec.isDiscounted ? 1 : 2;
 
@@ -986,7 +692,7 @@ const buildInfrastructureActions = (formData: FormData, cash: number): Action[] 
       title: `${emoji} ${rec.title}`,
       why: rec.why,
       solution: rec.benefit,
-      timeToComplete: '5‑10 minutes',
+      timeToComplete: '5Ã¢â‚¬â€˜10 minutes',
       cost: rec.cost,
       savings: rec.isDiscounted ? rec.originalCost - rec.cost : 0,
       roiHours: rec.roiHours ?? null,
@@ -1009,7 +715,7 @@ const buildFlyingSkillActions = (flyingPct: number): Action[] => {
       priority: 3,
       urgency: 'MEDIUM',
       type: 'STAT',
-      title: `San Andreas Flight School (${flyingPct}% → 80%+)`,
+      title: `San Andreas Flight School (${flyingPct}% Ã¢â€ â€™ 80%+)`,
       why: `Your Flying is ${flyingPct}% (${Math.ceil(flyingPct / 20)}/5 bars). ${efficiencyGap}% below meta benchmark for heist leadership. Your Sparrow is unstable. Flight School fixes this AND pays ~$250k.`,
       timeToComplete: '45 mins',
       earnings: '+$250k',
@@ -1028,7 +734,7 @@ const buildStrengthBlockerActions = (strengthPct: number, formData: FormData): A
   const method = formData.hasMansion ? 'Mansion Gym (Private)' : 'Pier Pressure (Beach)';
   const timeToComplete = formData.hasMansion
     ? `${Math.ceil((40 - strengthPct) * 0.3)} mins`
-    : '60‑75 mins';
+    : '60Ã¢â‚¬â€˜75 mins';
   const methodDetails = formData.hasMansion
     ? 'Use the punching bag minigame in your gym. This is the only fast, legit method.'
     : `Launch "Pier Pressure" alone. Go to the boardwalk. Punch pedestrians. Math: You need ${impactsNeeded} punches to reach 40%. (~30 punches/min).`;
@@ -1059,19 +765,19 @@ const buildStrengthBlockerActions = (strengthPct: number, formData: FormData): A
 const buildDreContractActions = (formData: FormData, userProfile: any): Action[] => {
   if (!formData.hasAgency || formData.dreContractDone) return [];
 
-  const weekEndLabel = _WEEKLY_EVENTS.meta?.validUntil ?? '';
+  const weekEndLabel = WEEKLY_EVENTS.meta?.validUntil ?? '';
   const dreGatekeeper = _checkGatekeeper('dre_contract', userProfile, Date.now()) as any;
 
   let title = `Dr. Dre Contract (After ${weekEndLabel})`;
-  let why = `One‑time $1M payout. Do after current events end ${weekEndLabel}.`;
-  const note = dreGatekeeper.status === 'LOCKED' ? dreGatekeeper.reason : `Lower priority than time‑limited events. Do after ${weekEndLabel}.`;
+  let why = `OneÃ¢â‚¬â€˜time $1M payout. Do after current events end ${weekEndLabel}.`;
+  const note = dreGatekeeper.status === 'LOCKED' ? dreGatekeeper.reason : `Lower priority than timeÃ¢â‚¬â€˜limited events. Do after ${weekEndLabel}.`;
   let priority = 4;
 
   if (dreGatekeeper.status === 'LOCKED') {
-    title = `🔒 ${title}`;
+    title = `Ã°Å¸â€â€™ ${title}`;
     why = `${dreGatekeeper.reason}. ${why}`;
   } else if (dreGatekeeper.status === 'WARNING') {
-    title = `⚠️ ${title}`;
+    title = `Ã¢Å¡Â Ã¯Â¸Â ${title}`;
     why = `${dreGatekeeper.reason} ${why}`;
   }
 
@@ -1083,7 +789,7 @@ const buildDreContractActions = (formData: FormData, userProfile: any): Action[]
       title,
       why,
       solution: 'Complete Dr. Dre Contract from Agency computer',
-      timeToComplete: '2‑3 hours',
+      timeToComplete: '2Ã¢â‚¬â€˜3 hours',
       note,
       gatekeeperStatus: dreGatekeeper.status,
       gatekeeperPenalty: dreGatekeeper.score_penalty,
@@ -1100,11 +806,11 @@ const buildStaminaActions = (staminaPct: number): Action[] => {
       urgency: 'LOW',
       type: 'STAT',
       title: 'Maximize Stamina (AFK Method)',
-      why: 'Unlimited sprint is useful for heist setups. Use the rubber‑band method while AFK. Required for Mansion Yoga buff (+15% run speed).',
+      why: 'Unlimited sprint is useful for heist setups. Use the rubberÃ¢â‚¬â€˜band method while AFK. Required for Mansion Yoga buff (+15% run speed).',
       impact: 'LOW - Quality of life improvement',
       cost: 0,
       timeToComplete: '30 mins (AFK)',
-      method: 'Rubber‑band controller while AFK',
+      method: 'RubberÃ¢â‚¬â€˜band controller while AFK',
     },
   ];
 };
@@ -1113,7 +819,7 @@ const buildStaminaActions = (staminaPct: number): Action[] => {
 // Smart Action Plan Orchestrator (complexity < 15)
 // ======================================================================
 
-export const buildSmartActionPlan = (formData: FormData, _results?: Results | null): Action[] => {
+const buildSmartActionPlan = (formData: FormData, _results?: Results | null): Action[] => {
   const now = Date.now();
   const cash = Number(formData.liquidCash) || 0;
   const strengthPct = validateStat(formData.strength);
@@ -1141,24 +847,37 @@ export const buildSmartActionPlan = (formData: FormData, _results?: Results | nu
 // Session & Maintenance Actions
 // ======================================================================
 
-export const generateSessionTaxActions = (formData: FormData): Action[] => {
-  const actions: Action[] = [];
-  const hasPassiveEmpire = formData.hasAcidLab || formData.hasBunker || formData.hasNightclub;
-  const hasAnySafe = formData.hasNightclub || formData.hasAgency || formData.hasCarWash;
-  const missingDaily = [];
-
+const getMissingDailyTasks = (formData: FormData, hasAnySafe: boolean): string[] => {
+  const missingDaily: string[] = [];
   if (!formData.dailyStashHouse) missingDaily.push('Stash House');
   if (!formData.dailyGsCache) missingDaily.push("G's Cache");
   if (hasAnySafe && !formData.dailySafeCollect) missingDaily.push('Collect safes');
+  return missingDaily;
+};
+
+const getPassiveEmpireSteps = (formData: FormData): string[] => {
+  const passiveSteps: string[] = [];
+  if (formData.hasNightclub) passiveSteps.push('Collect Nightclub safe');
+  if (formData.hasAcidLab) passiveSteps.push('Check Acid Lab stock / resupply');
+  if (formData.hasBunker) passiveSteps.push('Resupply Bunker');
+  if (formData.hasCarWash) passiveSteps.push('Collect Car Wash safe');
+  return passiveSteps;
+};
+
+const generateSessionTaxActions = (formData: FormData): Action[] => {
+  const actions: Action[] = [];
+  const hasPassiveEmpire = formData.hasAcidLab || formData.hasBunker || formData.hasNightclub;
+  const hasAnySafe = formData.hasNightclub || formData.hasAgency || formData.hasCarWash;
+  const missingDaily = getMissingDailyTasks(formData, hasAnySafe);
 
   if (missingDaily.length > 0) {
     actions.push({
       priority: 0,
       urgency: 'URGENT',
       type: 'DAILY',
-      title: '💰 Daily Cash Loop',
+      title: 'Ã°Å¸â€™Â° Daily Cash Loop',
       why: 'These are fast, guaranteed-value dailies. Leaving them unchecked is free money left behind.',
-      solution: `Complete: ${missingDaily.join(' → ')}. Resets daily at 07:00 UTC.`,
+      solution: `Complete: ${missingDaily.join(' Ã¢â€ â€™ ')}. Resets daily at 07:00 UTC.`,
       timeToComplete: '5-10 mins',
       estimatedMinutes: 8,
       launchesPassiveTimer: false,
@@ -1166,20 +885,15 @@ export const generateSessionTaxActions = (formData: FormData): Action[] => {
     });
   }
 
+  const passiveSteps = getPassiveEmpireSteps(formData);
   if (hasPassiveEmpire) {
-    const passiveSteps = [];
-    if (formData.hasNightclub) passiveSteps.push('Collect Nightclub safe');
-    if (formData.hasAcidLab) passiveSteps.push('Check Acid Lab stock / resupply');
-    if (formData.hasBunker) passiveSteps.push('Resupply Bunker');
-    if (formData.hasCarWash) passiveSteps.push('Collect Car Wash safe');
-
     actions.push({
       priority: 0,
       urgency: 'URGENT',
       type: 'TAX',
-      title: '🏭 Passive Empire Maintenance',
+      title: 'Ã°Å¸ÂÂ­ Passive Empire Maintenance',
       why: `Start all passive clocks immediately. ${passiveSteps.length} businesses need attention. Empty supplies = money left on the table every hour.`,
-      solution: passiveSteps.join(' → ') + '. Do this FIRST every session (~5-10 min).',
+      solution: passiveSteps.join(' Ã¢â€ â€™ ') + '. Do this FIRST every session (~5-10 min).',
       timeToComplete: '5-10 mins',
       estimatedMinutes: 10,
       launchesPassiveTimer: true,
@@ -1194,7 +908,7 @@ export const generateSessionTaxActions = (formData: FormData): Action[] => {
       type: 'TAX',
       title: 'Sell Acid Lab Product (Private Session)',
       why: 'Acid Lab sell missions work in Invite Only. Sell when stock is full for max value.',
-      solution: 'Call Mutt → Sell Product. Brickade 6x6 sell is solo-friendly in private sessions.',
+      solution: 'Call Mutt Ã¢â€ â€™ Sell Product. Brickade 6x6 sell is solo-friendly in private sessions.',
       timeToComplete: '5-10 mins',
       estimatedMinutes: 8,
       launchesPassiveTimer: false,
@@ -1220,20 +934,7 @@ export const generateSessionTaxActions = (formData: FormData): Action[] => {
   return actions;
 };
 
-export const generateMaintenanceActions = (formData: FormData, _results?: Results | null): Action[] => {
-  const actions: Action[] = [];
-
-  actions.push({
-    priority: 6,
-    urgency: 'LOW',
-    type: 'DAILY',
-    title: 'Complete Daily Objectives',
-    why: 'Daily objectives provide steady income and RP. Check phone for daily tasks.',
-    solution: 'Check phone → Daily Objectives → Complete tasks',
-    timeToComplete: '10-15 minutes',
-    earnings: '$30-50k + RP',
-  });
-
+const addStatMaintenanceActions = (actions: Action[], formData: FormData) => {
   const stats = {
     strength: validateStat(formData.strength),
     flying: validateStat(formData.flying),
@@ -1243,8 +944,9 @@ export const generateMaintenanceActions = (formData: FormData, _results?: Result
     driving: validateStat(formData.driving),
   };
 
-  for (const [statName, statPct] of Object.entries(stats)) {
-    if (statPct < 100) {
+  Object.entries(stats)
+    .filter(([, statPct]) => statPct < 100)
+    .forEach(([statName, statPct]) => {
       actions.push({
         priority: 7,
         urgency: 'LOW',
@@ -1256,8 +958,62 @@ export const generateMaintenanceActions = (formData: FormData, _results?: Result
         currentStat: `${statPct}%`,
         targetStat: '100%',
       });
-    }
+    });
+};
+
+const addFallbackMaintenanceActions = (actions: Action[]) => {
+  const fallbackActions: Action[] = [
+    {
+      priority: 7,
+      urgency: 'LOW',
+      type: 'OPTIMIZE',
+      title: 'Review Your Business Setup',
+      why: "Periodically review your businesses to ensure they're optimized for maximum income.",
+      solution: 'Check all business computers and ensure upgrades are purchased, technicians assigned, etc.',
+      timeToComplete: '15-20 minutes',
+    },
+    {
+      priority: 7,
+      urgency: 'LOW',
+      type: 'OPTIMIZE',
+      title: 'Complete Contact Missions',
+      why: 'Contact missions provide steady income and RP. Good filler activity between heists.',
+      solution: 'Open phone Ã¢â€ â€™ Quick Job Ã¢â€ â€™ Contact Mission',
+      timeToComplete: '10-15 minutes per mission',
+      earnings: '$20-40k per mission',
+    },
+    {
+      priority: 7,
+      urgency: 'LOW',
+      type: 'OPTIMIZE',
+      title: 'Explore New Content',
+      why: 'GTA Online regularly adds new content. Check the Rockstar Newswire for latest updates.',
+      solution: 'Visit rockstargames.com/newswire or check in-game notifications',
+      timeToComplete: '5 minutes',
+    },
+  ];
+
+  for (const action of fallbackActions) {
+    if (actions.length >= 3) break;
+    actions.push(action);
   }
+};
+
+const generateMaintenanceActions = (formData: FormData, _results?: Results | null): Action[] => {
+  const actions: Action[] = [
+    {
+      priority: 6,
+      urgency: 'LOW',
+      type: 'DAILY',
+      title: 'Complete Daily Objectives',
+      why: 'Daily objectives provide steady income and RP. Check phone for daily tasks.',
+      solution: 'Check phone Ã¢â€ â€™ Daily Objectives Ã¢â€ â€™ Complete tasks',
+      timeToComplete: '10-15 minutes',
+      earnings: '$30-50k + RP',
+    },
+  ];
+
+  addStatMaintenanceActions(actions, formData);
 
   const nightclubTechsCount = Number(formData.nightclubTechs) || 0;
   if (formData.hasNightclub && nightclubTechsCount < 5) {
@@ -1287,42 +1043,62 @@ export const generateMaintenanceActions = (formData: FormData, _results?: Result
     });
   }
 
-  if (actions.length < 3) {
-    actions.push({
-      priority: 7,
-      urgency: 'LOW',
-      type: 'OPTIMIZE',
-      title: 'Review Your Business Setup',
-      why: "Periodically review your businesses to ensure they're optimized for maximum income.",
-      solution: 'Check all business computers and ensure upgrades are purchased, technicians assigned, etc.',
-      timeToComplete: '15-20 minutes',
-    });
-  }
-  if (actions.length < 3) {
-    actions.push({
-      priority: 7,
-      urgency: 'LOW',
-      type: 'OPTIMIZE',
-      title: 'Complete Contact Missions',
-      why: 'Contact missions provide steady income and RP. Good filler activity between heists.',
-      solution: 'Open phone → Quick Job → Contact Mission',
-      timeToComplete: '10-15 minutes per mission',
-      earnings: '$20-40k per mission',
-    });
-  }
-  if (actions.length < 3) {
-    actions.push({
-      priority: 7,
-      urgency: 'LOW',
-      type: 'OPTIMIZE',
-      title: 'Explore New Content',
-      why: 'GTA Online regularly adds new content. Check the Rockstar Newswire for latest updates.',
-      solution: 'Visit rockstargames.com/newswire or check in-game notifications',
-      timeToComplete: '5 minutes',
-    });
+  addFallbackMaintenanceActions(actions);
+  return actions;
+};
+
+const getUniqueBottleneckActions = (bottlenecks: Bottleneck[], now: number): Action[] => {
+  const seenBottleneckIds = new Set<string>();
+  const actions: Action[] = [];
+
+  for (const bottleneck of bottlenecks) {
+    if (bottleneck.id && seenBottleneckIds.has(bottleneck.id)) continue;
+    if (bottleneck.id) seenBottleneckIds.add(bottleneck.id);
+    actions.push(bottleneckToAction(bottleneck, now));
   }
 
   return actions;
+};
+
+const dedupeActionsByPriority = (
+  actions: Action[],
+  matcher: (action: Action) => boolean,
+  now: number
+): Action[] => {
+  const matching = actions.filter(matcher);
+  if (matching.length <= 1) return actions;
+
+  matching.sort((a, b) => calculatePriorityScore(b, now) - calculatePriorityScore(a, now));
+  const keepTitle = matching[0].title;
+  return actions.filter((action) => !matcher(action) || action.title === keepTitle);
+};
+
+const ensureMinimumActions = (
+  actions: Action[],
+  formData: FormData,
+  results: Results | null | undefined,
+  minCount: number
+) => {
+  if (actions.length >= minCount) return;
+  const maintenance = generateMaintenanceActions(formData, results);
+  actions.push(...maintenance.slice(0, 5 - actions.length));
+};
+
+const appendUniqueMaintenanceActions = (
+  actions: Action[],
+  formData: FormData,
+  results: Results | null | undefined,
+  minCount: number
+) => {
+  if (actions.length >= minCount) return;
+
+  const additional = generateMaintenanceActions(formData, results);
+  for (const action of additional) {
+    if (actions.length >= minCount) break;
+    if (!actions.some((existing) => existing.title === action.title)) {
+      actions.push(action);
+    }
+  }
 };
 
 // ======================================================================
@@ -1339,51 +1115,25 @@ export const buildCompactActionPlan = (
 
   const now = Date.now();
   const prioritizedBottlenecks = bottlenecks ?? [];
-  const seenBottleneckIds = new Set<string>();
-  const actions: Action[] = [];
-
-  for (const bottleneck of prioritizedBottlenecks) {
-    if (bottleneck.id && seenBottleneckIds.has(bottleneck.id)) continue;
-    if (bottleneck.id) seenBottleneckIds.add(bottleneck.id);
-    actions.push(bottleneckToAction(bottleneck, now));
-  }
-
+  const actions = getUniqueBottleneckActions(prioritizedBottlenecks, now);
   const smartActions = buildSmartActionPlan(formData, results);
-  const allActions = [...actions, ...smartActions];
+  let allActions = [...actions, ...smartActions];
 
-  // Deduplicate Paper Trail
-  const paperTrailActions = allActions.filter(
-    a => a.type === 'MISSION' && a.title && /paper\s*trail/i.test(a.title)
+  allActions = dedupeActionsByPriority(
+    allActions,
+    (action) => action.type === 'MISSION' && Boolean(action.title) && /paper\s*trail/i.test(action.title),
+    now
   );
-  if (paperTrailActions.length > 1) {
-    paperTrailActions.sort((a, b) => calculatePriorityScore(b, now) - calculatePriorityScore(a, now));
-    const keepTitle = paperTrailActions[0].title;
-    const filtered = allActions.filter(
-      a => !(a.type === 'MISSION' && a.title && /paper\s*trail/i.test(a.title)) || a.title === keepTitle
-    );
-    allActions.length = 0;
-    allActions.push(...filtered);
-  }
 
-  // Deduplicate Auto Shop
   const autoShopKeywords = ['auto shop', 'union depository', 'robbery contract'];
-  const autoShopActions = allActions.filter(
-    a => a.title && autoShopKeywords.some(kw => a.title.toLowerCase().includes(kw))
+  allActions = dedupeActionsByPriority(
+    allActions,
+    (action) =>
+      Boolean(action.title) && autoShopKeywords.some((keyword) => action.title.toLowerCase().includes(keyword)),
+    now
   );
-  if (autoShopActions.length > 1) {
-    autoShopActions.sort((a, b) => calculatePriorityScore(b, now) - calculatePriorityScore(a, now));
-    const keepTitle = autoShopActions[0].title;
-    const filtered = allActions.filter(
-      a => !(a.title && autoShopKeywords.some(kw => a.title.toLowerCase().includes(kw))) || a.title === keepTitle
-    );
-    allActions.length = 0;
-    allActions.push(...filtered);
-  }
 
-  if (allActions.length < 3) {
-    const maintenance = generateMaintenanceActions(formData, results);
-    allActions.push(...maintenance.slice(0, 5 - allActions.length));
-  }
+  ensureMinimumActions(allActions, formData, results, 3);
 
   allActions.forEach(action => {
     action._priorityScore = calculatePriorityScore(action, now);
@@ -1394,15 +1144,7 @@ export const buildCompactActionPlan = (
   annotated.sort((a, b) => (b.compoundScore ?? 0) - (a.compoundScore ?? 0));
   const sorted = annotated.slice(0, 5).map(({ _priorityScore: _, _compoundMeta: __, ...action }) => action);
 
-  if (sorted.length < 3) {
-    const additional = generateMaintenanceActions(formData, results);
-    for (const action of additional) {
-      if (sorted.length >= 3) break;
-      if (!sorted.some(a => a.title === action.title)) {
-        sorted.push(action);
-      }
-    }
-  }
+  appendUniqueMaintenanceActions(sorted, formData, results, 3);
 
   return sorted;
 };
@@ -1460,52 +1202,4 @@ export const buildSessionPlan = ({
   };
 };
 
-export const getTopPriorityAction = (
-  formData: FormData,
-  results: Results | null
-): {
-  type: string;
-  title: string;
-  reason: string;
-  icon: string;
-  color: string;
-  steps: string;
-  time?: string | null;
-} => {
-  const actionPlan = buildSmartActionPlan(formData, results);
-  if (actionPlan.length === 0) {
-    return {
-      type: 'OPTIMIZE',
-      title: 'Continue Your Grind',
-      reason: "You're doing great! Focus on maximizing your current setup.",
-      icon: '🎯',
-      color: 'from-blue-600 to-purple-600',
-      steps: 'Keep running your optimized loop',
-    };
-  }
 
-  const topAction = actionPlan[0];
-  let actionType = 'PRIORITY';
-  let icon = '🎯';
-  let color = 'from-blue-600 to-purple-600';
-
-  if (topAction.urgency === 'URGENT' || topAction.urgency === 'GRIND NOW') {
-    actionType = 'CRITICAL';
-    icon = '⚡';
-    color = 'from-yellow-600 to-orange-600';
-  } else if (topAction.urgency === 'BLOCKER') {
-    actionType = 'BLOCKER';
-    icon = '🚨';
-    color = 'from-red-600 to-orange-600';
-  }
-
-  return {
-    type: actionType,
-    title: topAction.title,
-    reason: topAction.why,
-    icon,
-    color,
-    time: topAction.timeToComplete ?? null,
-    steps: topAction.method ?? topAction.why,
-  };
-};

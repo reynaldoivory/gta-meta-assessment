@@ -1,3 +1,5 @@
+<!-- markdownlint-disable MD022 MD031 MD032 MD036 MD009 -->
+
 # 🧪 Testing Guide - Meta Awareness System
 
 ## 🎯 Critical Test Cases
@@ -338,7 +340,7 @@ if (strength < 60 && autoShopIncome > 0) {
 
 ## 📊 Test Results Template
 
-```
+```text
 Date: ___________
 Tester: ___________
 

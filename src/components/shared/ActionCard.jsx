@@ -17,23 +17,23 @@ const getBudgetRecommendation = (action, formData) => {
 };
 
 const getCardTheme = (isUrgent, isCritical) => {
-  if (isUrgent) return { borderColor: 'border-red-500', bgColor: 'bg-red-900/20' };
-  if (isCritical) return { borderColor: 'border-orange-500', bgColor: 'bg-orange-900/20' };
-  return { borderColor: 'border-blue-500', bgColor: 'bg-blue-900/20' };
+  if (isUrgent) return { borderColor: 'border-accent-pink', bgColor: 'bg-gradient-to-br from-accent-pink/20 to-primary-orange-500/20', shadow: 'shadow-glow-orange' };
+  if (isCritical) return { borderColor: 'border-primary-orange-500', bgColor: 'bg-gradient-to-br from-primary-orange-500/15 to-primary-purple-500/10', shadow: 'shadow-float' };
+  return { borderColor: 'border-primary-cyan-500', bgColor: 'bg-gradient-to-br from-primary-cyan-500/10 to-primary-purple-500/10', shadow: 'shadow-float' };
 };
 
 const ActionBadges = ({ rank, title, isUrgent, isCritical }) => (
-  <h3 className="text-xl font-bold text-slate-100 flex items-center gap-2 flex-wrap">
-    {rank && <span className="text-slate-400">#{rank}</span>}
+  <h3 className="text-xl font-display font-bold text-white flex items-center gap-2 flex-wrap">
+    {rank && <span className="badge-purple font-mono text-sm">#{rank}</span>}
     {title}
     {isUrgent && (
-      <span className="text-xs bg-red-500 text-white px-2 py-1 rounded animate-pulse">
-        URGENT
+      <span className="badge bg-accent-pink/30 text-accent-pink border-accent-pink animate-pulse font-mono text-[10px]">
+        🔥 URGENT
       </span>
     )}
     {isCritical && !isUrgent && (
-      <span className="text-xs bg-orange-500 text-white px-2 py-1 rounded">
-        CRITICAL
+      <span className="badge-orange font-mono text-[10px]">
+        ⚡ CRITICAL
       </span>
     )}
   </h3>
@@ -53,15 +53,15 @@ const ActionMeta = ({ action }) => {
   if (!hasTime && !hasSavings && !hasCost) return null;
 
   return (
-    <div className="flex gap-4 mt-2 text-sm text-slate-400">
+    <div className="flex gap-3 mt-3 text-sm flex-wrap">
       {hasTime && (
-        <span>⏱️ {action.timeHours ? `${action.timeHours} hrs` : action.timeToComplete}</span>
+        <span className="badge-cyan font-mono text-xs">⏱️ {action.timeHours ? `${action.timeHours} hrs` : action.timeToComplete}</span>
       )}
       {hasSavings && (
-        <span className="text-green-400">💰 +${action.savingsPerHour.toLocaleString()}/hr</span>
+        <span className="badge bg-accent-green/20 text-accent-green border-accent-green/40 font-mono text-xs">💰 +${action.savingsPerHour.toLocaleString()}/hr</span>
       )}
       {hasCost && (
-        <span className="text-yellow-400">💵 ${(action.cost / 1000000).toFixed(2)}M</span>
+        <span className="badge-orange font-mono text-xs">💵 ${(action.cost / 1000000).toFixed(2)}M</span>
       )}
     </div>
   );

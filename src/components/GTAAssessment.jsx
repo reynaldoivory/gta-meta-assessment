@@ -36,9 +36,15 @@ const AssessmentRouter = () => {
 const GTAAssessment = () => (
   <ErrorBoundary>
     <AssessmentProvider>
-      <div className="min-h-screen bg-transparent font-body text-slate-100">
-        <AssessmentRouter />
-        <DevTools />
+      <div className="min-h-screen bg-transparent font-body text-slate-50">
+        {/* Animated background orbs */}
+        <div className="bg-orb-purple" style={{ top: '10%', left: '5%' }} />
+        <div className="bg-orb-cyan" style={{ top: '60%', right: '10%' }} />
+        
+        <div className="relative z-10">
+          <AssessmentRouter />
+          <DevTools />
+        </div>
       </div>
     </AssessmentProvider>
   </ErrorBoundary>

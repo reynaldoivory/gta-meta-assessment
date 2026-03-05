@@ -3,11 +3,12 @@
 
 import { WEEKLY_EVENTS, getWeeklyBonuses, formatExpiry } from '../config/weeklyEvents';
 import { MODEL_CONFIG } from './modelConfig';
+import type { AssessmentFormData } from '../types/domain.types';
 
 /**
  * Extract numeric multiplier from string (e.g., "2X" -> 2, "1.5X" -> 1.5)
  */
-const parseMultiplier = (multiplierStr) => {
+const parseMultiplier = (multiplierStr: string | null | undefined): number => {
   if (!multiplierStr) return 1;
   const match = multiplierStr.match(/([\d.]+)/);
   return match ? Number.parseFloat(match[1]) : 1;
@@ -20,7 +21,7 @@ const parseMultiplier = (multiplierStr) => {
  * @param {boolean} isEventActive - Whether current weekly event is active
  * @returns {{ income: number, multiplier: number, event: Object|null }}
  */
-const calculateAutoShopIncome = (formData, events, isEventActive) => {
+const calculateAutoShopIncome = (formData: AssessmentFormData, events: any[], isEventActive: boolean) => {
   let income = 0;
   let multiplier = 1;
   let event = null;
@@ -86,14 +87,14 @@ const calculateAutoShopIncome = (formData, events, isEventActive) => {
  * @param {boolean} isEventActive - Whether current weekly event is active
  * @returns {{ income: number, multiplier: number, event: Object|null }}
  */
-const calculateCayoIncome = (formData, events, isEventActive) => {
+const calculateCayoIncome = (formData: AssessmentFormData, events: any[], isEventActive: boolean) => {
   let income = 0;
   let multiplier = 1;
   let event = null;
 
   if (formData.hasKosatka) {
-    const cayoEventMatch = events.find(e => 
-      e.activity.toLowerCase().includes('cayo') || 
+    const cayoEventMatch = events.find((e: any) =>
+      e.activity.toLowerCase().includes('cayo') ||
       e.activity.toLowerCase().includes('perico')
     );
 
@@ -102,7 +103,7 @@ const calculateCayoIncome = (formData, events, isEventActive) => {
       multiplier = parseMultiplier(cayoEventMatch.multiplier);
     }
 
-    const config = MODEL_CONFIG.income?.cayo || {};
+    const config: any = (MODEL_CONFIG as any).income?.cayo || {};
     const basePayout = config.basePayout ?? 700000;
     // Solo cooldown is 144 minutes (2h 24m) in invite-only sessions.
     // Average run (prep + finale) is ~75 min for a safe-pace player.
@@ -128,7 +129,7 @@ const calculateCayoIncome = (formData, events, isEventActive) => {
  * @param {boolean} isEventActive - Whether current weekly event is active
  * @returns {{ income: number, multiplier: number, event: Object|null }}
  */
-const calculateAgencyIncome = (formData, isEventActive) => {
+const calculateAgencyIncome = (formData: AssessmentFormData, isEventActive: boolean) => {
   const noIncome = { income: 0, multiplier: 1, event: null };
 
   if (!formData.hasAgency) {
@@ -184,7 +185,7 @@ const calculateAgencyIncome = (formData, isEventActive) => {
  * @param {Object} formData - Form data
  * @returns {Object} Dynamic income breakdown
  */
-export const calculateDynamicIncome = (formData) => {
+export const calculateDynamicIncome = (formData: AssessmentFormData) => {
   // Safety check for WEEKLY_EVENTS
   if (!WEEKLY_EVENTS?.meta) {
     console.warn('WEEKLY_EVENTS not loaded, using default values');

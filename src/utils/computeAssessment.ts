@@ -4,12 +4,13 @@
 import { MODEL_CONFIG } from './modelConfig.js';
 import { validateStat, validateNumericInput } from './assessmentHelpers.js';
 import { getCurrentEvents } from './eventHelpers.js';
-import { calculateIncome } from './calculateIncome.js';
-import { detectBottlenecks } from './detectBottlenecks.js';
-import { calculateScore } from './calculateScore.js';
+import { calculateIncome } from './calculateIncome';
+import { detectBottlenecks } from './detectBottlenecks';
+import { calculateScore } from './calculateScore';
+import type { AssessmentFormData } from '../types/domain.types';
 
 /** Normalize and validate form inputs into a clean params object. */
-const normalizeFormData = (formData) => {
+const normalizeFormData = (formData: AssessmentFormData) => {
   const rank = Number(formData.rank) || 0;
   const timePlayed = Number(formData.timePlayed) || 0; // total hours (optional)
   const liquidCash = Number(formData.liquidCash) || 0;
@@ -107,7 +108,7 @@ const normalizeFormData = (formData) => {
 };
 
 /** Check heist leadership readiness criteria. */
-const calculateHeistReadiness = (normalizedParams) => {
+const calculateHeistReadiness = (normalizedParams: ReturnType<typeof normalizeFormData>) => {
   const {
     rank,
     strength,
@@ -129,7 +130,7 @@ const calculateHeistReadiness = (normalizedParams) => {
     hasCash,
   } = normalizedParams;
 
-  const heistConfig = MODEL_CONFIG.heistReadiness || {};
+  const heistConfig: any = MODEL_CONFIG.heistReadiness || {};
   const diversifiedConfig = heistConfig.diversifiedIncome || {};
   const points = diversifiedConfig.points || {};
   const mcPoints = diversifiedConfig.mcPoints || {};

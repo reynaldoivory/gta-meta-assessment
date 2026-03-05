@@ -28,3 +28,15 @@ export interface AssessmentFormData {
   hasBrickade6x6?: boolean;
   [key: string]: any;
 }
+
+export interface AssessmentResult {
+  score: number;
+  tier: string;
+  incomePerHour: number;
+  activeIncome: number;
+  passiveIncome: number;
+  dailyIncome?: number;
+  heistReadyPercent: number;
+  heistReady: { rank50: boolean; strength80: boolean; flying80: boolean; diversifiedIncomeTier: number; diversifiedIncomePoints: number; diversifiedIncomeLabel: string; travelOptimized: boolean; bizCore: boolean; };
+  bottlenecks?: any[];
+}

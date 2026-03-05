@@ -1,5 +1,12 @@
-// src/utils/buildLLMPrompt.js
-export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses: _weeklyBonuses = [] }) => {
+import type { AssessmentFormData, AssessmentResult } from '../types/domain.types';
+
+interface PromptArgs {
+  formData: AssessmentFormData;
+  assessmentResults?: AssessmentResult | null;
+  weeklyBonuses?: any[];
+}
+
+export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses: _weeklyBonuses = [] }: PromptArgs) => {
   if (!assessmentResults) return '';
 
   const {
@@ -106,7 +113,13 @@ export const buildLLMPrompt = ({ formData, assessmentResults, weeklyBonuses: _we
   ].join('\n');
 };
 
-export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }) => {
+interface ExportArgs {
+  formData: AssessmentFormData;
+  assessmentResults: AssessmentResult;
+  actionPlan: any[];
+}
+
+export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }: ExportArgs) => {
   const date = new Date().toLocaleDateString('en-US', {
     weekday: 'long',
     year: 'numeric',
@@ -257,19 +270,37 @@ export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }
   ].join('\n');
 };
 
-// Stub functions for compatibility
-export const buildWhatIfPrompt = ({ formData, assessmentResults, whatIf, weeklyBonuses = [] }) => {
+interface WhatIfArgs {
+  formData: AssessmentFormData;
+  assessmentResults: AssessmentResult;
+  whatIf: string;
+  weeklyBonuses?: any[];
+}
+
+export const buildWhatIfPrompt = ({ formData, assessmentResults, whatIf, weeklyBonuses = [] }: WhatIfArgs) => {
   const basePrompt = buildLLMPrompt({ formData, assessmentResults, weeklyBonuses });
   return `${basePrompt}\n\n--- WHAT-IF SCENARIO ---\n${whatIf}\n\nPlease analyze how this change would affect the recommendations above.`;
 };
 
-export const buildPlanCritiquePrompt = ({ formData, assessmentResults, actionPlan, weeklyBonuses = [] }) => {
+interface PlanCritiqueArgs {
+  formData: AssessmentFormData;
+  assessmentResults: AssessmentResult;
+  actionPlan: any[];
+  weeklyBonuses?: any[];
+}
+
+export const buildPlanCritiquePrompt = ({ formData, assessmentResults, actionPlan, weeklyBonuses = [] }: PlanCritiqueArgs) => {
   const basePrompt = buildLLMPrompt({ formData, assessmentResults, weeklyBonuses });
   const planText = actionPlan.map((a, idx) => `${idx + 1}. ${a.title}: ${a.why || a.reason}`).join('\n');
   return `${basePrompt}\n\n--- APP'S RECOMMENDED ACTION PLAN ---\n${planText}\n\nPlease critique this plan and suggest improvements or corrections.`;
 };
 
-export const buildLLMJsonPayload = ({ formData, assessmentResults }) => {
+interface PayloadArgs {
+  formData: AssessmentFormData;
+  assessmentResults: AssessmentResult;
+}
+
+export const buildLLMJsonPayload = ({ formData, assessmentResults }: PayloadArgs) => {
   return {
     rank: Number(formData.rank) || 0,
     timePlayed: Number(formData.timePlayed) || 0,

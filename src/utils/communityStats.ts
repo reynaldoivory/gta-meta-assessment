@@ -1,10 +1,12 @@
 // src/utils/communityStats.js
+import type { AssessmentFormData, AssessmentResult } from '../types/domain.types';
+
 const COMMUNITY_STATS_KEY = 'gta_community_stats_pool';
 const TRAP_STATS_KEY = 'gta_community_trap_stats';
 const STATS_VERSION = 'v1';
 
 // Anonymize and aggregate data
-export const submitAnonymousStats = (formData, assessmentResults) => {
+export const submitAnonymousStats = (formData: AssessmentFormData, assessmentResults: AssessmentResult) => {
   // Get existing pool
   const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
 
@@ -111,7 +113,7 @@ export const getCommunityAverages = () => {
 };
 
 // Compare individual player to community
-export const compareToCommunity = (formData, assessmentResults) => {
+export const compareToCommunity = (formData: AssessmentFormData, assessmentResults: AssessmentResult) => {
   const communityAvg = getCommunityAverages();
   
   if (!communityAvg) {
@@ -232,7 +234,7 @@ export const getProgressOverTime = () => {
  * @param {Object} trapSummary - Summary from getTrapSummary()
  * @param {Object} formData - Player form data
  */
-export const submitTrapStats = (trapSummary, formData) => {
+export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) => {
   if (!trapSummary || trapSummary.count === 0) return;
   
   try {
@@ -352,7 +354,7 @@ export const getTrapOccurrenceRates = () => {
  * @param {Array} currentTraps - Currently detected traps
  * @returns {Object|null} Trap avoidance statistics
  */
-export const getTrapAvoidanceStats = (formData, currentTraps) => {
+export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps: any) => {
   const occurrenceRates = getTrapOccurrenceRates();
   
   if (!occurrenceRates) {

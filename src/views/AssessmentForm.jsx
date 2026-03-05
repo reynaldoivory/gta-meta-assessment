@@ -1,23 +1,63 @@
+
 // src/views/AssessmentForm.jsx - HEIST PLANNING BOARD
 // Complete redesign with 12-column grid layout, GTA aesthetics
 
 import { useRef, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 import { useAssessment } from '../context/AssessmentContext';
-import { Save, Trash2, ChevronDown, ChevronRight } from 'lucide-react';
+import { Save, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
 import { BusinessMatrixPanel } from '../components/shared/BusinessMatrixPanel';
 import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSidebar';
 import { FinancialWorkbookPanel } from '../components/shared/FinancialWorkbookPanel';
-import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFinancialGuidePanel';
-        {/* =========== SIDEBAR (COL-SPAN-4): VITALS =========== */}
-        <>
-          {/* VITALS HEADER, RANK, CASH, LIFETIME, TIME, STATS, GTA+ STATUS (sidebar content) */}
-          {/* ...existing sidebar JSX content here... */}
-        </>
+import { AssetToggleCard } from '../components/shared/AssetToggleCard';
+import { StatBar } from '../components/shared/StatBar';
 
-    clearFieldError('timePlayed', errors, setErrors);
+export default function AssessmentForm() {
+  // 1. Destructure all data/functions needed from your Context
+  const {
+    formData, setFormData, errors, setErrors, clearFieldError,
+    manualSave, localStorageAvailable, isSaving, lastSaved, clearSavedData,
+    runAssessment, isCalculating,
+    cascadeTraps, criticalTraps, hasCriticalTrap
+  } = useAssessment();
+
+  // 2. Local State definitions
+  const formContainerRef = useRef(null);
+  const [openPanels, setOpenPanels] = useState({ operations: true, workbook: false });
+  const [timePlayedMode, setTimePlayedMode] = useState('total');
+
+  // 3. Helpers
+  const togglePanel = (panel) => {
+    setOpenPanels(prev => ({ ...prev, [panel]: !prev[panel] }));
   };
+  const formatCurrency = (val) => Number(val).toLocaleString();
+  const formatHours = (val) => Number(val).toFixed(1);
+  const errorBorder = (errs, field) => errs?.[field] ? 'border-gta-red' : 'border-slate-700';
+  const errorBorderSimple = (errs, field) => errs?.[field] ? 'border-gta-red' : 'border-slate-700';
+
+  // 4. Handlers
+  const handleInputChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
+    }));
+    if (errors[name]) clearFieldError(name, errors, setErrors);
+  };
+
+  const handleStatChange = (key, value) => {
+    setFormData(prev => ({ ...prev, [key]: value }));
+  };
+
+  const handleTimePlayedPartChange = (e) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  // Calculated values for display
+  const timePlayedHasParts = (formData.timePlayedDays || formData.timePlayedHours);
+  const timePlayedTotal = formData.timePlayed || 0;
 
   const handleTimePlayedTotalChange = (e) => {
     const { value } = e.target;
@@ -129,8 +169,6 @@ import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFi
       <div className="max-w-7xl mx-auto grid grid-cols-12 gap-6" ref={formContainerRef}>
         
         {/* =========== SIDEBAR (COL-SPAN-4): VITALS =========== */}
-              />
-            </div>
             
             <div>
               <label htmlFor="liquidCash" className="text-xs text-gta-gray font-bold uppercase block mb-2">Available Cash</label>
@@ -349,105 +387,107 @@ import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFi
             </button>
 
             {openPanels.operations && (
-              <div className="space-y-6">
-                <BusinessMatrixPanel
-                  cascadeTraps={cascadeTraps}
-                  criticalTraps={criticalTraps}
-                  hasCriticalTrap={hasCriticalTrap}
-                />
+              <>
+                <div className="space-y-6">
+                  <BusinessMatrixPanel
+                    cascadeTraps={cascadeTraps}
+                    criticalTraps={criticalTraps}
+                    hasCriticalTrap={hasCriticalTrap}
+                  />
 
-                <section className="bg-gta-panel border border-gta-green/30 rounded-lg p-4">
-                  <button
-                    type="button"
-                    onClick={() => togglePanel('workbook')}
-                    className="w-full flex items-center justify-between text-left"
-                  >
-                    <div>
-                      <h3 className="text-sm font-bold uppercase text-gta-green">Financial Workbook</h3>
-                      <p className="text-xs text-gta-gray mt-1">Hidden by default for a cleaner load view.</p>
-                    </div>
-                    {openPanels.workbook ? (
-                      <ChevronDown className="w-4 h-4 text-slate-300" />
-                    ) : (
-                      <ChevronRight className="w-4 h-4 text-slate-300" />
+                  <section className="bg-gta-panel border border-gta-green/30 rounded-lg p-4">
+                    <button
+                      type="button"
+                      onClick={() => togglePanel('workbook')}
+                      className="w-full flex items-center justify-between text-left"
+                    >
+                      <div>
+                        <h3 className="text-sm font-bold uppercase text-gta-green">Financial Workbook</h3>
+                        <p className="text-xs text-gta-gray mt-1">Hidden by default for a cleaner load view.</p>
+                      </div>
+                      {openPanels.workbook ? (
+                        <ChevronDown className="w-4 h-4 text-slate-300" />
+                      ) : (
+                        <ChevronRight className="w-4 h-4 text-slate-300" />
+                      )}
+                    </button>
+
+                    {openPanels.workbook && (
+                      <div className="mt-4">
+                        <FinancialWorkbookPanel
+                          formData={formData}
+                          setFormData={setFormData}
+                        />
+                      </div>
                     )}
-                  </button>
+                  </section>
+                </div>
+                <h3 className="text-lg font-bold text-gta-green font-heading uppercase mb-4">🏍️ Vehicles & Tools</h3>
+                <div className="grid grid-cols-2 gap-3">
+                  <AssetToggleCard 
+                    label="Oppressor Mk II"
+                    emoji="🏍️"
+                    cost="$6.8M"
+                    details="Missiles require Nightclub + Terrorbyte (Specialized Workshop)"
+                    isOwned={formData.hasOppressor || false}
+                    onChange={() => handleInputChange({ target: { name: 'hasOppressor', type: 'checkbox', checked: !formData.hasOppressor } })}
+                    compact
+                  >
+                    {formData.hasOppressor && (
+                      <div className="space-y-2">
+                        <label className="flex items-center gap-2 p-2 rounded bg-slate-900/60 border border-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="hasTerrorbyte"
+                            checked={formData.hasTerrorbyte || false}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 rounded bg-slate-800 border-gta-green checked:bg-gta-green"
+                            aria-label="Owns Terrorbyte"
+                          />
+                          <span className="text-xs text-slate-300">Terrorbyte owned (requires Nightclub)</span>
+                        </label>
+                        <label className="flex items-center gap-2 p-2 rounded bg-slate-900/60 border border-slate-700 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            name="hasOppressorMissiles"
+                            checked={formData.hasOppressorMissiles || false}
+                            onChange={handleInputChange}
+                            className="w-4 h-4 rounded bg-slate-800 border-gta-green checked:bg-gta-green"
+                            aria-label="Oppressor Mk II missiles installed"
+                          />
+                          <span className="text-xs text-slate-300">Missiles installed (Terrorbyte workshop)</span>
+                        </label>
+                      </div>
+                    )}
+                  </AssetToggleCard>
+                  <AssetToggleCard 
+                    label="F-160 Raiju"
+                    emoji="✈️"
+                    cost="$6.8M"
+                    isOwned={formData.hasRaiju || false}
+                    onChange={() => handleInputChange({ target: { name: 'hasRaiju', type: 'checkbox', checked: !formData.hasRaiju } })}
+                    compact
+                  />
+                  <AssetToggleCard 
+                    label="Armored Kuruma"
+                    emoji="🛡️"
+                    cost="$1.532M"
+                    isOwned={formData.hasArmoredKuruma || false}
+                    onChange={() => handleInputChange({ target: { name: 'hasArmoredKuruma', type: 'checkbox', checked: !formData.hasArmoredKuruma } })}
+                    compact
+                  />
+                  <AssetToggleCard 
+                    label="Brickade 6x6"
+                    emoji="🚚"
+                    cost="$650k"
+                    isOwned={formData.hasBrickade6x6 || false}
+                    onChange={() => handleInputChange({ target: { name: 'hasBrickade6x6', type: 'checkbox', checked: !formData.hasBrickade6x6 } })}
+                    compact
+                  />
+                </div>
+              </>
+            )}
 
-                  {openPanels.workbook && (
-                    <div className="mt-4">
-                      <FinancialWorkbookPanel
-                        formData={formData}
-                        setFormData={setFormData}
-                      />
-                    </div>
-                  )}
-                </section>
-            <h3 className="text-lg font-bold text-gta-green font-heading uppercase mb-4">🏍️ Vehicles & Tools</h3>
-            <div className="grid grid-cols-2 gap-3">
-              <AssetToggleCard 
-                label="Oppressor Mk II"
-                emoji="🏍️"
-                cost="$6.8M"
-                details="Missiles require Nightclub + Terrorbyte (Specialized Workshop)"
-                isOwned={formData.hasOppressor || false}
-                onChange={() => handleInputChange({ target: { name: 'hasOppressor', type: 'checkbox', checked: !formData.hasOppressor } })}
-                compact
-              >
-                {formData.hasOppressor && (
-                  <div className="space-y-2">
-                    <label className="flex items-center gap-2 p-2 rounded bg-slate-900/60 border border-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="hasTerrorbyte"
-                        checked={formData.hasTerrorbyte || false}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 rounded bg-slate-800 border-gta-green checked:bg-gta-green"
-                        aria-label="Owns Terrorbyte"
-                      />
-                      <span className="text-xs text-slate-300">Terrorbyte owned (requires Nightclub)</span>
-                    </label>
-                    <label className="flex items-center gap-2 p-2 rounded bg-slate-900/60 border border-slate-700 cursor-pointer">
-                      <input
-                        type="checkbox"
-                        name="hasOppressorMissiles"
-                        checked={formData.hasOppressorMissiles || false}
-                        onChange={handleInputChange}
-                        className="w-4 h-4 rounded bg-slate-800 border-gta-green checked:bg-gta-green"
-                        aria-label="Oppressor Mk II missiles installed"
-                      />
-                      <span className="text-xs text-slate-300">Missiles installed (Terrorbyte workshop)</span>
-                    </label>
-                  </div>
-                )}
-              </AssetToggleCard>
-              <AssetToggleCard 
-                label="F-160 Raiju"
-                emoji="✈️"
-                cost="$6.8M"
-                isOwned={formData.hasRaiju || false}
-                onChange={() => handleInputChange({ target: { name: 'hasRaiju', type: 'checkbox', checked: !formData.hasRaiju } })}
-                compact
-              />
-              <AssetToggleCard 
-                label="Armored Kuruma"
-                emoji="🛡️"
-                cost="$1.532M"
-                isOwned={formData.hasArmoredKuruma || false}
-                onChange={() => handleInputChange({ target: { name: 'hasArmoredKuruma', type: 'checkbox', checked: !formData.hasArmoredKuruma } })}
-                compact
-              />
-              <AssetToggleCard 
-                label="Brickade 6x6"
-                emoji="🚚"
-                cost="$650k"
-                isOwned={formData.hasBrickade6x6 || false}
-                onChange={() => handleInputChange({ target: { name: 'hasBrickade6x6', type: 'checkbox', checked: !formData.hasBrickade6x6 } })}
-                compact
-              />
-            </div>
-          </div>
-
-          {/* PROPERTIES & SERVICES */}
           <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-6">
             <h3 className="text-lg font-bold text-gta-green font-heading uppercase mb-4">🏢 Properties & Services</h3>
             <div className="grid grid-cols-2 gap-3">
@@ -665,6 +705,6 @@ import { EnterpriseFinancialGuidePanel } from '../components/shared/EnterpriseFi
           </div>
         </main>
       </div>
-    </div>
+
   );
 }

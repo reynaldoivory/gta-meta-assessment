@@ -52,7 +52,7 @@ const getNextResetTime = () => {
   }
   
   return resetTime.getTime();
-};
+
 
 const getNowTimestamp = () => Date.now();
 

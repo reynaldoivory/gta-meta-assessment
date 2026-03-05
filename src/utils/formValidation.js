@@ -1,6 +1,23 @@
 // src/utils/formValidation.js
 // Form validation utilities
 
+
+/**
+ * Helper to validate a number field with min/max constraints.
+ * @param {any} value - The value to check
+ * @param {number} min - Minimum allowed value
+ * @param {number} max - Maximum allowed value (optional)
+ * @param {string} msg - Error message if invalid
+ * @returns {string|null}
+ */
+function validateNumber(value, min, max, msg) {
+  const num = Number(value);
+  if (value && (Number.isNaN(num) || num < min || (typeof max === 'number' && num > max))) {
+    return msg;
+  }
+  return null;
+}
+
 /**
  * Validate a single field
  * @param {string} field - Field name
@@ -10,79 +27,30 @@
 export const validateField = (field, value) => {
   switch (field) {
     case 'rank':
-      const rankNum = Number(value);
-      if (value && (isNaN(rankNum) || rankNum < 1 || rankNum > 8000)) {
-        return 'Rank must be between 1-8000';
-      }
-      return null;
-      
+      return validateNumber(value, 1, 8000, 'Rank must be between 1-8000');
     case 'liquidCash':
-      const cashNum = Number(value);
-      if (value && (isNaN(cashNum) || cashNum < 0)) {
-        return 'Cash cannot be negative';
-      }
-      return null;
-
+      return validateNumber(value, 0, undefined, 'Cash cannot be negative');
     case 'totalIncomeCollected':
-      const incomeNum = Number(value);
-      if (value && (isNaN(incomeNum) || incomeNum < 0)) {
-        return 'Total income cannot be negative';
-      }
-      return null;
-
+      return validateNumber(value, 0, undefined, 'Total income cannot be negative');
     case 'totalRPCollected':
-      const rpNum = Number(value);
-      if (value && (isNaN(rpNum) || rpNum < 0)) {
-        return 'Total RP cannot be negative';
-      }
-      return null;
-      
+      return validateNumber(value, 0, undefined, 'Total RP cannot be negative');
     case 'timePlayed':
-      const timeNum = Number(value);
-      if (value && (isNaN(timeNum) || timeNum < 0)) {
-        return 'Time played cannot be negative';
-      }
-      return null;
-
+      return validateNumber(value, 0, undefined, 'Time played cannot be negative');
     case 'timePlayedDays':
-      const daysNum = Number(value);
-      if (value && (isNaN(daysNum) || daysNum < 0)) {
-        return 'Days played cannot be negative';
-      }
-      return null;
-
+      return validateNumber(value, 0, undefined, 'Days played cannot be negative');
     case 'timePlayedHours':
-      const hoursNum = Number(value);
-      if (value && (isNaN(hoursNum) || hoursNum < 0 || hoursNum > 23)) {
-        return 'Hours must be between 0-23';
-      }
-      return null;
-
+      return validateNumber(value, 0, 23, 'Hours must be between 0-23');
     case 'nightclubTechs':
-      const techs = Number(value);
-      if (value && (isNaN(techs) || techs < 0 || techs > 5)) {
-        return 'Technicians must be between 0-5';
-      }
-      return null;
-      
+      return validateNumber(value, 0, 5, 'Technicians must be between 0-5');
     case 'nightclubFeeders':
       // Legacy validation - nightclubFeeders is now computed from nightclubSources
       // This case is kept for backwards compatibility
       if (typeof value === 'number' || typeof value === 'string') {
-        const feeders = Number(value);
-        if (value && (isNaN(feeders) || feeders < 0 || feeders > 7)) {
-          return 'Feeder businesses must be between 0-7';
-        }
+        return validateNumber(value, 0, 7, 'Feeder businesses must be between 0-7');
       }
       return null;
-      
     case 'securityContracts':
-      const contracts = Number(value);
-      if (value && (isNaN(contracts) || contracts < 0)) {
-        return 'Security contracts cannot be negative';
-      }
-      return null;
-      
+      return validateNumber(value, 0, undefined, 'Security contracts cannot be negative');
     default:
       return null;
   }
@@ -95,20 +63,13 @@ export const validateField = (field, value) => {
  */
 export const validateForm = (formData) => {
   const errors = {};
-  
-  // Validate all numeric fields
   const fieldsToValidate = [
     'rank', 'liquidCash', 'totalIncomeCollected', 'totalRPCollected', 'timePlayed', 'timePlayedDays', 'timePlayedHours',
-    'nightclubTechs',
-    'nightclubFeeders', 'securityContracts'
+    'nightclubTechs', 'nightclubFeeders', 'securityContracts'
   ];
-  
-  fieldsToValidate.forEach(field => {
+  for (const field of fieldsToValidate) {
     const error = validateField(field, formData[field]);
-    if (error) {
-      errors[field] = error;
-    }
-  });
-  
+    if (error) errors[field] = error;
+  }
   return errors;
 };

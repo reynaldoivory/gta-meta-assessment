@@ -6,17 +6,11 @@
 import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
-import { checkGatekeeper } from './gatekeeperEngine.js';
-import { generateInfrastructureRecommendations, getNightclubTechnicianCost } from './infrastructureAdvisor.js';
+import { getNightclubTechnicianCost } from './infrastructureAdvisor.js';
 
-// Type assertions for .js modules (until converted to TypeScript)
-const _checkGatekeeper = checkGatekeeper as (action: any, user: any, now: number) => any;
-const WEEKLY_EVENTS = _rawWEEKLY_EVENTS as any;
-const _generateInfrastructureRecommendations = generateInfrastructureRecommendations as (formData: any) => any[];
-const _getNightclubTechnicianCost = getNightclubTechnicianCost as (level: number) => number;
-const _validateStat = validateStat as any;
-const _isExpiringSoon = isExpiringSoon as (expiry: number, now: number) => boolean;
-const _isExpiringCritical = isExpiringCritical as (expiry: number, now: number) => boolean;
+
+// Use direct imports, remove redundant type assertions (TypeScript will infer types)
+const WEEKLY_EVENTS = _rawWEEKLY_EVENTS;
 
 // ======================================================================
 // Types & Interfaces

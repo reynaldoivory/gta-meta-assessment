@@ -1,3 +1,5 @@
+import { useState, useEffect, useMemo } from 'react';
+
 import PropTypes from 'prop-types';
 
 const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
@@ -18,35 +20,10 @@ const getStatusText = ({ isReady, lastSold, percentFull, timeToFull, productionT
   if (isReady) return '⚠️ Production STOPPED (at max capacity)';
   if (!lastSold) return 'Set last sale time to start tracking';
   return `${Math.round(percentFull)}% full • Ready in ${Math.max(0, (timeToFull - productionTime).toFixed(1))} hrs`;
-};
-import PropTypes from 'prop-types';
-
-const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
-
-const getBorderClasses = (isReady, isNearFull) => {
-  if (isReady) return 'border-red-500 ring-2 ring-red-500/50';
-  if (isNearFull) return 'border-yellow-500';
-  return 'border-slate-700';
-};
-
-const getProgressBarClass = (isReady, isNearFull) => {
-  if (isReady) return 'bg-red-500';
-  if (isNearFull) return 'bg-yellow-500';
-  return 'bg-purple-500';
-};
-
-const getStatusText = ({ isReady, lastSold, percentFull, timeToFull, productionTime }) => {
-  if (isReady) return '⚠️ Production STOPPED (at max capacity)';
-  if (!lastSold) return 'Set last sale time to start tracking';
-  return `${Math.round(percentFull)}% full • Ready in ${Math.max(0, (timeToFull - productionTime).toFixed(1))} hrs`;
->>>>>>> 2634cade7d3bc981a4587e186bd3c3e58c4c2109
 };
 
 const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   const [productionTime, setProductionTime] = useState(0);
-<<<<<<< HEAD
-  const [lastSold, setLastSold] = useState(() => loadLastSold(hasAcidLab));
-=======
   const [lastSold, setLastSold] = useState(() => {
     if (!hasAcidLab) return null;
     try {
@@ -58,7 +35,6 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
       return null;
     }
   });
->>>>>>> 2634cade7d3bc981a4587e186bd3c3e58c4c2109
   const [suppliesNeeded, setSuppliesNeeded] = useState(false);
 
   // Calculate time since last sale
@@ -198,3 +174,5 @@ AcidLabTracker.propTypes = {
 };
 
 export default AcidLabTracker;
+
+

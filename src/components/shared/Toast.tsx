@@ -1,7 +1,7 @@
-// src/components/shared/Toast.jsx
+﻿// src/components/shared/Toast.tsx
 import { useEffect } from 'react';
 import { CheckCircle, XCircle, AlertCircle, Info, X } from 'lucide-react';
-import PropTypes from 'prop-types';
+import type { ToastType } from '../../context/ToastContext';
 
 const toastIcons = {
   success: CheckCircle,
@@ -17,7 +17,14 @@ const toastColors = {
   info: 'bg-gradient-to-r from-primary-purple-600/90 to-primary-cyan-600/90 border-primary-purple-500 shadow-glow-purple text-white',
 };
 
-const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
+export interface ToastProps {
+  message: string;
+  type?: ToastType;
+  onClose: () => void;
+  duration?: number;
+}
+
+const Toast = ({ message, type = 'info', onClose, duration = 3000 }: ToastProps) => {
   const Icon = toastIcons[type];
   
   useEffect(() => {
@@ -26,11 +33,9 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
   }, [duration, onClose]);
   
   return (
-    <div className={`
-      flex items-center gap-3 px-5 py-4 rounded-2xl border-2 backdrop-blur-md
-      animate-pop-in font-bold
-      ${toastColors[type]}
-    `}>
+    <div className={
+      "flex items-center gap-3 px-5 py-4 rounded-2xl border-2 backdrop-blur-md animate-pop-in font-bold " + toastColors[type]
+    }>
       <Icon className="w-5 h-5 flex-shrink-0" />
       <p className="flex-1 text-sm font-medium">{message}</p>
       <button 
@@ -42,13 +47,6 @@ const Toast = ({ message, type = 'info', onClose, duration = 3000 }) => {
       </button>
     </div>
   );
-};
-
-Toast.propTypes = {
-  message: PropTypes.string.isRequired,
-  type: PropTypes.oneOf(['success', 'error', 'warning', 'info']),
-  onClose: PropTypes.func.isRequired,
-  duration: PropTypes.number,
 };
 
 export default Toast;

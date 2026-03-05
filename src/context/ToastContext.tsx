@@ -1,19 +1,30 @@
-// src/context/ToastContext.jsx
-import PropTypes from 'prop-types';
-import { createContext, useContext, useMemo, useState } from 'react';
+﻿// src/context/ToastContext.tsx
+import { createContext, useContext, useMemo, useState, ReactNode } from 'react';
 import Toast from '../components/shared/Toast';
 
-const ToastContext = createContext(null);
+export type ToastType = 'info' | 'success' | 'warning' | 'error';
 
-export const ToastProvider = ({ children }) => {
-  const [toasts, setToasts] = useState([]);
+export interface ToastMessage {
+  id: number;
+  message: string;
+  type: ToastType;
+}
+
+export interface ToastContextValue {
+  showToast: (message: string, type?: ToastType) => void;
+}
+
+const ToastContext = createContext<ToastContextValue | null>(null);
+
+export const ToastProvider = ({ children }: { children: ReactNode }) => {
+  const [toasts, setToasts] = useState<ToastMessage[]>([]);
   
-  const showToast = (message, type = 'info') => {
+  const showToast = (message: string, type: ToastType = 'info') => {
     const id = Date.now();
     setToasts(prev => [...prev, { id, message, type }]);
   };
   
-  const removeToast = (id) => {
+  const removeToast = (id: number) => {
     setToasts(prev => prev.filter(t => t.id !== id));
   };
 
@@ -39,11 +50,7 @@ export const ToastProvider = ({ children }) => {
   );
 };
 
-ToastProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
-export const useToast = () => {
+export const useToast = (): ToastContextValue => {
   const context = useContext(ToastContext);
   if (!context) {
     throw new Error('useToast must be used within ToastProvider');

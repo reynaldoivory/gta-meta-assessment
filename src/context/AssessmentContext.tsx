@@ -1,11 +1,29 @@
-import PropTypes from 'prop-types';
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+﻿import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import type { AssessmentFormData } from '../types/domain.types';
+
+export interface AssessmentContextValue {
+  formData: AssessmentFormData;
+  setFormData: React.Dispatch<React.SetStateAction<AssessmentFormData>>;
+  errors: Record<string, string>;
+  setErrors: React.Dispatch<React.SetStateAction<Record<string, string>>>;
+  clearFieldError: (field: string) => void;
+  manualSave: () => void;
+  localStorageAvailable: boolean;
+  isSaving: boolean;
+  lastSaved: Date | null;
+  clearSavedData: () => void;
+  runAssessment: () => void;
+  isCalculating: boolean;
+  cascadeTraps: string[];
+  criticalTraps: string[];
+  hasCriticalTrap: boolean;
+}
 
 // Create the Context
-const AssessmentContext = createContext(null);
+const AssessmentContext = createContext<AssessmentContextValue | null>(null);
 
 // Initial Data Helper
-const createInitialFormData = () => ({
+const createInitialFormData = (): AssessmentFormData => ({
   // Vitals
   liquidCash: '',
   totalRPCollected: '',
@@ -48,38 +66,39 @@ const createInitialFormData = () => ({
   hasBrickade6x6: false
 });
 
-export const AssessmentProvider = ({ children }) => {
+export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   // 1. State Initialization
-  const [formData, setFormData] = useState(() => {
+  const [formData, setFormData] = useState<AssessmentFormData>(() => {
     try {
       const saved = localStorage.getItem('gta_assessment_data');
-      return saved ? JSON.parse(saved) : createInitialFormData();
+      return saved ? (JSON.parse(saved) as AssessmentFormData) : createInitialFormData();
     } catch (e) {
       console.warn("Failed to load saved data", e);
       return createInitialFormData();
     }
   });
   
-  const [errors, setErrors] = useState({});
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCalculating, setIsCalculating] = useState(false);
-  const [lastSaved, setLastSaved] = useState(null);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
   
   // 2. Calculated Logic (Traps)
   const cascadeTraps = useMemo(() => {
-    const traps = [];
+    const traps: string[] = [];
     if (formData.hasOppressor && !formData.hasTerrorbyte) traps.push('Missiles require Terrorbyte');
     // Add other logic here
     return traps;
   }, [formData]);
 
   const criticalTraps = useMemo(() => {
-    return [];
+    const traps: string[] = [];
+    return traps;
   }, [formData]);
 
   const hasCriticalTrap = criticalTraps.length > 0;
 
   // 3. Actions
-  const clearFieldError = (field) => {
+  const clearFieldError = (field: string) => {
     setErrors(prev => {
       const newErrors = { ...prev };
       delete newErrors[field];
@@ -116,10 +135,11 @@ export const AssessmentProvider = ({ children }) => {
       manualSave();
     }, 2000);
     return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData]);
 
   // 4. Context Value
-  const value = {
+  const value: AssessmentContextValue = {
     formData,
     setFormData,
     errors,
@@ -144,12 +164,8 @@ export const AssessmentProvider = ({ children }) => {
   );
 };
 
-AssessmentProvider.propTypes = {
-  children: PropTypes.node.isRequired,
-};
-
 // Custom Hook for easy access
-export const useAssessment = () => {
+export const useAssessment = (): AssessmentContextValue => {
   const context = useContext(AssessmentContext);
   if (!context) {
     throw new Error('useAssessment must be used within an AssessmentProvider');

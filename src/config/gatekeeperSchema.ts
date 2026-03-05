@@ -6,7 +6,9 @@
  * 3. GEAR_OVERRIDE: Specific gear that bypasses a Soft Gate (e.g., Scuba Suit bypasses Lung Capacity).
  */
 
-export const TASK_REQUIREMENTS = {
+import type { TaskRequirement } from '../types/domain.types';
+
+export const TASK_REQUIREMENTS: Record<string, TaskRequirement> = {
     // HEISTS
     'cayo_perico': {
         hard_gates: ['kosatka'], 

@@ -109,9 +109,6 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
       }));
     }
   }, [formData, setFormData]);
-    }
-  }, [formData, setFormData]);
-
 
   // Calculate time until next reset
   const nowRef = useRef(Date.now());

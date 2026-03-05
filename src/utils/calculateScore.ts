@@ -1,7 +1,8 @@
-﻿// src/utils/calculateScore.js
+// src/utils/calculateScore.js
 // Score calculation logic extracted from computeAssessment.js
 
-import { MODEL_CONFIG } from './modelConfig.js';
+import { MODEL_CONFIG as _MODEL_CONFIG } from './modelConfig.js';
+const MODEL_CONFIG: any = _MODEL_CONFIG;
 
 /**
  * Calculate assessment score and tier based on player data
@@ -56,10 +57,10 @@ export const calculateScore = (params) => { // NOSONAR
 
   let score = 0;
 
-  // Active income: $0 â†’ 0, $1M/hr â†’ wActive
+  // Active income: $0 → 0, $1M/hr → wActive
   score += Math.min(wActive, (activeIncome / 1000000) * wActive);
 
-  // Passive income: $0 â†’ 0, $200k/hr â†’ wPassive
+  // Passive income: $0 → 0, $200k/hr → wPassive
   score += Math.min(wPassive, (passiveIncome / 200000) * wPassive);
 
   // Asset score
@@ -78,7 +79,7 @@ export const calculateScore = (params) => { // NOSONAR
   score += Math.min(wAssets, assetScore);
 
   // Stats: average of key stats scaled to wStats
-  const avgCoreStat = (strength + flying + shooting) / 3; // already 0â€“100
+  const avgCoreStat = (strength + flying + shooting) / 3; // already 0–100
   score += (avgCoreStat / 100) * wStats;
 
   const finalScore = Math.round(score);

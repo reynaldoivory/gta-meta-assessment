@@ -29,13 +29,7 @@ type PriorityPlanResult = {
  * Returns all derived data needed by the PriorityActionPlan view.
  */
 export const usePriorityPlan = (sessionMinutes: number): PriorityPlanResult => {
-  const { formData, results, setStep, whatIfText, setWhatIfText } = useAssessment() as {
-    formData: FormData;
-    results: Results | null;
-    setStep: (step: string) => void;
-    whatIfText: string;
-    setWhatIfText: (text: string) => void;
-  };
+  const { formData, results, setStep, whatIfText, setWhatIfText } = useAssessment() as any;
 
   const sessionPlan = useMemo(() => {
     if (!results) return null;

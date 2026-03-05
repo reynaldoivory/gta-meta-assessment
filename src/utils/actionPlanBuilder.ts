@@ -1,4 +1,4 @@
-﻿// src/utils/actionPlanBuilder.ts
+// src/utils/actionPlanBuilder.ts
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
 /* eslint-disable @typescript-eslint/no-explicit-any, complexity, max-lines */
@@ -6,7 +6,8 @@
 import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
-import { getNightclubTechnicianCost } from './infrastructureAdvisor.js';
+import { getNightclubTechnicianCost, generateInfrastructureRecommendations } from './infrastructureAdvisor.js';
+import { checkGatekeeper } from './gatekeeperEngine.js';
 
 
 // Use direct imports, remove redundant type assertions (TypeScript will infer types)
@@ -428,13 +429,13 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
       priority: 0,
       urgency: 'URGENT',
       type: 'PURCHASE',
-      title: `Ã¢Å¡Â¡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate ?? 'this week'})`,
-      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks $1.3MÃ¢â‚¬â€˜$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
+      title: `âš¡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate ?? 'this week'})`,
+      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks $1.3Mâ€‘$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
       cost: shopCost,
-      earnings: '$1.3MÃ¢â‚¬â€˜$1.5M/hr',
+      earnings: '$1.3Mâ€‘$1.5M/hr',
       timeRemaining: `${daysLeft} days`,
       timeToComplete: '15 minutes (purchase + setup)',
-      potentialEarnings: `$4Ã¢â‚¬â€˜5M in ${daysLeft} days`,
+      potentialEarnings: `$4â€‘5M in ${daysLeft} days`,
       expiresAt: expiry ? new Date(expiry).getTime() : null,
     });
     return actions;
@@ -458,12 +459,12 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
         priority: 0,
         urgency: 'URGENT',
         type: 'MISSION',
-        title: 'Ã°Å¸â€Â¥ Grind Auto Shop Robbery Contracts (2X Event)',
-        why: `Zero prep, ~$540Ã¢â‚¬â€˜600k per 20Ã¢â‚¬â€˜25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0Ã¢â‚¬â€˜1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
+        title: 'ðŸ”¥ Grind Auto Shop Robbery Contracts (2X Event)',
+        why: `Zero prep, ~$540â€‘600k per 20â€‘25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0â€‘1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
         solution:
-          'Rotation: Union Depository finale Ã¢â€ â€™ Client vehicle delivery (also 2X) while staff preps Ã¢â€ â€™ Repeat. Eliminates downtime.',
-        timeToComplete: '20Ã¢â‚¬â€˜25 min per finale, ~$540Ã¢â‚¬â€˜600k payout',
-        earnings: '$1.0Ã¢â‚¬â€˜1.5M/hr (realistic)',
+          'Rotation: Union Depository finale â†’ Client vehicle delivery (also 2X) while staff preps â†’ Repeat. Eliminates downtime.',
+        timeToComplete: '20â€‘25 min per finale, ~$540â€‘600k payout',
+        earnings: '$1.0â€‘1.5M/hr (realistic)',
         timeRemaining: expiryText,
         potentialEarnings: `$${(daysLeftAutoShop * 10 * 1.8).toFixed(1)}M potential over next ${daysLeftAutoShop} days`,
         strategy: 'Eliminates downtime between contracts. Highest $/hr in game right now.',
@@ -477,8 +478,8 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
           ? 'Mansion Gym (Private)'
           : 'Pier Pressure (Beach)';
         const timeToComplete = formData.hasMansion
-          ? '20Ã¢â‚¬â€˜30 mins'
-          : '60Ã¢â‚¬â€˜75 mins';
+          ? '20â€‘30 mins'
+          : '60â€‘75 mins';
         const methodDetails = formData.hasMansion
           ? 'Use the punching bag minigame in your gym. This is the only fast, legit method.'
           : `Launch "Pier Pressure" alone. Go to the boardwalk. Punch pedestrians. Math: You need ${impactsNeeded} punches to reach 60%. (~30 punches/min).`;
@@ -490,7 +491,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
           priority: 0,
           urgency: 'BLOCKER',
           type: 'STAT',
-          title: `Ã°Å¸Å¡Â¨ FIX STRENGTH (${strengthPct}% Ã¢â€ â€™ 60%+)`,
+          title: `ðŸš¨ FIX STRENGTH (${strengthPct}% â†’ 60%+)`,
           why: `You will fail the Auto Shop finale with low strength. You take too much damage.`,
           impact: 'CRITICAL',
           cost: 0,
@@ -508,14 +509,14 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
           priority: 0,
           urgency: 'URGENT',
           type: 'GRIND',
-          title: `Ã¢Å¡Â¡ FARM UNION DEPOSITORY CONTRACT (${daysLeftAutoShop} days left)`,
-          why: 'This is the highest paying activity in the game right now. Union Depository Contract pays ~$540Ã¢â‚¬â€˜600k (with 2X bonus) in ~20Ã¢â‚¬â€˜25 mins. No cooldown Ã¢â‚¬â€œ repeat endlessly. Beats Cayo Perico this week.',
-          earnings: '$1.3MÃ¢â‚¬â€˜$1.5M/hr',
+          title: `âš¡ FARM UNION DEPOSITORY CONTRACT (${daysLeftAutoShop} days left)`,
+          why: 'This is the highest paying activity in the game right now. Union Depository Contract pays ~$540â€‘600k (with 2X bonus) in ~20â€‘25 mins. No cooldown â€“ repeat endlessly. Beats Cayo Perico this week.',
+          earnings: '$1.3Mâ€‘$1.5M/hr',
           timeRemaining: `${daysLeftAutoShop} days`,
           timeToComplete: '25 mins per contract (repeatable)',
           method:
             'Select "Union Depository Contract" from Auto Shop board. If not available, do a short contract to refresh the board.',
-          potentialEarnings: `$4Ã¢â‚¬â€˜5M by event end`,
+          potentialEarnings: `$4â€‘5M by event end`,
           expiresAt: autoShopExpiry,
         });
       }
@@ -535,11 +536,11 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
       priority: 0,
       urgency: 'GRIND NOW',
       type: 'GRIND',
-      title: `Ã¢Å¡Â¡ GRIND FOR AUTO SHOP (${daysLeft} days left)`,
+      title: `âš¡ GRIND FOR AUTO SHOP (${daysLeft} days left)`,
       why: `Auto Shop 2X event ends in ${daysLeft} days. You need $${(needed / 1000).toFixed(0)}k more (${hoursNeeded.toFixed(1)} hours of grinding). Buy it before the event ends!`,
       cost: needed,
       timeToComplete: `${hoursNeeded.toFixed(1)} hours`,
-      potentialEarnings: `$4Ã¢â‚¬â€˜5M after purchase`,
+      potentialEarnings: `$4â€‘5M after purchase`,
       expiresAt: autoShopExpiry,
     });
   }
@@ -568,11 +569,11 @@ const buildBusinessBattlesActions = (formData: FormData, now: number): Action[] 
     priority: 1,
     urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
     type: 'FREEMODE',
-    title: 'Ã¢Å¡Â¡ Contest Business Battles (4X This Week!)',
+    title: 'âš¡ Contest Business Battles (4X This Week!)',
     why: whyText,
     solution: 'Join Business Battles in Freemode (every ~15 mins). Goods go to your Nightclub at 4X value. Best stacking activity.',
-    timeToComplete: '5Ã¢â‚¬â€˜10 min per battle',
-    earnings: '$200Ã¢â‚¬â€˜400k per battle + 4X Nightclub goods',
+    timeToComplete: '5â€‘10 min per battle',
+    earnings: '$200â€‘400k per battle + 4X Nightclub goods',
     timeRemaining: urgencyText,
     expiresAt: bbExpiry,
     category: 'freemode',
@@ -607,7 +608,7 @@ const buildNightclubDiscountActions = (formData: FormData, now: number): Action[
     priority: 1,
     urgency: hoursLeft < 24 ? 'URGENT' : 'HIGH',
     type: 'PURCHASE',
-    title: 'Ã°Å¸â€™Â° Buy Nightclub Upgrades (40% OFF!)',
+    title: 'ðŸ’° Buy Nightclub Upgrades (40% OFF!)',
     why: `Your Nightclub isn't optimized. 40% off upgrades ${getExpiryLabel(ncDiscountExpiry ? new Date(ncDiscountExpiry).toISOString() : WEEKLY_EVENTS.meta?.validUntil ?? '')} (${urgencyText}). Save ~$600k on Equipment + Staff upgrades.`,
     solution: 'Buy Equipment Upgrade + Staff Upgrade from Nightclub computer. They boost production speed significantly.',
     timeToComplete: '5 minutes',
@@ -622,7 +623,7 @@ const buildNightclubDiscountActions = (formData: FormData, now: number): Action[
 const buildCombatPrepActions = (formData: FormData): Action[] => {
   const actions: Action[] = [];
   const playerRank = Number(formData.rank) || 0;
-  const strengthPct = _validateStat(formData.strength);
+  const strengthPct = validateStat(formData.strength);
   const hasGTAPlus = !!formData.hasGTAPlus;
   const autoShop2XActive =
     formData.hasAutoShop &&
@@ -638,10 +639,10 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
       priority: 2,
       urgency: 'HIGH',
       type: 'PREPARATION',
-      title: 'Ã°Å¸â€™Âª Max Strength Before Auto Shop Finales',
+      title: 'ðŸ’ª Max Strength Before Auto Shop Finales',
       why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is ${strengthPct}% (low). You take extra damage. Max strength first.`,
       solution: '1. Max Strength (30 min via Pier Pressure or Mansion Gym). 2. Then stock 10+ Snacks + 10 Super Heavy Armor.',
-      timeToComplete: '30Ã¢â‚¬â€˜40 min oneÃ¢â‚¬â€˜time investment',
+      timeToComplete: '30â€‘40 min oneâ€‘time investment',
       impact: 'Prevents wasted time on failed missions',
       note: 'Do this before grinding Auto Shop.',
     });
@@ -650,10 +651,10 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
       priority: 2,
       urgency: 'MEDIUM',
       type: 'PREPARATION',
-      title: 'Ã°Å¸â€ºÂ¡Ã¯Â¸Â Stock Snacks & Armor for Auto Shop',
+      title: 'ðŸ›¡ï¸ Stock Snacks & Armor for Auto Shop',
       why: `Rank ${playerRank} = ~${maxHealthPercent}% max health. Strength is good (${strengthPct}%), but stock up on supplies.`,
       solution: 'Stock 10+ Snacks + 10 Super Heavy Armor. Visit Agency armory for free snacks if owned.',
-      timeToComplete: '10Ã¢â‚¬â€˜15 min oneÃ¢â‚¬â€˜time investment',
+      timeToComplete: '10â€‘15 min oneâ€‘time investment',
       impact: 'Prevents wasted time on failed missions',
     });
   }
@@ -663,7 +664,7 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
 
 const buildInfrastructureActions = (formData: FormData, cash: number): Action[] => {
   const actions: Action[] = [];
-  const infraRecommendations = _generateInfrastructureRecommendations(formData) || [];
+  const infraRecommendations = generateInfrastructureRecommendations(formData) || [];
   const criticalInfra = infraRecommendations.filter(
     (r: any) => r.urgency === 'CRITICAL' || r.urgency === 'URGENT' || r.type === 'CRITICAL'
   );
@@ -671,11 +672,11 @@ const buildInfrastructureActions = (formData: FormData, cash: number): Action[] 
   criticalInfra.slice(0, 2).forEach((rec: any, index: number) => {
     if (rec.cost && cash < rec.cost) return;
 
-    let emoji = 'Ã°Å¸ÂÂ­';
-    if (rec.isTrap) emoji = 'Ã¢Å¡Â Ã¯Â¸Â';
-    else if (rec.isDiscounted) emoji = 'Ã°Å¸â€™Â°';
-    else if (rec.category === 'nightclub') emoji = 'Ã°Å¸Å½Â­';
-    else if (rec.category === 'bunker') emoji = 'Ã°Å¸â€Â«';
+    let emoji = 'ðŸ­';
+    if (rec.isTrap) emoji = 'âš ï¸';
+    else if (rec.isDiscounted) emoji = 'ðŸ’°';
+    else if (rec.category === 'nightclub') emoji = 'ðŸŽ­';
+    else if (rec.category === 'bunker') emoji = 'ðŸ”«';
 
     const priorityBoost = rec.isDiscounted ? 1 : 2;
 
@@ -686,7 +687,7 @@ const buildInfrastructureActions = (formData: FormData, cash: number): Action[] 
       title: `${emoji} ${rec.title}`,
       why: rec.why,
       solution: rec.benefit,
-      timeToComplete: '5Ã¢â‚¬â€˜10 minutes',
+      timeToComplete: '5â€‘10 minutes',
       cost: rec.cost,
       savings: rec.isDiscounted ? rec.originalCost - rec.cost : 0,
       roiHours: rec.roiHours ?? null,
@@ -709,7 +710,7 @@ const buildFlyingSkillActions = (flyingPct: number): Action[] => {
       priority: 3,
       urgency: 'MEDIUM',
       type: 'STAT',
-      title: `San Andreas Flight School (${flyingPct}% Ã¢â€ â€™ 80%+)`,
+      title: `San Andreas Flight School (${flyingPct}% â†’ 80%+)`,
       why: `Your Flying is ${flyingPct}% (${Math.ceil(flyingPct / 20)}/5 bars). ${efficiencyGap}% below meta benchmark for heist leadership. Your Sparrow is unstable. Flight School fixes this AND pays ~$250k.`,
       timeToComplete: '45 mins',
       earnings: '+$250k',
@@ -728,7 +729,7 @@ const buildStrengthBlockerActions = (strengthPct: number, formData: FormData): A
   const method = formData.hasMansion ? 'Mansion Gym (Private)' : 'Pier Pressure (Beach)';
   const timeToComplete = formData.hasMansion
     ? `${Math.ceil((40 - strengthPct) * 0.3)} mins`
-    : '60Ã¢â‚¬â€˜75 mins';
+    : '60â€‘75 mins';
   const methodDetails = formData.hasMansion
     ? 'Use the punching bag minigame in your gym. This is the only fast, legit method.'
     : `Launch "Pier Pressure" alone. Go to the boardwalk. Punch pedestrians. Math: You need ${impactsNeeded} punches to reach 40%. (~30 punches/min).`;
@@ -760,18 +761,18 @@ const buildDreContractActions = (formData: FormData, userProfile: any): Action[]
   if (!formData.hasAgency || formData.dreContractDone) return [];
 
   const weekEndLabel = WEEKLY_EVENTS.meta?.validUntil ?? '';
-  const dreGatekeeper = _checkGatekeeper('dre_contract', userProfile, Date.now()) as any;
+  const dreGatekeeper = checkGatekeeper('dre_contract', userProfile) as any;
 
   let title = `Dr. Dre Contract (After ${weekEndLabel})`;
-  let why = `OneÃ¢â‚¬â€˜time $1M payout. Do after current events end ${weekEndLabel}.`;
-  const note = dreGatekeeper.status === 'LOCKED' ? dreGatekeeper.reason : `Lower priority than timeÃ¢â‚¬â€˜limited events. Do after ${weekEndLabel}.`;
+  let why = `Oneâ€‘time $1M payout. Do after current events end ${weekEndLabel}.`;
+  const note = dreGatekeeper.status === 'LOCKED' ? dreGatekeeper.reason : `Lower priority than timeâ€‘limited events. Do after ${weekEndLabel}.`;
   let priority = 4;
 
   if (dreGatekeeper.status === 'LOCKED') {
-    title = `Ã°Å¸â€â€™ ${title}`;
+    title = `ðŸ”’ ${title}`;
     why = `${dreGatekeeper.reason}. ${why}`;
   } else if (dreGatekeeper.status === 'WARNING') {
-    title = `Ã¢Å¡Â Ã¯Â¸Â ${title}`;
+    title = `âš ï¸ ${title}`;
     why = `${dreGatekeeper.reason} ${why}`;
   }
 
@@ -783,7 +784,7 @@ const buildDreContractActions = (formData: FormData, userProfile: any): Action[]
       title,
       why,
       solution: 'Complete Dr. Dre Contract from Agency computer',
-      timeToComplete: '2Ã¢â‚¬â€˜3 hours',
+      timeToComplete: '2â€‘3 hours',
       note,
       gatekeeperStatus: dreGatekeeper.status,
       gatekeeperPenalty: dreGatekeeper.score_penalty,
@@ -800,11 +801,11 @@ const buildStaminaActions = (staminaPct: number): Action[] => {
       urgency: 'LOW',
       type: 'STAT',
       title: 'Maximize Stamina (AFK Method)',
-      why: 'Unlimited sprint is useful for heist setups. Use the rubberÃ¢â‚¬â€˜band method while AFK. Required for Mansion Yoga buff (+15% run speed).',
+      why: 'Unlimited sprint is useful for heist setups. Use the rubberâ€‘band method while AFK. Required for Mansion Yoga buff (+15% run speed).',
       impact: 'LOW - Quality of life improvement',
       cost: 0,
       timeToComplete: '30 mins (AFK)',
-      method: 'RubberÃ¢â‚¬â€˜band controller while AFK',
+      method: 'Rubberâ€‘band controller while AFK',
     },
   ];
 };
@@ -869,9 +870,9 @@ const generateSessionTaxActions = (formData: FormData): Action[] => {
       priority: 0,
       urgency: 'URGENT',
       type: 'DAILY',
-      title: 'Ã°Å¸â€™Â° Daily Cash Loop',
+      title: 'ðŸ’° Daily Cash Loop',
       why: 'These are fast, guaranteed-value dailies. Leaving them unchecked is free money left behind.',
-      solution: `Complete: ${missingDaily.join(' Ã¢â€ â€™ ')}. Resets daily at 07:00 UTC.`,
+      solution: `Complete: ${missingDaily.join(' â†’ ')}. Resets daily at 07:00 UTC.`,
       timeToComplete: '5-10 mins',
       estimatedMinutes: 8,
       launchesPassiveTimer: false,
@@ -885,9 +886,9 @@ const generateSessionTaxActions = (formData: FormData): Action[] => {
       priority: 0,
       urgency: 'URGENT',
       type: 'TAX',
-      title: 'Ã°Å¸ÂÂ­ Passive Empire Maintenance',
+      title: 'ðŸ­ Passive Empire Maintenance',
       why: `Start all passive clocks immediately. ${passiveSteps.length} businesses need attention. Empty supplies = money left on the table every hour.`,
-      solution: passiveSteps.join(' Ã¢â€ â€™ ') + '. Do this FIRST every session (~5-10 min).',
+      solution: passiveSteps.join(' â†’ ') + '. Do this FIRST every session (~5-10 min).',
       timeToComplete: '5-10 mins',
       estimatedMinutes: 10,
       launchesPassiveTimer: true,
@@ -902,7 +903,7 @@ const generateSessionTaxActions = (formData: FormData): Action[] => {
       type: 'TAX',
       title: 'Sell Acid Lab Product (Private Session)',
       why: 'Acid Lab sell missions work in Invite Only. Sell when stock is full for max value.',
-      solution: 'Call Mutt Ã¢â€ â€™ Sell Product. Brickade 6x6 sell is solo-friendly in private sessions.',
+      solution: 'Call Mutt â†’ Sell Product. Brickade 6x6 sell is solo-friendly in private sessions.',
       timeToComplete: '5-10 mins',
       estimatedMinutes: 8,
       launchesPassiveTimer: false,
@@ -972,7 +973,7 @@ const addFallbackMaintenanceActions = (actions: Action[]) => {
       type: 'OPTIMIZE',
       title: 'Complete Contact Missions',
       why: 'Contact missions provide steady income and RP. Good filler activity between heists.',
-      solution: 'Open phone Ã¢â€ â€™ Quick Job Ã¢â€ â€™ Contact Mission',
+      solution: 'Open phone â†’ Quick Job â†’ Contact Mission',
       timeToComplete: '10-15 minutes per mission',
       earnings: '$20-40k per mission',
     },
@@ -1001,7 +1002,7 @@ const generateMaintenanceActions = (formData: FormData, _results?: Results | nul
       type: 'DAILY',
       title: 'Complete Daily Objectives',
       why: 'Daily objectives provide steady income and RP. Check phone for daily tasks.',
-      solution: 'Check phone Ã¢â€ â€™ Daily Objectives Ã¢â€ â€™ Complete tasks',
+      solution: 'Check phone â†’ Daily Objectives â†’ Complete tasks',
       timeToComplete: '10-15 minutes',
       earnings: '$30-50k + RP',
     },

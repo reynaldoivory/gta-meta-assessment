@@ -85,7 +85,7 @@ const getTimePlayedSummary = (formData: FormData) => {
 };
 
 export const useAssessmentResults = () => {
-  const { formData, results, setStep, gamification, gamificationSummary, setFormData } = useAssessment();
+  const { formData, results, setStep, gamification, gamificationSummary, setFormData } = useAssessment() as any;
   const { showToast } = useToast();
 
   const typedFormData = (formData || {}) as FormData;

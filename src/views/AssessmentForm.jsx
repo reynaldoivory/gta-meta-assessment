@@ -11,7 +11,7 @@ import { BusinessMatrixPanel } from '../components/shared/BusinessMatrixPanel';
 import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSidebar';
 import { FinancialWorkbookPanel } from '../components/shared/FinancialWorkbookPanel';
 import { AssetToggleCard } from '../components/shared/AssetToggleCard';
-import { StatBar } from '../components/shared/StatBar';
+import StatBar from '../components/shared/StatBar';
 
 export default function AssessmentForm() {
   // 1. Destructure all data/functions needed from your Context

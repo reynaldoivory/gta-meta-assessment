@@ -1,4 +1,4 @@
-﻿import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
+import { createContext, useContext, useEffect, useMemo, useState, ReactNode } from 'react';
 import type { AssessmentFormData } from '../types/domain.types';
 
 export interface AssessmentContextValue {
@@ -13,6 +13,12 @@ export interface AssessmentContextValue {
   lastSaved: Date | null;
   clearSavedData: () => void;
   runAssessment: () => void;
+  results?: any;
+  setStep?: (s: string) => void;
+  gamification?: any;
+  gamificationSummary?: any;
+  whatIfText?: string;
+  setWhatIfText?: (s: string) => void;
   isCalculating: boolean;
   cascadeTraps: string[];
   criticalTraps: string[];

@@ -1,7 +1,8 @@
 // src/utils/bottleneckTypes.ts
 // Shared type definitions for the bottleneck detection modules.
 
-export type { Bottleneck } from './actionPlanBuilder';
+import type { Bottleneck } from './actionPlanBuilder';
+export type { Bottleneck };
 
 export interface DetectionParams {
   rank: number;

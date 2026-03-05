@@ -20,5 +20,5 @@
     "allowJs": true,
   },
   "include": ["src/**/*"],
-  "exclude": ["node_modules", "dist", "coverage", "**/*.OLD.*", "src/utils/actionPlanBuilder.ts"]
+  "exclude": ["node_modules", "dist", "coverage", "**/*.OLD.*", ]
 }

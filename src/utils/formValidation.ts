@@ -10,7 +10,7 @@
  * @param {string} msg - Error message if invalid
  * @returns {string|null}
  */
-function validateNumber(value, min, max, msg) {
+function validateNumber(value: any, min: number, max: number | undefined, msg: string): string | null {
   const num = Number(value);
   if (value && (Number.isNaN(num) || num < min || (typeof max === 'number' && num > max))) {
     return msg;
@@ -24,7 +24,7 @@ function validateNumber(value, min, max, msg) {
  * @param {any} value - Field value
  * @returns {string | null} Error message or null if valid
  */
-export const validateField = (field, value) => {
+export const validateField = (field: string, value: any): string | null => {
   switch (field) {
     case 'rank':
       return validateNumber(value, 1, 8000, 'Rank must be between 1-8000');

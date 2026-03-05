@@ -1,6 +1,7 @@
 // src/components/ActionPlan.jsx
 // Session Optimizer - Displays prioritized recommendations from the engine
 import React, { useState, useEffect, useMemo, useRef, useCallback } from 'react';
+import PropTypes from 'prop-types';
 import { getFormattedRecommendations } from '../utils/recommendationEngine.ts';
 import { useAssessment } from '../context/AssessmentContext';
 
@@ -258,7 +259,7 @@ const TaskCard = ({ data, rank }) => {
         <div className="flex justify-between items-start gap-4">
           {/* Left: Icon + Title */}
           <div className="flex items-start gap-3 flex-1 min-w-0">
-            <span className="text-2xl flex-shrink-0" role="img" aria-label="icon">
+            <span className="text-2xl flex-shrink-0" aria-hidden="true">
               {data.icon}
             </span>
             <div className="min-w-0">
@@ -288,7 +289,7 @@ const TaskCard = ({ data, rank }) => {
             )}
             {data.timeLeft && (
               <div className="text-xs text-orange-400 font-mono mt-1 flex items-center justify-end gap-1">
-                <span>⏰</span> {data.timeLeft}
+                <span aria-label="Time left">⏰</span> {data.timeLeft}
               </div>
             )}
             {data.timeInvestment && (
@@ -303,15 +304,14 @@ const TaskCard = ({ data, rank }) => {
         <div className="mt-3 flex items-start justify-between gap-3">
           {/* “UX bubble” — must wrap long text */}
           <div className="flex-1 min-w-0">
-            <div className="flex items-start gap-2 bg-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded border border-slate-700 font-mono whitespace-normal break-words [overflow-wrap:anywhere] max-w-full">
+            <div className="flex items-start gap-2 bg-slate-800 text-slate-200 text-xs px-3 py-1.5 rounded border border-slate-700 font-mono whitespace-normal [overflow-wrap:anywhere] max-w-full">
               <span className="flex-shrink-0">👉</span>
               <span className="min-w-0">
                 {data.action}
               </span>
             </div>
           </div>
-          
-          {data.warnings && data.warnings.length > 0 && (
+          {data.warnings && Array.isArray(data.warnings) && data.warnings.length > 0 && (
             <button
               onClick={() => setExpanded(!expanded)}
               className="flex-shrink-0 text-xs text-slate-500 hover:text-slate-300 transition-colors"
@@ -323,11 +323,11 @@ const TaskCard = ({ data, rank }) => {
       </div>
 
       {/* Expanded Warnings */}
-      {expanded && data.warnings && data.warnings.length > 0 && (
+      {expanded && data.warnings && Array.isArray(data.warnings) && data.warnings.length > 0 && (
         <div className="px-4 pb-4 pt-2 border-t border-slate-700/50">
           <div className="space-y-1">
-            {data.warnings.map((warning, i) => (
-              <div key={i} className="text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded">
+            {data.warnings.map((warning) => (
+              <div key={warning} className="text-xs text-yellow-400 bg-yellow-900/20 p-2 rounded">
                 ⚠️ {warning}
               </div>
             ))}
@@ -336,6 +336,27 @@ const TaskCard = ({ data, rank }) => {
       )}
     </div>
   );
+};
+
+
+ActionPlan.propTypes = {
+  user: PropTypes.object.isRequired,
+  gameState: PropTypes.object.isRequired,
+};
+
+TaskCard.propTypes = {
+  data: PropTypes.shape({
+    priority: PropTypes.string,
+    icon: PropTypes.node,
+    label: PropTypes.string,
+    description: PropTypes.string,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+    timeLeft: PropTypes.string,
+    timeInvestment: PropTypes.string,
+    action: PropTypes.string,
+    warnings: PropTypes.arrayOf(PropTypes.string),
+  }).isRequired,
+  rank: PropTypes.number.isRequired,
 };
 
 export default ActionPlan;

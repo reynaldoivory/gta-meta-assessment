@@ -1,4 +1,6 @@
-import type { Bottleneck } from './actionPlanBuilder';
+
+// Centralized types for Action Plan logic
+export type { Action, Bottleneck, FormData } from './actionPlanBuilder';
 
 export type Results = {
   bottlenecks?: Bottleneck[];
@@ -7,5 +9,3 @@ export type Results = {
   nextGoal?: string;
   [key: string]: unknown;
 };
-
-export type { Action, Bottleneck, FormData } from './actionPlanBuilder';

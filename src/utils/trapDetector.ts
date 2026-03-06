@@ -6,6 +6,8 @@ import { calculateNightclubIncome } from './incomeCalculators.js';
 import { MODEL_CONFIG } from './modelConfig.js';
 import { getNightclubTechnicianCost, INFRASTRUCTURE_COSTS } from './infrastructureAdvisor.js';
 
+import { AssessmentFormData, AssessmentResult } from '../types/domain.types.js';
+
 /**
  * Trap severity levels
  */
@@ -156,7 +158,7 @@ export const getRecentlyFixedTraps = () => {
  * @param {Object} assessment - Current assessment
  * @returns {Array} Array of newly fixed traps
  */
-export const checkForFixedTraps = (currentTraps, formData, assessment) => {
+export const checkForFixedTraps = (currentTraps: any[], formData: AssessmentFormData, assessment: AssessmentResult | null) => {
   const history = getTrapHistory();
   const currentTrapIds = new Set(currentTraps.map(t => t.id));
   const newlyFixed = [];
@@ -302,8 +304,8 @@ const detectNightclubTraps = (formData) => {
  * @param {Object} assessment - Assessment results (optional)
  * @returns {Array} Array of trap objects sorted by severity
  */
-export const detectTraps = (formData, assessment = null) => {
-  const traps = [];
+export const detectTraps = (formData: AssessmentFormData, assessment: AssessmentResult | null = null) => {
+  const traps: any[] = [];
   
   // Calculate total wealth for context
   const liquidCash = Number(formData.liquidCash) || 0;
@@ -633,7 +635,7 @@ const sortTrapsBySeverity = (traps) => {
  * @param {Array} traps - Array of detected traps
  * @returns {Object} Summary with counts and total lost income
  */
-export const getTrapSummary = (traps) => {
+export const getTrapSummary = (traps: any[]) => {
   if (!traps || traps.length === 0) {
     return {
       count: 0,

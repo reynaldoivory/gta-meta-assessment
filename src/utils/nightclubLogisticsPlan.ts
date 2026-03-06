@@ -8,7 +8,7 @@ const SOURCE_RANKING = [
   { id: 'printing', rate: 1500 },
 ];
 
-export const getNightclubPlan = (formData = {}) => {
+export const getNightclubPlan = (formData: any = {}) => {
   const sources = formData.nightclubSources || {};
   const techs = Number(formData.nightclubTechs) || 0;
 

@@ -51,12 +51,12 @@ const toNumber = (value: unknown) => Number(value) || 0;
 
 const getDetectedTraps = (formData: FormData, results: Results | null) => {
   if (!results) return [];
-  return detectTraps(formData, results);
+  return detectTraps(formData as any, results as any);
 };
 
 const getNewlyFixedTraps = (detectedTraps: unknown[], formData: FormData, results: Results | null) => {
   if (!results) return [];
-  return checkForFixedTraps(detectedTraps, formData, results);
+  return checkForFixedTraps(detectedTraps as any, formData as any, results as any);
 };
 
 const getStrengthSummary = (formData: FormData) => {

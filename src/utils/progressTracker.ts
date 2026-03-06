@@ -73,8 +73,8 @@ export const getProgressOverTime = () => {
   }
 
   // Sort by timestamp
-  const sorted = [...history].sort((a, b) => 
-    new Date(a.timestamp) - new Date(b.timestamp)
+  const sorted = [...history].sort((a, b) =>
+    new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
   );
 
   return {
@@ -109,7 +109,7 @@ export const getLatestSnapshot = () => {
 
   // Sort by timestamp and get most recent
   const sorted = [...history].sort((a, b) => 
-    new Date(b.timestamp) - new Date(a.timestamp)
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
   return sorted[0];
@@ -125,7 +125,7 @@ export const compareToPrevious = (currentResults) => {
   if (history.length < 2) return null;
 
   const sorted = [...history].sort((a, b) => 
-    new Date(b.timestamp) - new Date(a.timestamp)
+    new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime()
   );
 
   const previous = sorted[1]; // Second most recent (current is about to be added)

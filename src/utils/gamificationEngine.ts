@@ -137,7 +137,7 @@ const buildSpecialOps = () => {
   const bonuses = WEEKLY_EVENTS.bonuses || {};
 
   // Generate ops from active high-value bonuses
-  Object.entries(bonuses).forEach(([key, bonus]) => {
+  Object.entries(bonuses as Record<string, any>).forEach(([key, bonus]) => {
     if (!bonus.isActive) return;
 
     if (bonus.soloFriendly && bonus.estimatedHourlyRate && bonus.estimatedHourlyRate >= 500000) {

@@ -7,7 +7,7 @@ import { MODEL_CONFIG } from './modelConfig.js';
  * @returns {number} Income per hour
  */
 export const calculateCayoIncome = (avgTime, completions) => {
-  const config = MODEL_CONFIG.income?.cayo || {};
+  const config = MODEL_CONFIG.income?.cayo || ({} as any);
   const basePayout = config.basePayout ?? 700000;
   const masteryBonus = config.masteryBonus ?? 1.1;
   const masteryThreshold = config.masteryThreshold ?? 10;
@@ -33,7 +33,7 @@ export const calculateCayoIncome = (avgTime, completions) => {
  * @returns {number} Income per hour (estimated)
  */
 export const calculateNightclubIncome = (techs, feeders) => {
-  const pCfg = MODEL_CONFIG.income?.passive || {};
+  const pCfg = MODEL_CONFIG.income?.passive || ({} as any);
   const maxNc = pCfg.nightclubMax ?? 50000;
   
   // Both need to be maxed for full efficiency
@@ -49,7 +49,7 @@ export const calculateNightclubIncome = (techs, feeders) => {
  * @returns {number} Income per hour
  */
 export const calculateGTAPlusIncome = (monthlyHours = null) => {
-  const gCfg = MODEL_CONFIG.income?.gtaPlus || {};
+  const gCfg = MODEL_CONFIG.income?.gtaPlus || ({} as any);
   const monthlyBonus = gCfg.monthlyBonus ?? 500000;
   const avgMonthlyHours = gCfg.avgMonthlyHours ?? 20;
   

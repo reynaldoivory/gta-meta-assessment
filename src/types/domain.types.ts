@@ -39,4 +39,5 @@ export interface AssessmentResult {
   heistReadyPercent: number;
   heistReady: { rank50: boolean; strength80: boolean; flying80: boolean; diversifiedIncomeTier: number; diversifiedIncomePoints: number; diversifiedIncomeLabel: string; travelOptimized: boolean; bizCore: boolean; };
   bottlenecks?: any[];
+  netWorth?: number;
 }

@@ -42,7 +42,7 @@ const getTimeMeta = (endDate, date) => {
  * @param {Date} date - Current date
  * @returns {Array} Bonus event objects
  */
-const collectWeeklyBonuses = (bonuses, date) => {
+const collectWeeklyBonuses = (bonuses: Record<string, any>, date: Date) => {
   const results = [];
   for (const [key, bonus] of Object.entries(bonuses)) {
     if (!bonus.isActive) continue;
@@ -82,7 +82,7 @@ const collectWeeklyBonuses = (bonuses, date) => {
  * @param {Date} date - Current date
  * @returns {Array} Discount event objects
  */
-const collectWeeklyDiscounts = (discounts, date) => {
+const collectWeeklyDiscounts = (discounts: Record<string, any>, date: Date) => {
   const results = [];
   for (const [key, discount] of Object.entries(discounts)) {
     const endDate = new Date(discount.validUntil);
@@ -112,7 +112,7 @@ const collectWeeklyDiscounts = (discounts, date) => {
  * @param {Date} date - Current date
  * @returns {Array} GTA+ event objects
  */
-const collectGTAPlusBonuses = (playerData, date) => {
+const collectGTAPlusBonuses = (playerData: any, date: Date) => {
   if (!playerData.hasGTAPlus || !WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
     return [];
   }
@@ -150,7 +150,7 @@ const collectGTAPlusBonuses = (playerData, date) => {
  * @param {Date|number} currentDate - Current date (defaults to now)
  * @returns {Array} Active events with priority metadata
  */
-export const getActiveEvents = (playerData, currentDate = new Date()) => {
+export const getActiveEvents = (playerData: any, currentDate: Date | number = new Date()) => {
   const date = new Date(currentDate);
 
   // Read date boundaries from config

@@ -25,3 +25,6 @@ dist-ssr
 
 # Prevent accidental nested repo clones
 /gta-meta-assessment/
+
+# App Logs
+logs/

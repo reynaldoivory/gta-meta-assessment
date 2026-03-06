@@ -51,11 +51,8 @@ This is a React 19 + Vite SPA that helps GTA Online players assess their in-game
 - Keep presentation (JSX) and business logic (utils) separated.
 
 ## Coding Conventions
-- Use **functional components** with hooks. No class components.
 - Prefer **named exports** for components and utilities.
-- Use **prop-types** for runtime prop validation on JSX components (already a dependency).
 - Use TypeScript types for TS/TSX components and utilities; keep `prop-types` only for `.jsx`.
-- Destructure props in function signatures.
 - Prefix unused parameters with `_`.
 - Keep imports organized: React/library imports first, then local imports.
 

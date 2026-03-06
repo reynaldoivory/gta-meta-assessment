@@ -4,7 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "agents:clean": "node cleanInstall.cjs",
+    "agents:clean": "node scripts/cleanInstall.cjs",
     "dev": "vite",
     "build": "vite build",
     "lint": "eslint .",

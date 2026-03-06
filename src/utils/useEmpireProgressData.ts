@@ -2,7 +2,7 @@ import { useMemo } from 'react';
 import { ACHIEVEMENTS } from './achievements';
 import { getLevelInfo, getMilestoneLabel, MILESTONE_LEVELS } from './gamificationEngine';
 
-type QuestItem = {
+export type QuestItem = {
   id?: string;
   title?: string;
   description?: string;
@@ -11,7 +11,7 @@ type QuestItem = {
   tag?: string;
 };
 
-type Achievement = {
+export type Achievement = {
   id: string;
   icon?: string;
   title?: string;
@@ -19,7 +19,7 @@ type Achievement = {
   tier?: string;
 };
 
-type GamificationState = {
+export type GamificationState = {
   xp?: number;
   unlockedAchievements?: string[];
   quests?: {

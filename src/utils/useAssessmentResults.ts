@@ -8,29 +8,15 @@ import { getProgressHistory } from './progressTracker';
 import { soundEffects } from './soundEffects';
 import { checkStreak } from './streakTracker';
 import { checkForFixedTraps, detectTraps, getTrapSummary } from './trapDetector';
+import type { AssessmentFormData, AssessmentResult } from '../types/domain.types';
 
-type FormData = {
-  strength?: number | string;
-  timePlayed?: number | string;
-  timePlayedDays?: number | string;
-  timePlayedHours?: number | string;
-  timePlayedMinutes?: number | string;
-  [key: string]: unknown;
-};
-
-type Results = {
-  score?: number;
-  tier?: string;
-  [key: string]: unknown;
-};
-
-type GamificationSummary = {
+export type GamificationSummary = {
   levelBefore: number;
   levelAfter: number;
   newAchievements?: unknown[];
 };
 
-const hasAnyTimeParts = (formData: FormData) =>
+const hasAnyTimeParts = (formData: AssessmentFormData) =>
   [formData.timePlayedDays, formData.timePlayedHours].some(
     (value) => value !== '' && value !== undefined && value !== null
   );
@@ -49,17 +35,17 @@ const formatTimeParts = (days: number, hours: number) => {
 
 const toNumber = (value: unknown) => Number(value) || 0;
 
-const getDetectedTraps = (formData: FormData, results: Results | null) => {
+const getDetectedTraps = (formData: AssessmentFormData, results: AssessmentResult | null) => {
   if (!results) return [];
-  return detectTraps(formData as any, results as any);
+  return detectTraps(formData, results);
 };
 
-const getNewlyFixedTraps = (detectedTraps: unknown[], formData: FormData, results: Results | null) => {
+const getNewlyFixedTraps = (detectedTraps: unknown[], formData: AssessmentFormData, results: AssessmentResult | null) => {
   if (!results) return [];
-  return checkForFixedTraps(detectedTraps as any, formData as any, results as any);
+  return checkForFixedTraps(detectedTraps, formData, results);
 };
 
-const getStrengthSummary = (formData: FormData) => {
+const getStrengthSummary = (formData: AssessmentFormData) => {
   const strengthPct = toNumber(formData.strength) * 20;
   return {
     strengthPct,
@@ -67,7 +53,7 @@ const getStrengthSummary = (formData: FormData) => {
   };
 };
 
-const getTimePlayedSummary = (formData: FormData) => {
+const getTimePlayedSummary = (formData: AssessmentFormData) => {
   const timePartsPresent = hasAnyTimeParts(formData);
   const timeDays = toNumber(formData.timePlayedDays);
   const timeHours = toNumber(formData.timePlayedHours);
@@ -85,13 +71,20 @@ const getTimePlayedSummary = (formData: FormData) => {
 };
 
 export const useAssessmentResults = () => {
-  const { formData, results, setStep, gamification, gamificationSummary, setFormData } = useAssessment() as any;
+  const { formData, results, setStep, gamification, gamificationSummary, setFormData } = useAssessment() as {
+    formData: unknown;
+    results: unknown;
+    setStep: (step: string) => void;
+    gamification: unknown;
+    gamificationSummary: unknown;
+    setFormData: (data: unknown) => void;
+  };
   const { showToast } = useToast();
 
-  const typedFormData = (formData || {}) as FormData;
-  const typedResults = results as Results | null;
+  const typedFormData = (formData || {}) as AssessmentFormData;
+  const typedResults = results as AssessmentResult | null;
 
-  const [dismissedConfettiResult, setDismissedConfettiResult] = useState<Results | null>(null);
+  const [dismissedConfettiResult, setDismissedConfettiResult] = useState<AssessmentResult | null>(null);
   const trapFixCelebratedRef = useRef(false);
 
   const showConfetti = Boolean(typedResults && toNumber(typedResults.score) >= 90 && dismissedConfettiResult !== typedResults);
@@ -147,7 +140,7 @@ export const useAssessmentResults = () => {
       fireConfetti('achievement');
     }
 
-    if (summary.newAchievements?.length > 0) {
+    if (summary.newAchievements && summary.newAchievements.length > 0) {
       soundEffects.achievement();
       fireConfetti('achievement');
     }

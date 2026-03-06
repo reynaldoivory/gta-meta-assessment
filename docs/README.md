@@ -395,3 +395,9 @@ This app's income models, cooldowns, and meta recommendations are cross-checked 
 - **Cooldowns**: Only trust Rockstar official or datamined values (TezFunz2). Community anecdotes must be verified by 3+ independent reports.
 - **Weekly events**: Always verify against Rockstar Newswire. Reddit megathread is secondary confirmation.
 - **Solo mechanics**: Prefer sources that show full unedited gameplay (not montages) for route/timing claims.
+
+ # #   T y p e S c r i p t   M i g r a t i o n 
+ 
+ T h e   p r o j e c t   i s   u n d e r g o i n g   a   g r a d u a l   b o t t o m - u p   T y p e S c r i p t   m i g r a t i o n .   C o r e   l o g i c ,   u t i l s ,   a n d   c o n f i g u r a t i o n s   i n   s r c / u t i l s   a n d   s r c / c o n f i g   h a v e   b e e n   c o n v e r t e d .   M o v i n g   f o r w a r d ,   a l l   n e w   c o d e   a n d   r e f a c t o r e d   R e a c t   c o m p o n e n t s   s h o u l d   u t i l i z e   s t r i c t   T y p e S c r i p t   w i t h   i n t e r f a c e s . 
+  
+ 

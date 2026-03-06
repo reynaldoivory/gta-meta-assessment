@@ -25,7 +25,8 @@ When starting the new chat, instruct the agent to **commence Phase 4**.
 
 ## Future Phases
 - **Phase 5:** Migrate UI Views (src/views/) and finalize removing the prop-types dependency project-wide.
+- **Phase 6 (Documentation Cleanup):** Clean up the `docs/` section to remove obsolete files, consolidate information, and ensure everything is relevant to the new TypeScript standard architecture.
 
 ---
 **Instructions for Next Agent:**
-"Please review TS_MIGRATION_HANDOFF.md and commence Phase 4 of the TypeScript migration. Begin migrating complex React components and custom hooks to TypeScript, replacing prop-types with TS Interfaces."
+"Please review TS_MIGRATION_HANDOFF.md and commence Phase 4 of the TypeScript migration. Begin migrating complex React components and custom hooks to TypeScript, replacing prop-types with TS Interfaces. Also keep in mind the upcoming cleanup of the documents section to make everything relevant."

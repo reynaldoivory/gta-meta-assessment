@@ -1,0 +1,26 @@
+[[allowlists]]
+description = "Ignore false positive: hasBrickade6x6"
+paths = [
+  '''src/components/shared/AssessmentAssetsPanel\.jsx'''
+]
+regexes = [
+  '''hasBrickade6x6'''
+]
+
+[[allowlists]]
+description = "Ignore false positive: GAMIFICATION_STORAGE_KEY"
+paths = [
+  '''src/utils/gamificationEngine\.js'''
+]
+regexes = [
+  '''GAMIFICATION_STORAGE_KEY'''
+]
+
+[[allowlists]]
+description = "Ignore false positive: STREAK_STORAGE_KEY"
+paths = [
+  '''src/utils/streakTracker\.js'''
+]
+regexes = [
+  '''STREAK_STORAGE_KEY'''
+]

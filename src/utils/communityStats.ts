@@ -215,10 +215,17 @@ export const exportCommunityStatsCSV = () => {
     ];
   });
 
+  // Escape CSV cells to prevent formula injection in spreadsheet apps
+  const escapeCsvCell = (val: unknown): string => {
+    const s = String(val ?? '');
+    const sanitized = /^[=+\-@]/.test(s) ? `'${s}` : s;
+    return `"${sanitized.replace(/"/g, '""')}"`;
+  };
+
   // Combine headers and rows
   const csvContent = [
-    headers.join(','),
-    ...rows.map(row => row.join(',')),
+    headers.map(escapeCsvCell).join(','),
+    ...rows.map(row => row.map(escapeCsvCell).join(',')),
   ].join('\n');
 
   return csvContent;

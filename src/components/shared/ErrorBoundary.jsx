@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component {
             <p className="text-slate-400 mb-4">
               The application encountered an error. Please try refreshing the page.
             </p>
-            {process.env.NODE_ENV === 'development' && this.state.error && (
+            {import.meta.env.DEV && this.state.error && (
               <details className="mb-4">
                 <summary className="text-sm text-slate-500 cursor-pointer mb-2">
                   Error details (dev only)

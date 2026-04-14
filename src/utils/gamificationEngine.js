@@ -221,14 +221,24 @@ const getDefaultGamificationState = () => ({
   lastAward: null,
 });
 
+const GAMIFICATION_ALLOWED_KEYS = new Set([
+  'xp', 'unlockedAchievements', 'lastAssessmentAt', 'quests', 'lastAward',
+]);
+
 export const loadGamificationState = () => {
   try {
     const stored = localStorage.getItem(GAMIFICATION_STORAGE_KEY);
     if (!stored) return getDefaultGamificationState();
     const parsed = JSON.parse(stored);
+    if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+      return getDefaultGamificationState();
+    }
+    const safe = Object.fromEntries(
+      Object.entries(parsed).filter(([k]) => GAMIFICATION_ALLOWED_KEYS.has(k))
+    );
     return {
       ...getDefaultGamificationState(),
-      ...parsed,
+      ...safe,
     };
   } catch (error) {
     console.error('Failed to load gamification state:', error);

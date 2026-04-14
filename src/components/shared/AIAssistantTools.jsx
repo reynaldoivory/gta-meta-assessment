@@ -2,20 +2,20 @@
 import PropTypes from 'prop-types';
 import { BookOpen } from 'lucide-react';
 import { buildGoogleDocExport, buildWhatIfPrompt } from '../../utils/buildLLMPrompt';
+import { useToast } from '../../context/ToastContext';
 
 /**
- * Copies text to clipboard with a success/error alert.
+ * Copies text to clipboard with toast notification (no blocking alert).
  */
-const copyToClipboard = async (text, successMessage = 'Copied to clipboard!') => {
+const copyToClipboard = async (text, notify, successMessage = 'Copied to clipboard!') => {
   try {
     if (!navigator.clipboard?.writeText) {
       throw new Error('Clipboard API unavailable');
     }
     await navigator.clipboard.writeText(text);
-    alert(successMessage);
-  } catch (err) {
-    console.error('Failed to copy:', err);
-    alert('Failed to copy. Please try again.');
+    notify(successMessage, 'success');
+  } catch (_err) {
+    notify('Failed to copy. Please try again.', 'error');
   }
 };
 
@@ -44,12 +44,13 @@ export const AIAssistantTools = ({
   llmPrompt, planPrompt, jsonPayload,
   whatIfText, setWhatIfText,
 }) => {
-  const handleCopyLLM = () => copyToClipboard(llmPrompt, 'LLM prompt copied to clipboard!');
-  const handleCopyPlan = () => copyToClipboard(planPrompt, 'Plan critique prompt copied!');
-  const handleCopyJson = () => copyToClipboard(JSON.stringify(jsonPayload, null, 2), 'JSON payload copied!');
+  const { showToast } = useToast();
+  const handleCopyLLM = () => copyToClipboard(llmPrompt, showToast, 'LLM prompt copied to clipboard!');
+  const handleCopyPlan = () => copyToClipboard(planPrompt, showToast, 'Plan critique prompt copied!');
+  const handleCopyJson = () => copyToClipboard(JSON.stringify(jsonPayload, null, 2), showToast, 'JSON payload copied!');
   const handleCopyGoogleDoc = () => {
     const doc = buildGoogleDocExport({ formData, assessmentResults: results, actionPlan });
-    copyToClipboard(doc, 'Google Doc export copied to clipboard!');
+    copyToClipboard(doc, showToast, 'Google Doc export copied to clipboard!');
   };
   const handleCopyWhatIf = () => {
     const prompt = buildWhatIfPrompt({
@@ -58,7 +59,7 @@ export const AIAssistantTools = ({
       whatIf: whatIfText || 'No specific change, just confirm best actions.',
       weeklyBonuses,
     });
-    copyToClipboard(prompt, 'What-if prompt copied!');
+    copyToClipboard(prompt, showToast, 'What-if prompt copied!');
   };
 
   return (

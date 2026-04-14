@@ -1,0 +1,68 @@
+# GTA Meta Assessment - Cursor Rules
+
+## Project Context
+
+This is a GTA Online meta coaching application that helps players optimize their money-making strategies.
+
+Key files that handle persisted data structures and migrations:
+
+- `src/context/AssessmentContext.jsx` - State management and localStorage persistence
+- `src/utils/calculateIncome.js` - Income calculations with nightclub exact stack method
+- `src/utils/detectBottlenecks.ts` - Player bottleneck detection
+- `src/utils/trapDetector.js` - Trap detection (Mule Custom, inefficient assignments)
+
+## Data Structures (Do Not Break)
+
+- `formData.nightclubSources` - Object with boolean keys (imports, cargo, pharma, sporting, cash, organic, printing)
+- `formData.nightclubStorage` - Object with hasPounder, hasMule booleans
+- `formData.nightclubFloors` - String number '1'-'5'
+- `formData.nightclubTechs` - String number '0'-'5'
+- `formData.bunkerEquipmentUpgrade`, `bunkerStaffUpgrade`, `bunkerSecurityUpgrade` - Booleans
+- `formData.purchaseDates` - Object with nullable ISO date strings
+- `formData.cayoHistory` - Array of run objects
+
+## Migration Safety
+
+- Always check for legacy field names before accessing new ones
+- Use fallback patterns: `formData.nightclubStorage?.hasPounder || formData.hasPounderCustom`
+- Never delete legacy fields during migration - only add new ones
+- Test with: fresh state, migrated state, and partially migrated state
+
+## Weekly Events
+
+- Source of truth: `src/config/weeklyEvents.js`
+- All dates should match between config files and eventHelpers.js
+- GTA+ events use `gtaPlusValidUntil`, weekly events use `validUntil`
+
+## Output Requirements
+
+- NEVER summarize code changes.
+- NEVER output partial files or diffs unless explicitly requested.
+- Preserve key order in objects unless reordering is required for logic.
+- If uncertain, ask BEFORE modifying persisted data structures.
+- Always show the full function/block being modified, not just the changed lines.
+- When editing React components, preserve all existing imports and exports.
+- When editing utility functions, preserve all existing helper functions in the file.
+
+## React Specifics
+
+- WHEN refactoring Context: ALWAYS explicitly preserve the `migrateUserData` function.
+- DO NOT "optimize" useEffect dependency arrays in `AssessmentContext` without audit.
+- NEVER remove legacy field initializations from `initialState` - they are required for backward compatibility.
+- ALWAYS verify `migrateUserData(parsed)` is actually called in the data loading useEffect.
+
+## Code Style
+
+- Use explicit Number() conversions for form data (e.g., `Number(formData.nightclubTechs) || 0`)
+- Use optional chaining with fallbacks for nested state (e.g., `formData.nightclubStorage?.hasPounder || false`)
+- Preserve comments that explain business logic or GTA Online mechanics
+- Keep inline comments for rate values (e.g., `// $10,000/hr - Cocaine`)
+
+## Testing Checklist
+
+Before marking a change complete:
+
+1. Run `npm run build` to verify no compilation errors
+2. Check for linter errors with `ReadLints`
+3. Verify backward compatibility with legacy data formats
+4. Confirm dates match between config files when editing events

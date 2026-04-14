@@ -152,7 +152,13 @@ export default function AssessmentForm() {
                 <Trash2 className="w-4 h-4 inline-block mr-2" /> Clear
               </button>
             </div>
-            {renderSaveStatus(localStorageAvailable, isSaving, lastSaved)}
+            {!localStorageAvailable ? (
+              <span className="text-xs text-amber-400">Storage unavailable</span>
+            ) : isSaving ? (
+              <span className="text-xs text-slate-400">Saving...</span>
+            ) : lastSaved ? (
+              <span className="text-xs text-emerald-400">Saved {new Date(lastSaved).toLocaleTimeString()}</span>
+            ) : null}
           </div>
         </div>
       </div>

@@ -1,6 +1,10 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { AssessmentFormData } from '../types/domain.types';
+import { computeAssessment } from '../utils/computeAssessment';
+import { applyAssessmentGamification } from '../utils/gamificationEngine';
+import { getProgressHistory } from '../utils/progressTracker';
+import { checkStreak } from '../utils/streakTracker';
 
 export interface AssessmentContextValue {
   formData: AssessmentFormData;
@@ -14,12 +18,13 @@ export interface AssessmentContextValue {
   lastSaved: Date | null;
   clearSavedData: () => void;
   runAssessment: () => void;
-  results?: any;
-  setStep?: (s: string) => void;
-  gamification?: any;
-  gamificationSummary?: any;
-  whatIfText?: string;
-  setWhatIfText?: (s: string) => void;
+  results: any;
+  step: string;
+  setStep: (s: string) => void;
+  gamification: any;
+  gamificationSummary: any;
+  whatIfText: string;
+  setWhatIfText: (s: string) => void;
   isCalculating: boolean;
   cascadeTraps: string[];
   criticalTraps: string[];
@@ -88,6 +93,11 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [isCalculating, setIsCalculating] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const [step, setStep] = useState<string>('form');
+  const [results, setResults] = useState<any>(null);
+  const [gamification, setGamification] = useState<any>(null);
+  const [gamificationSummary, setGamificationSummary] = useState<any>(null);
+  const [whatIfText, setWhatIfText] = useState<string>('');
   
   // 2. Calculated Logic (Traps)
   const cascadeTraps = useMemo(() => {
@@ -125,15 +135,34 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   const clearSavedData = () => {
     localStorage.removeItem('gta_assessment_data');
     setFormData(createInitialFormData());
+    setResults(null);
     setLastSaved(null);
   };
 
   const runAssessment = () => {
     setIsCalculating(true);
     setTimeout(() => {
-      setIsCalculating(false);
-      // Assessment calculation complete
-    }, 1500);
+      try {
+        const assessmentResults = computeAssessment(formData);
+        setResults(assessmentResults);
+
+        const history = getProgressHistory();
+        const streakInfo = checkStreak();
+        const gamResult = applyAssessmentGamification({
+          formData,
+          results: assessmentResults,
+          history,
+          streak: streakInfo?.streak ?? 0,
+        });
+        setGamification(gamResult.state);
+        setGamificationSummary(gamResult.summary);
+      } catch (e) {
+        console.error("Assessment failed", e);
+      } finally {
+        setIsCalculating(false);
+        setStep('results');
+      }
+    }, 0);
   };
 
   // Auto-save effect
@@ -158,6 +187,13 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
     lastSaved,
     clearSavedData,
     runAssessment,
+    results,
+    step,
+    setStep,
+    gamification,
+    gamificationSummary,
+    whatIfText,
+    setWhatIfText,
     isCalculating,
     cascadeTraps,
     criticalTraps,

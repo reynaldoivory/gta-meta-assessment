@@ -270,8 +270,9 @@ export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) 
   if (!trapSummary || trapSummary.count === 0) return;
   
   try {
-    const trapPool = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
-    
+    const _rawTrap = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
+    const trapPool: any[] = Array.isArray(_rawTrap) ? _rawTrap : [];
+
     const trapSnapshot = {
       version: STATS_VERSION,
       timestamp: Date.now(),
@@ -312,8 +313,10 @@ export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) 
  */
 export const getTrapOccurrenceRates = () => {
   try {
-    const trapPool = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
-    const communityPool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    const _rawTrapOcc = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
+    const _rawCommunityOcc = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    const trapPool: any[] = Array.isArray(_rawTrapOcc) ? _rawTrapOcc : [];
+    const communityPool: any[] = Array.isArray(_rawCommunityOcc) ? _rawCommunityOcc : [];
     
     if (trapPool.length === 0 || communityPool.length === 0) {
       // Return default rates based on known GTA Online player behavior

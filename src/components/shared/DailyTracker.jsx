@@ -52,6 +52,7 @@ const getNextResetTime = () => {
   }
   
   return resetTime.getTime();
+};
 
 
 const getNowTimestamp = () => Date.now();
@@ -77,8 +78,11 @@ const loadSavedTasks = () => {
       localStorage.setItem('dailyTracker', JSON.stringify({ tasks: resetTasks, lastResetTime: resetTime }));
       return { tasks: resetTasks, resetTime, syncMode: 'reset' };
     }
+    const loadedTasks = Array.isArray(parsed.tasks)
+      ? parsed.tasks.filter(t => t && typeof t === 'object' && typeof t.id === 'string')
+      : CORE_DAILIES;
     return {
-      tasks: parsed.tasks || CORE_DAILIES,
+      tasks: loadedTasks.length > 0 ? loadedTasks : CORE_DAILIES,
       resetTime: parsed.lastResetTime,
       syncMode: 'load',
     };
@@ -86,8 +90,6 @@ const loadSavedTasks = () => {
     return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
   }
 };
-};
-
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
   const [lastResetTime, setLastResetTime] = useState(() => Date.now());

@@ -132,7 +132,7 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
     setIsCalculating(true);
     setTimeout(() => {
       setIsCalculating(false);
-      console.log("Assessment Complete", formData);
+      // Assessment calculation complete
     }, 1500);
   };
 

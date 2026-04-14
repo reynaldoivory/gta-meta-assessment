@@ -1,10 +1,6 @@
 // src/components/shared/ResultsScoreCard.jsx
 import PropTypes from 'prop-types';
-
-const formatHours = (value) => {
-  if (!Number.isFinite(value)) return '0';
-  return Number.isInteger(value) ? String(value) : value.toFixed(2);
-};
+import { formatHours } from '../../utils/formatters';
 
 const IncomeBar = ({ label, value, total, colorFrom }) => {
   const pct = total > 0 ? (value / total) * 100 : 0;

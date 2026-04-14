@@ -12,6 +12,7 @@ import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSi
 import { FinancialWorkbookPanel } from '../components/shared/FinancialWorkbookPanel';
 import { AssetToggleCard } from '../components/shared/AssetToggleCard';
 import StatBar from '../components/shared/StatBar';
+import { formatCurrency, formatHoursShort as formatHours } from '../utils/formatters';
 
 export default function AssessmentForm() {
   // 1. Destructure all data/functions needed from your Context
@@ -31,10 +32,7 @@ export default function AssessmentForm() {
   const togglePanel = (panel) => {
     setOpenPanels(prev => ({ ...prev, [panel]: !prev[panel] }));
   };
-  const formatCurrency = (val) => Number(val).toLocaleString();
-  const formatHours = (val) => Number(val).toFixed(1);
   const errorBorder = (errs, field) => errs?.[field] ? 'border-gta-red' : 'border-slate-700';
-  const errorBorderSimple = (errs, field) => errs?.[field] ? 'border-gta-red' : 'border-slate-700';
 
   // 4. Handlers
   const handleInputChange = (e) => {
@@ -268,7 +266,7 @@ export default function AssessmentForm() {
                       value={formData.timePlayedDays || ''}
                       onChange={handleTimePlayedPartChange}
                       onFocus={() => handleTimePlayedModeFocus('parts')}
-                      className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorderSimple(errors, 'timePlayed')}`}
+                      className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorder(errors, 'timePlayed')}`}
                       min="0"
                     />
                   </div>
@@ -282,7 +280,7 @@ export default function AssessmentForm() {
                       value={formData.timePlayedHours || ''}
                       onChange={handleTimePlayedPartChange}
                       onFocus={() => handleTimePlayedModeFocus('parts')}
-                      className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorderSimple(errors, 'timePlayed')}`}
+                      className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorder(errors, 'timePlayed')}`}
                       min="0"
                       max="23"
                     />
@@ -299,7 +297,7 @@ export default function AssessmentForm() {
                     value={formData.timePlayed || ''}
                     onChange={handleTimePlayedTotalChange}
                     onFocus={() => handleTimePlayedModeFocus('total')}
-                    className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorderSimple(errors, 'timePlayed')}`}
+                    className={`w-full bg-slate-800 border rounded p-3 focus:border-gta-green focus:ring-2 focus:ring-gta-green/20 outline-none transition-colors text-white ${errorBorder(errors, 'timePlayed')}`}
                     min="0"
                     step="0.1"
                   />

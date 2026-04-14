@@ -3,6 +3,7 @@ import PropTypes from 'prop-types';
 import { Gauge, Landmark } from 'lucide-react';
 import { useEmpire } from '../../context/EmpireContext';
 import { createCfoModeLedger, getEffectiveHeat } from '../../utils/cfoModeLedger';
+import { formatDollars as formatCurrency } from '../../utils/formatters';
 
 const SHEETS = [
   { id: 'balance', label: 'Consolidated Balance Sheet' },
@@ -10,8 +11,6 @@ const SHEETS = [
   { id: 'capex', label: 'CapEx Strategy' },
   { id: 'synergy', label: 'Synergy Multiplier' },
 ];
-
-const formatCurrency = (value) => `$${(Number(value) || 0).toLocaleString()}`;
 const formatCycle = (minutes) => (minutes >= 60 ? `${(minutes / 60).toFixed(1)} Hours` : `${minutes} Mins`);
 const clampHeat = (value) => Math.max(0, Math.min(100, value));
 

@@ -1,18 +1,12 @@
 import PropTypes from 'prop-types';
 import { Check } from 'lucide-react';
 import StatBar from './StatBar';
+import { formatCurrency } from '../../utils/formatters';
 
 const statLabels = ['Strength', 'Flying', 'Shooting', 'Stealth', 'Driving', 'Stamina'];
 
 const getErrorBorder = (errors, field) => {
   return errors?.[field] ? 'border-gta-red ring-2 ring-gta-red/20' : 'border-gta-green/50';
-};
-
-const formatCurrency = (value) => {
-  if (!value || value === '') return '';
-  const num = Number(value);
-  if (Number.isNaN(num)) return value;
-  return num.toLocaleString('en-US');
 };
 
 export const AssessmentVitalsSidebar = ({

@@ -20,8 +20,8 @@ export const CORE_BUSINESSES: Business[] = [
       { id: 'nightclub_rockford', name: 'Rockford Hills', price: 1650000 },
     ],
     upgrades: [
-      { id: 'nightclub_equipment', name: 'Equipment Upgrade', cost: 1400000, required: true },
-      { id: 'nightclub_staff', name: 'Staff Upgrade', cost: 500000, required: true },
+      { id: 'nightclub_equipment', name: 'Equipment Upgrade', cost: 1425000, required: true },
+      { id: 'nightclub_staff', name: 'Staff Upgrade', cost: 475000, required: true },
       { id: 'nightclub_security', name: 'Security Upgrade', cost: 695000 },
       { id: 'nightclub_storage', name: 'Storage Floors (4 total)', cost: 1700000 },
     ],
@@ -45,8 +45,8 @@ export const CORE_BUSINESSES: Business[] = [
       { id: 'bunker_farmhouse', name: 'Farmhouse', price: 2375000 },
     ],
     upgrades: [
-      { id: 'bunker_equipment', name: 'Equipment Upgrade', cost: 1670000, required: true },
-      { id: 'bunker_staff', name: 'Staff Upgrade', cost: 585000, required: true },
+      { id: 'bunker_equipment', name: 'Equipment Upgrade', cost: 1155000, required: true },
+      { id: 'bunker_staff', name: 'Staff Upgrade', cost: 598500, required: true },
       { id: 'bunker_security', name: 'Security Upgrade', cost: 420000 },
     ],
     recommendedLocationId: 'bunker_chumash',

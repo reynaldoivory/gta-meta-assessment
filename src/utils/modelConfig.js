@@ -165,11 +165,11 @@ export const MODEL_CONFIG = {
     },
     // New passive income structure
     passive: {
-      acidLabBase: 75000,          // Base Acid Lab income per hour
-      acidLabUpgrade: 1.4,         // 40% boost when upgraded
+      acidLabBase: 34000,          // Base Acid Lab passive accrual per hour
+      acidLabUpgrade: 1.5,         // 50% equipment boost when upgraded
       acidLabUpgradeCost: 250000,  // Acid Lab equipment upgrade cost (single source of truth)
       nightclubMax: 50000,         // Max Nightclub income per hour
-      bunkerBase: 30000,           // Base Bunker income per hour
+      bunkerBase: 21000,           // Base Bunker unupgraded stock accrual per hour
       bunkerUpgrade: 2.5,          // 2.5x multiplier when upgraded
       bunkerUpgradeCost: 1753500,  // Equipment ($1,155,000) + Staff ($598,500) = $1,753,500
       salvageYard: 35000           // Salvage Yard passive income per hour
@@ -182,12 +182,12 @@ export const MODEL_CONFIG = {
     },
     acidLab: {
       upgraded: {
-        perHour: 105000           // Upgraded Acid Lab income ($75k * 1.4)
+        perHour: 51000            // Upgraded Acid Lab income ($34k * 1.5)
       },
       unupgraded: {
-        perHour: 75000            // Unupgraded Acid Lab income (matches passive.acidLabBase)
+        perHour: 34000            // Unupgraded Acid Lab income (matches passive.acidLabBase)
       },
-      upgradeBenefit: 30000,      // Hourly income gain from upgrading ($105k - $75k)
+      upgradeBenefit: 17000,      // Hourly income gain from upgrading ($51k - $34k)
       upgradeCost: 250000          // Upgrade cost (matches infrastructureAdvisor)
     },
     salvageYard: {
@@ -201,14 +201,14 @@ export const MODEL_CONFIG = {
     },
     bunker: {
       upgraded: {
-        perHour: 75000            // Upgraded bunker income ($30k * 2.5)
+        perHour: 52500            // Upgraded bunker income ($21k * 2.5)
       },
       unupgraded: {
-        perHour: 30000            // Unupgraded bunker income (matches passive.bunkerBase)
+        perHour: 21000            // Unupgraded bunker income (matches passive.bunkerBase)
       }
     },
     autoShop: {
-      perHour: 40000              // Auto Shop income per hour
+      perHour: 400000             // Auto Shop income per hour (matches calculateIncome.ts hardcoded value)
     },
     // Car Wash passive income (Bottom Dollar Bounties DLC)
     carWash: {

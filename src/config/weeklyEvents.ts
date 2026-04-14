@@ -236,7 +236,11 @@ export const getWeeklyBonuses = (options: any = {}) => {
   
   // Dynamically build from bonuses object for backward compatibility
   const regularBonuses = Object.entries(WEEKLY_EVENTS.bonuses)
-    .filter(([, bonus]: any) => bonus.isActive)
+    .filter(([, bonus]: any) => {
+      if (!bonus.isActive) return false;
+      if (bonus.validUntil && new Date(bonus.validUntil).getTime() < Date.now()) return false;
+      return true;
+    })
     .map(([, bonus]: any) => ({
       activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
       multiplier: `${bonus.multiplier}X`,

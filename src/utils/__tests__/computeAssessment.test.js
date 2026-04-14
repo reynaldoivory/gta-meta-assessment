@@ -65,8 +65,8 @@ describe('computeAssessment', () => {
 
     test('should have income in expected range for beginner', () => {
       const result = computeAssessment(beginnerProfile);
-      // Beginner with unupgraded Acid Lab should have ~$62k/hr
-      expect(result.incomePerHour).toBeGreaterThan(50000);
+      // Beginner with unupgraded Acid Lab should have ~$39k/hr (34k acid + 5k carwash)
+      expect(result.incomePerHour).toBeGreaterThan(30000);
       expect(result.incomePerHour).toBeLessThan(200000);
     });
 

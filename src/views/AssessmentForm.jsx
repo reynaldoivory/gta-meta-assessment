@@ -2,8 +2,7 @@
 // src/views/AssessmentForm.jsx - HEIST PLANNING BOARD
 // Complete redesign with 12-column grid layout, GTA aesthetics
 
-import { useRef, useMemo, useState } from 'react';
-import PropTypes from 'prop-types';
+import { useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
 import { Save, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
@@ -26,7 +25,7 @@ export default function AssessmentForm() {
   // 2. Local State definitions
   const formContainerRef = useRef(null);
   const [openPanels, setOpenPanels] = useState({ operations: true, workbook: false });
-  const [timePlayedMode, setTimePlayedMode] = useState('total');
+  const [timePlayedMode, _setTimePlayedMode] = useState('total');
 
   // 3. Helpers
   const togglePanel = (panel) => {

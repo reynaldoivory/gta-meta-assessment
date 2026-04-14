@@ -25,7 +25,7 @@ export default function AssessmentForm() {
   // 2. Local State definitions
   const formContainerRef = useRef(null);
   const [openPanels, setOpenPanels] = useState({ operations: true, workbook: false });
-  const [timePlayedMode, _setTimePlayedMode] = useState('total');
+  const timePlayedMode = formData.timePlayedMode || 'total';
 
   // 3. Helpers
   const togglePanel = (panel) => {

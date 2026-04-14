@@ -8,7 +8,12 @@ const STATS_VERSION = 'v1';
 // Anonymize and aggregate data
 export const submitAnonymousStats = (formData: AssessmentFormData, assessmentResults: AssessmentResult) => {
   // Get existing pool
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  let pool: any[];
+  try {
+    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  } catch {
+    pool = [];
+  }
 
   // Create anonymized snapshot
   const anonymousData = {
@@ -63,7 +68,12 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
 
 // Calculate community averages
 export const getCommunityAverages = () => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  let pool: any[];
+  try {
+    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  } catch {
+    return null;
+  }
 
   if (pool.length === 0) {
     return null;
@@ -131,7 +141,12 @@ export const compareToCommunity = (formData: AssessmentFormData, assessmentResul
 };
 
 const calculatePercentile = (score, _communityAvg) => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  let pool: any[];
+  try {
+    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  } catch {
+    return 50;
+  }
   const recent = pool.filter(e => e.timestamp > Date.now() - 30 * 24 * 60 * 60 * 1000);
   
   if (recent.length === 0) return 50;
@@ -142,7 +157,12 @@ const calculatePercentile = (score, _communityAvg) => {
 
 // Export community stats as CSV
 export const exportCommunityStatsCSV = () => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  let pool: any[];
+  try {
+    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  } catch {
+    return null;
+  }
   
   if (pool.length === 0) {
     return null;
@@ -206,7 +226,12 @@ export const exportCommunityStatsCSV = () => {
 
 // Get progress over time data for charts
 export const getProgressOverTime = () => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  let pool: any[];
+  try {
+    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  } catch {
+    return null;
+  }
   
   if (pool.length === 0) {
     return null;

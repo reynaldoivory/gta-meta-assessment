@@ -13,7 +13,12 @@ export const downloadCSV = (csv, filename = 'gta_community_stats.csv') => {
 };
 
 export const exportProgressHistoryCSV = () => {
-  const history = JSON.parse(localStorage.getItem('gta_progress_history') || '[]');
+  let history;
+  try {
+    history = JSON.parse(localStorage.getItem('gta_progress_history') || '[]');
+  } catch {
+    return null;
+  }
   
   if (history.length === 0) {
     return null;

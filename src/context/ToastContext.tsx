@@ -1,5 +1,6 @@
 ﻿// src/context/ToastContext.tsx
-import { createContext, useContext, useMemo, useState, ReactNode } from 'react';
+import { createContext, useContext, useMemo, useState } from 'react';
+import type { ReactNode } from 'react';
 import Toast from '../components/shared/Toast';
 
 export type ToastType = 'info' | 'success' | 'warning' | 'error';

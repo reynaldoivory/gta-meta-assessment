@@ -5,11 +5,11 @@ import { useAssessment } from '../../context/AssessmentContext';
 import { X, Code, Database } from 'lucide-react';
 
 const DevTools = () => {
-  const { formData, results, step, version } = useAssessment();
+  const { formData, results } = useAssessment();
   const [isOpen, setIsOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('state');
 
-  if (process.env.NODE_ENV !== 'development') {
+  if (import.meta.env.PROD) {
     return null;
   }
 
@@ -62,14 +62,6 @@ const DevTools = () => {
             {activeTab === 'state' && (
               <div className="space-y-2">
                 <div>
-                  <div className="text-slate-500 mb-1">Current Step:</div>
-                  <div className="text-green-400">{step}</div>
-                </div>
-                <div>
-                  <div className="text-slate-500 mb-1">Context Version:</div>
-                  <div className="text-blue-400">{version}</div>
-                </div>
-                <div>
                   <div className="text-slate-500 mb-1">Form Data:</div>
                   <pre className="text-slate-300 overflow-auto max-h-64 bg-slate-950 p-2 rounded">
                     {JSON.stringify(formData, null, 2)}
@@ -101,13 +93,13 @@ const DevTools = () => {
                 <div>
                   <div className="text-slate-500 mb-1">Community Stats:</div>
                   <div className="text-slate-300">
-                    {JSON.parse(localStorage.getItem('gta_community_stats_pool') || '[]').length} entries
+                    {(() => { try { return JSON.parse(localStorage.getItem('gta_community_stats_pool') || '[]').length; } catch { return 0; } })()} entries
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500 mb-1">Progress History:</div>
                   <div className="text-slate-300">
-                    {JSON.parse(localStorage.getItem('gta_progress_history') || '[]').length} snapshots
+                    {(() => { try { return JSON.parse(localStorage.getItem('gta_progress_history') || '[]').length; } catch { return 0; } })()} snapshots
                   </div>
                 </div>
                 <button

@@ -2,7 +2,7 @@
   "mcpServers": {
     "deepseek-local": {
       "command": "npx",
-      "args": ["-y", "@arikusi/deepseek-mcp-server"]
+      "args": ["-y", "@arikusi/deepseek-mcp-server@1.6.0"]
     }
   }
 }

@@ -10,7 +10,7 @@
  * @param {string} msg - Error message if invalid
  * @returns {string|null}
  */
-function validateNumber(value: any, min: number, max: number | undefined, msg: string): string | null {
+function validateNumber(value: string | number | undefined, min: number, max: number | undefined, msg: string): string | null {
   const num = Number(value);
   if (value && (Number.isNaN(num) || num < min || (typeof max === 'number' && num > max))) {
     return msg;
@@ -24,7 +24,7 @@ function validateNumber(value: any, min: number, max: number | undefined, msg: s
  * @param {any} value - Field value
  * @returns {string | null} Error message or null if valid
  */
-export const validateField = (field: string, value: any): string | null => {
+export const validateField = (field: string, value: string | number | undefined): string | null => {
   switch (field) {
     case 'rank':
       return validateNumber(value, 1, 8000, 'Rank must be between 1-8000');
@@ -61,8 +61,8 @@ export const validateField = (field: string, value: any): string | null => {
  * @param {Object} formData - Form data object
  * @returns {Object} Errors object with field names as keys
  */
-export const validateForm = (formData) => {
-  const errors = {};
+export const validateForm = (formData: Record<string, string | number | undefined>): Record<string, string> => {
+  const errors: Record<string, string> = {};
   const fieldsToValidate = [
     'rank', 'liquidCash', 'totalIncomeCollected', 'totalRPCollected', 'timePlayed', 'timePlayedDays', 'timePlayedHours',
     'nightclubTechs', 'nightclubFeeders', 'securityContracts'

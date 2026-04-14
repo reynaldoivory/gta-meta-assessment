@@ -70,7 +70,7 @@ const RecentAchievements = ({ recentAchievements }) => (
           </div>
         ))
       ) : (
-        <div className="text-xs text-slate-500">No achievements yet. First win is close.</div>
+        <div className="text-xs text-slate-500">No achievements yet. Your first unlock is closer than you think.</div>
       )}
     </div>
   </div>
@@ -191,7 +191,7 @@ const EmpireProgressPanel = ({ gamification }) => {
           title="Daily Ops"
           icon={Target}
           iconColorClass="text-cyan-300"
-          emptyText="No daily ops assigned."
+          emptyText="No daily ops right now. Complete an assessment to unlock ops."
           quests={dailyQuests}
         />
 
@@ -199,7 +199,7 @@ const EmpireProgressPanel = ({ gamification }) => {
           title="Weekly Campaign"
           icon={Target}
           iconColorClass="text-violet-300"
-          emptyText="No weekly ops assigned."
+          emptyText="No weekly campaign active. Check back after your next assessment."
           quests={weeklyQuests}
         />
 

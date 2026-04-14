@@ -24,10 +24,10 @@ class ErrorBoundary extends React.Component {
           <div className="max-w-md w-full bg-slate-900 border border-red-500/30 rounded-2xl p-6">
             <div className="flex items-center gap-3 mb-4">
               <AlertCircle className="w-8 h-8 text-red-400" />
-              <h2 className="text-2xl font-bold text-white">Something went wrong</h2>
+              <h2 className="text-2xl font-bold text-white">Wasted!</h2>
             </div>
             <p className="text-slate-400 mb-4">
-              The application encountered an error. Please try refreshing the page.
+              Something blew up behind the scenes. Hit Refresh to reload and try again.
             </p>
             {import.meta.env.DEV && this.state.error && (
               <details className="mb-4">

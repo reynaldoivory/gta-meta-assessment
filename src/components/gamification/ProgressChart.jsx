@@ -31,7 +31,7 @@ const ProgressChart = ({ history }) => {
     return (
       <EmptyState
         icon="📈"
-        title="Not enough data yet"
+        title="Not enough history yet"
         description="Complete at least 2 assessments to see your progress over time. Come back tomorrow!"
         action={
           <div className="flex items-center gap-2 text-blue-400 text-sm mt-2">

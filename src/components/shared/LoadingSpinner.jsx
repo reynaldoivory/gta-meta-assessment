@@ -5,9 +5,9 @@ import PropTypes from 'prop-types';
 const STEPS = [
   'Analyzing your stats...',
   'Calculating income potential...',
-  'Comparing to community...',
-  'Building action plan...',
-  'Finalizing results...'
+  'Comparing to the community...',
+  'Building your action plan...',
+  'Finalizing your report card...'
 ];
 
 const LoadingSpinner = ({ message = 'Calculating...' }) => {

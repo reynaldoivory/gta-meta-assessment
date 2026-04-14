@@ -42,7 +42,7 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
           <h3 className="text-xl font-bold text-white">Community Comparison</h3>
         </div>
         <p className="text-sm text-slate-400">
-          Run more assessments to see how you compare to the community average. Stats are stored locally in your browser.
+          Run at least two assessments to see how your empire stacks up against the community average. All stats stay in your browser -- nothing leaves your machine.
         </p>
       </div>
     );

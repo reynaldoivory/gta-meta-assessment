@@ -10,7 +10,7 @@ export const SessionCard = ({ label, action }) => {
     return (
       <div className="p-4 rounded-xl border border-slate-700 bg-slate-900/40">
         <div className="text-xs font-bold text-slate-400 mb-2">{label}</div>
-        <div className="text-slate-400 text-sm">No recommendation found for this slot.</div>
+        <div className="text-slate-400 text-sm">Nothing to recommend for this slot yet. Add more businesses or upgrades to unlock options.</div>
       </div>
     );
   }

@@ -26,7 +26,7 @@ const SocialCardGenerator = ({ formData, results }) => {
     ctx.fillStyle = '#ffffff';
     ctx.font = 'bold 48px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText('GTA Manager Assessment', canvas.width / 2, 100);
+    ctx.fillText('GTA Empire Report Card', canvas.width / 2, 100);
 
     // Tier and Score
     ctx.fillStyle = '#fbbf24'; // yellow-400

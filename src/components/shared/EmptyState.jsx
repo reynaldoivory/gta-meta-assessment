@@ -2,8 +2,8 @@ import PropTypes from 'prop-types';
 
 const EmptyState = ({ 
   icon = '📊', 
-  title = 'No data yet', 
-  description = 'Data will appear here once available',
+  title = 'Nothing here yet',
+  description = 'Fill out the Heist Planning Board and run your assessment to see results here.',
   action = null 
 }) => (
   <div className="flex flex-col items-center justify-center py-12 px-6 text-center">

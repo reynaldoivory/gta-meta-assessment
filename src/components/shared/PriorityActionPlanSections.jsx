@@ -11,7 +11,7 @@ export const EmptyResultsState = ({ setStep }) => (
       >
         ← Back to Results
       </button>
-      <p className="text-slate-400">No assessment results available.</p>
+      <p className="text-slate-400">No results yet. Head back to the Heist Planning Board and run your assessment first.</p>
     </div>
   </div>
 );

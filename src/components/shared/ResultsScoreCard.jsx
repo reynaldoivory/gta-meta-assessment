@@ -36,7 +36,7 @@ export const ResultsScoreCard = ({
 }) => (
   <div className="card-enterprise animate-pop-in">
     <div className="flex items-center justify-between mb-6">
-      <h2 className="font-display text-3xl font-black heading-gradient-purple">Assessment Results</h2>
+      <h2 className="font-display text-3xl font-black heading-gradient-purple">Empire Report Card</h2>
       <div className="flex items-center gap-3">
         <div className="text-5xl font-display font-black heading-gradient-fire">
           Tier {results.tier}

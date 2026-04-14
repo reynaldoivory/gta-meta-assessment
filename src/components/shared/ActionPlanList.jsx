@@ -225,7 +225,7 @@ export const ActionPlanList = ({ actionPlan }) => {
   if (!actionPlan || actionPlan.length === 0) {
     return (
       <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6 text-center">
-        <p className="text-slate-400">No specific actions needed. You&apos;re doing great!</p>
+        <p className="text-slate-400">No actions needed right now. Your empire is running clean -- keep grinding!</p>
       </div>
     );
   }

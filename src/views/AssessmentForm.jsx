@@ -406,7 +406,7 @@ export default function AssessmentForm() {
                     >
                       <div>
                         <h3 className="text-sm font-bold uppercase text-gta-green">Financial Workbook</h3>
-                        <p className="text-xs text-gta-gray mt-1">Hidden by default for a cleaner load view.</p>
+                        <p className="text-xs text-gta-gray mt-1">Expand to plan your purchases and budget.</p>
                       </div>
                       {openPanels.workbook ? (
                         <ChevronDown className="w-4 h-4 text-slate-300" />

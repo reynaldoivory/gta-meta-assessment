@@ -15,7 +15,7 @@ const AssessmentRouter = () => {
 
   // Show loading state during calculation
   if (isCalculating) {
-    return <LoadingSpinner message="Running Assessment..." />;
+    return <LoadingSpinner message="Crunching the Numbers..." />;
   }
 
   switch (step) {

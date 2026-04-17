@@ -91,7 +91,13 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
       const safe: Partial<AssessmentFormData> = {};
       for (const key of allowed) {
         if (Object.prototype.hasOwnProperty.call(parsed, key)) {
-          (safe as Record<string, unknown>)[key as string] = parsed[key];
+          const defaultVal = defaults[key];
+          const parsedVal = parsed[key];
+          if (typeof parsedVal === typeof defaultVal) {
+            (safe as Record<string, unknown>)[key as string] = parsedVal;
+          } else {
+            (safe as Record<string, unknown>)[key as string] = defaultVal;
+          }
         }
       }
       return { ...defaults, ...safe } as AssessmentFormData;
@@ -139,7 +145,7 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
       localStorage.setItem('gta_assessment_data', JSON.stringify(formData));
       setLastSaved(new Date());
     } catch (e) {
-      console.error("Save failed", e);
+      console.error("Save failed", import.meta.env.DEV ? e : (e instanceof Error ? e.message : 'unknown error'));
     }
   };
 
@@ -168,7 +174,7 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
         setGamification(gamResult.state);
         setGamificationSummary(gamResult.summary);
       } catch (e) {
-        console.error("Assessment failed", e);
+        console.error("Assessment failed", import.meta.env.DEV ? e : (e instanceof Error ? e.message : 'unknown error'));
       } finally {
         setIsCalculating(false);
         setStep('results');

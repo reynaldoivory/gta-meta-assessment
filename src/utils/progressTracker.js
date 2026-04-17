@@ -33,7 +33,7 @@ export const saveProgressSnapshot = (formData, results) => {
     localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(trimmedHistory));
     return true;
   } catch (error) {
-    console.error('Failed to save progress snapshot:', error);
+    console.error('Failed to save progress snapshot:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return false;
   }
 };
@@ -56,7 +56,7 @@ export const getProgressHistory = () => {
       typeof entry.incomePerHour === 'number'
     );
   } catch (error) {
-    console.error('Failed to load progress history:', error);
+    console.error('Failed to load progress history:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return [];
   }
 };
@@ -94,7 +94,7 @@ export const clearProgressHistory = () => {
     localStorage.removeItem(PROGRESS_STORAGE_KEY);
     return true;
   } catch (error) {
-    console.error('Failed to clear progress history:', error);
+    console.error('Failed to clear progress history:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return false;
   }
 };

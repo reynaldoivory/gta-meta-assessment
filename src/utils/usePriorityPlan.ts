@@ -36,7 +36,7 @@ export const usePriorityPlan = (sessionMinutes: number): PriorityPlanResult => {
     try {
       return buildSessionPlan({ formData, results, sessionMinutes }) as RecordLike;
     } catch (e) {
-      console.error('Error building session plan:', e);
+      console.error('Error building session plan:', import.meta.env.DEV ? e : (e instanceof Error ? e.message : 'unknown error'));
       return null;
     }
   }, [formData, results, sessionMinutes]);
@@ -56,7 +56,7 @@ export const usePriorityPlan = (sessionMinutes: number): PriorityPlanResult => {
       actionPlan = buildCompactActionPlan(prioritizedBottlenecks, results.heistReady, formData, results);
       weeklyBonuses = getWeeklyBonuses() as unknown[];
     } catch (error) {
-      console.error('Error building action plan:', error);
+      console.error('Error building action plan:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     }
   }
 
@@ -76,7 +76,7 @@ export const usePriorityPlan = (sessionMinutes: number): PriorityPlanResult => {
       });
       jsonPayload = buildLLMJsonPayload({ formData, assessmentResults: results });
     } catch (error) {
-      console.error('Error building LLM prompts:', error);
+      console.error('Error building LLM prompts:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     }
   }
 

@@ -32,11 +32,14 @@ const loadState = (): EmpireState => {
       return getDefaultState();
     }
     return {
-      ownedBusinesses: parsed.ownedBusinesses,
+      ownedBusinesses: parsed.ownedBusinesses.filter(
+        (item: unknown): item is OwnedBusiness =>
+          typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).businessId === 'string'
+      ),
       ownedVehicles: Array.isArray(parsed.ownedVehicles) ? parsed.ownedVehicles : [],
     };
   } catch (error) {
-    console.error('Failed to load empire state:', error);
+    console.error('Failed to load empire state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return getDefaultState();
   }
 };
@@ -70,7 +73,7 @@ export const EmpireProvider = ({ children }: { children: ReactNode }) => {
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
-      console.error('Failed to save empire state:', error);
+      console.error('Failed to save empire state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     }
   }, [state]);
 

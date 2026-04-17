@@ -241,7 +241,7 @@ export const loadGamificationState = () => {
       ...safe,
     };
   } catch (error) {
-    console.error('Failed to load gamification state:', error);
+    console.error('Failed to load gamification state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return getDefaultGamificationState();
   }
 };
@@ -250,7 +250,7 @@ const saveGamificationState = (state) => {
   try {
     localStorage.setItem(GAMIFICATION_STORAGE_KEY, JSON.stringify(state));
   } catch (error) {
-    console.error('Failed to save gamification state:', error);
+    console.error('Failed to save gamification state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
   }
 };
 

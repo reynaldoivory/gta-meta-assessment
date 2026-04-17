@@ -78,7 +78,7 @@ export const checkStreak = () => {
       bonus: null,
     };
   } catch (error) {
-    console.error('Streak check failed:', error);
+    console.error('Streak check failed:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return {
       streak: 0,
       lastDate: null,
@@ -130,7 +130,7 @@ export const recordAssessment = () => {
 
     return { streak: newStreak, isNewStreak: newStreak > currentStreak };
   } catch (error) {
-    console.error('Failed to record assessment:', error);
+    console.error('Failed to record assessment:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return { streak: 0, isNewStreak: false };
   }
 };
@@ -179,7 +179,7 @@ export const resetStreak = () => {
     localStorage.removeItem(LAST_ASSESSMENT_KEY);
     return true;
   } catch (error) {
-    console.error('Failed to reset streak:', error);
+    console.error('Failed to reset streak:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
     return false;
   }
 };

@@ -27,6 +27,9 @@ jobs:
   sonarqube:
     name: SonarQube
     runs-on: ubuntu-latest
+    # Dependabot PRs run without repo secrets, so SONAR_TOKEN is empty and the
+    # scan fails. Skip; the scan runs again when the PR merges into main.
+    if: github.actor != 'dependabot[bot]'
     steps:
       - uses: actions/checkout@v4
         with:

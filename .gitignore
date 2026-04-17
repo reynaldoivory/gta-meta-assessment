@@ -36,3 +36,6 @@ venv/
 __pycache__/
 *.py[cod]
 coverage/
+
+# Local agent state (scheduled tasks, permission overrides)
+.claude/

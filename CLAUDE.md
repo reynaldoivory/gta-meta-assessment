@@ -14,6 +14,9 @@ npm test             # Jest unit tests
 npm run lint         # ESLint (0 errors, ~71 warnings expected)
 npm run type-check   # tsc --noEmit
 npm run deploy       # Build + gh-pages push to GitHub Pages
+
+node scripts/generateModStack.mjs [--class Super] [--hsw] [--ids 001,025] ...
+                     # Emit a curated mod-stack markdown from vehicles.csv (Steam PC, Story Mode)
 ```
 
 ## Stack

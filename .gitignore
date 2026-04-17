@@ -29,3 +29,9 @@ dist-ssr
 
 # Environment variables
 .env*
+
+# Python venv (defensive — never commit)
+.venv/
+venv/
+__pycache__/
+*.py[cod]

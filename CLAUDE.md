@@ -138,7 +138,7 @@ Test file: `src/utils/__tests__/computeAssessment.test.js`. Tests beginner/inter
 
 ## Conventions
 
-- **Immutable updates**: Spread, never mutate. See `~/.claude/rules/common/coding-style.md`.
+- **Immutable updates**: Spread, never mutate.
 - **Formatting functions**: Import from `src/utils/formatters.ts`. Never define `formatCurrency` or `formatHours` inline.
 - **Error boundaries**: `ErrorBoundary.jsx` wraps the app. Uses `import.meta.env.DEV` (not `process.env.NODE_ENV`) for dev-only error details.
 - **Notifications**: Use `useToast()` from `ToastContext`. Never use `alert()`.

@@ -3,7 +3,7 @@
 **Date:** April 17, 2026
 **Commit:** `d6ca7b5` — feat: add Garage vehicle database + refresh weekly events
 **Deploy:** `gh-pages` (https://reynaldoivory.github.io/gta-meta-assessment/)
-**Operator:** Rey (Chad Lance) via Opus 4.7 agentic parallel workflow
+**Workflow:** Opus 4.7 agentic parallel audit → fixes → ship
 
 ---
 

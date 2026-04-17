@@ -119,10 +119,11 @@ export default function GarageTab() {
       if (v.Shop) shopSet.add(v.Shop);
       if (v.GTA_Make) makeSet.add(v.GTA_Make);
     }
+    const byLocale = (a, b) => String(a).localeCompare(String(b));
     return {
-      classes: [...classSet].sort(),
-      shops: [...shopSet].sort(),
-      makes: [...makeSet].sort(),
+      classes: [...classSet].sort(byLocale),
+      shops: [...shopSet].sort(byLocale),
+      makes: [...makeSet].sort(byLocale),
     };
   }, [vehicles]);
 

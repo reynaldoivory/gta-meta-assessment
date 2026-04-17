@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import { X, Gauge, DollarSign, Car, Store, Info, ExternalLink, Wrench, BookOpen } from 'lucide-react';
 
 const formatPrice = (price) => {
@@ -39,17 +40,32 @@ export default function DetailModal({ vehicle, onClose }) {
   const gtabaseHref = gtabaseUrl(v);
   const modsUrl = gta5ModsSearch(v);
 
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [onClose]);
+
   return (
-    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={onClose}>
+    <div
+      className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+      onKeyDown={(e) => { if (e.key === 'Escape' || e.key === 'Enter') onClose(); }}
+      role="presentation"
+    >
       <div
         className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="vehicle-detail-title"
       >
         {/* Header */}
         <div className="sticky top-0 bg-slate-900/95 backdrop-blur border-b border-slate-700 p-4 flex items-center justify-between">
           <div>
             <div className="text-xs text-slate-500 mb-1">#{v.Vehicle_ID} · {v.Class}</div>
-            <h2 className="text-2xl font-bold text-white">{v.GTA_Make} {v.GTA_Model}</h2>
+            <h2 id="vehicle-detail-title" className="text-2xl font-bold text-white">{v.GTA_Make} {v.GTA_Model}</h2>
             <p className="text-slate-400 text-sm">IRL: {v.Real_World || 'N/A'}</p>
           </div>
           <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">

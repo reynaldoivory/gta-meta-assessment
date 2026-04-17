@@ -6,6 +6,7 @@ export const EmptyResultsState = ({ setStep }) => (
   <div className="min-h-screen bg-slate-950 p-4 md:p-6">
     <div className="max-w-4xl mx-auto">
       <button
+        type="button"
         onClick={() => setStep('results')}
         className="mb-4 text-slate-400 hover:text-white"
       >
@@ -23,6 +24,7 @@ EmptyResultsState.propTypes = {
 export const ActionPlanHeader = ({ setStep }) => (
   <div className="flex justify-between items-center bg-slate-900/80 p-4 rounded-xl border border-slate-700">
     <button
+      type="button"
       onClick={() => setStep('results')}
       className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
     >

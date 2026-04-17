@@ -80,7 +80,11 @@ export default function VehicleTable({ vehicles, sortConfig, onSort, onSelect })
             <tr
               key={v.Vehicle_ID}
               onClick={() => onSelect(v)}
-              className="border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer transition-colors"
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(v); } }}
+              tabIndex={0}
+              role="button"
+              aria-label={`View details for ${v.GTA_Make} ${v.GTA_Model}`}
+              className="border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer transition-colors focus:outline-none focus:bg-slate-800/70"
             >
               <td className="px-3 py-2 text-slate-500 text-xs">{v.Vehicle_ID}</td>
               <td className="px-3 py-2 text-white font-medium text-sm">{v.GTA_Make}</td>

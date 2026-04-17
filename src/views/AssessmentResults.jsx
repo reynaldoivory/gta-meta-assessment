@@ -47,6 +47,7 @@ const AssessmentResults = () => {
         {/* Top Navigation */}
         <div className="card-enterprise flex justify-between items-center animate-pop-in">
           <button
+            type="button"
             onClick={() => setStep('form')}
             className="btn-secondary text-sm py-2 px-4"
           >
@@ -122,6 +123,7 @@ const AssessmentResults = () => {
         {/* Social & Action */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           <button
+            type="button"
             onClick={() => setStep('actionPlan')}
             className="p-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center gap-3 text-xl font-bold hover:scale-[1.02] transition-transform shadow-lg shadow-blue-900/20"
           >

@@ -41,9 +41,53 @@ export default function DetailModal({ vehicle, onClose }) {
   const modsUrl = gta5ModsSearch(v);
 
   useEffect(() => {
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    // Focus management and basic focus trap for accessibility
+    const previouslyFocused = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const titleEl = document.getElementById('vehicle-detail-title');
+    const dialogEl = titleEl ? titleEl.closest('[role="dialog"]') : null;
+    const selector = 'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), [tabindex]:not([tabindex="-1"])';
+    const focusable = dialogEl ? Array.from(dialogEl.querySelectorAll(selector)).filter((el) => el instanceof HTMLElement) : [];
+    const firstFocusable = focusable[0] || null;
+    const lastFocusable = focusable[focusable.length - 1] || null;
+    const closeBtn = dialogEl ? dialogEl.querySelector('button[aria-label="Close vehicle details"]') : null;
+    // move focus to close button (or first focusable) when opened
+    if (closeBtn && closeBtn instanceof HTMLElement) {
+      closeBtn.focus();
+    } else if (firstFocusable && firstFocusable instanceof HTMLElement) {
+      firstFocusable.focus();
+    }
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key === 'Tab') {
+        // Basic focus trap: loop focus inside dialog
+        if (!focusable.length) {
+          e.preventDefault();
+          return;
+        }
+        if (e.shiftKey) {
+          if (document.activeElement === firstFocusable) {
+            e.preventDefault();
+            lastFocusable && lastFocusable.focus();
+          }
+        } else {
+          if (document.activeElement === lastFocusable) {
+            e.preventDefault();
+            firstFocusable && firstFocusable.focus();
+          }
+        }
+      }
+    };
+
     document.addEventListener('keydown', onKey);
-    return () => document.removeEventListener('keydown', onKey);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      if (previouslyFocused && previouslyFocused.focus) previouslyFocused.focus();
+    };
   }, [onClose]);
 
   return (
@@ -68,7 +112,7 @@ export default function DetailModal({ vehicle, onClose }) {
             <h2 id="vehicle-detail-title" className="text-2xl font-bold text-white">{v.GTA_Make} {v.GTA_Model}</h2>
             <p className="text-slate-400 text-sm">IRL: {v.Real_World || 'N/A'}</p>
           </div>
-          <button onClick={onClose} className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+          <button onClick={onClose} aria-label="Close vehicle details" className="p-2 hover:bg-slate-700 rounded-lg transition-colors">
             <X className="w-6 h-6 text-slate-400" />
           </button>
         </div>

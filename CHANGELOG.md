@@ -9,6 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added — 2026-04-17 · Garage vehicle database (commit d6ca7b5)
+- New Garage tab browses 795-vehicle database (`public/data/vehicles.csv`) with filter/sort/search
+- Detail modal links live to GTA Wiki, GTABase, and gta5-mods.com replace-mod searches
+- "Garage" button on Planning Board header, routes to `step='garage'`
+- Source: community-maintained `reynaldoivory/gta-online-database`, cross-checked Apr 17 2026
+- `papaparse` added for CSV parsing
+- `formatPriceShort` utility added to `src/utils/formatters.ts`
+- Weekly events refreshed to Apr 16-23 2026 LD Organics 420 event
+- See `docs/GARAGE_SHIP_2026-04-17.md` for full before/after log
+
+### Security — 2026-04-17
+- CSP `connect-src` changed from `'none'` to `'self'` for same-origin CSV fetch
+- `AssessmentContext` localStorage hydration now key-allowlisted (blocks unexpected field injection)
+- `DetailModal` external hrefs gated by origin allowlist (defense in depth against tampered CSV)
+
+### Fixed — 2026-04-17
+- `modelConfig.effectiveHourlyRate` recomputed from bumped $1.3M base payout (was stale at $367k)
+- `calculateIncome.ts` payphone fallback reduced to 0 (canonical value lives in `modelConfig.js`)
+- Inline `formatPrice` duplicates in garage components replaced with shared `formatPriceShort`
+
 ### Added
 - GTA+ exclusive bonuses now visible to all users with locked state indicator
 - Lock icon overlay on GTA+ monthly bonuses for non-subscribers

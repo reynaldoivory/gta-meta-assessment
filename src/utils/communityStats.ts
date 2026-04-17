@@ -1,5 +1,6 @@
 // src/utils/communityStats.js
 import type { AssessmentFormData, AssessmentResult } from '../types/domain.types';
+import { escapeCsvCell } from './csvHelpers';
 
 const COMMUNITY_STATS_KEY = 'gta_community_stats_pool';
 const TRAP_STATS_KEY = 'gta_community_trap_stats';
@@ -214,13 +215,6 @@ export const exportCommunityStatsCSV = () => {
       entry.heistReadyPercent,
     ];
   });
-
-  // Escape CSV cells to prevent formula injection in spreadsheet apps
-  const escapeCsvCell = (val: unknown): string => {
-    const s = String(val ?? '');
-    const sanitized = /^[=+\-@]/.test(s) ? `'${s}` : s;
-    return `"${sanitized.replace(/"/g, '""')}"`;
-  };
 
   // Combine headers and rows
   const csvContent = [

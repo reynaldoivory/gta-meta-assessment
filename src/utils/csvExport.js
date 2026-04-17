@@ -1,4 +1,5 @@
 ﻿// src/utils/csvExport.js
+import { escapeCsvCell } from './csvHelpers';
 
 export const downloadCSV = (csv, filename = 'gta_community_stats.csv') => {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -66,7 +67,7 @@ const toHistoryRow = (snapshot) => {
 
   return [
     headers.join(','),
-    ...rows.map(row => row.map(cell => `"${cell}"`).join(',')),
+    ...rows.map(row => row.map(escapeCsvCell).join(',')),
   ].join('\n');
 };
 

@@ -37,7 +37,10 @@ const AssessmentResults = () => {
     totalHours, timePartsLabel, shouldShowTimePlayed,
   } = useAssessmentResults();
 
-  if (!results) return null;
+  if (!results) {
+    setStep('form');
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-transparent p-4 md:p-6 text-slate-50 font-body">

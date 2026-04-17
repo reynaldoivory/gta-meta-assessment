@@ -31,7 +31,7 @@ jobs:
     # scan fails. Skip; the scan runs again when the PR merges into main.
     if: github.actor != 'dependabot[bot]'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
       - name: Use Node.js

@@ -32,11 +32,11 @@ const convertTotalHoursToParts = (totalHours) => {
   };
 };
 
-const setMissingTimePartDefaults = (migrated) => {
-  if (migrated.timePlayedDays === undefined) migrated.timePlayedDays = '';
-  if (migrated.timePlayedHours === undefined) migrated.timePlayedHours = '';
-  if (migrated.timePlayedMinutes === undefined) migrated.timePlayedMinutes = '';
-};
+const setMissingTimePartDefaults = (migrated) => ({
+  timePlayedDays: migrated.timePlayedDays !== undefined ? migrated.timePlayedDays : '',
+  timePlayedHours: migrated.timePlayedHours !== undefined ? migrated.timePlayedHours : '',
+  timePlayedMinutes: migrated.timePlayedMinutes !== undefined ? migrated.timePlayedMinutes : '',
+});
 
 const inferTimePlayedMode = (migrated) => {
   if (hasTimeParts(migrated)) return 'parts';
@@ -45,11 +45,13 @@ const inferTimePlayedMode = (migrated) => {
 };
 
 const ensureBooleanDefaults = (migrated, fields) => {
+  const overrides = {};
   fields.forEach((field) => {
     if (migrated[field] === undefined) {
-      migrated[field] = false;
+      overrides[field] = false;
     }
   });
+  return { ...migrated, ...overrides };
 };
 
 const migrateNightclubSources = (migrated) => {
@@ -66,11 +68,11 @@ const migrateNightclubSources = (migrated) => {
       newSources[sourceOrder[index]] = true;
     }
 
-    migrated.nightclubSources = newSources;
+    return { ...migrated, nightclubSources: newSources };
   }
 
   if (!migrated.nightclubSources) {
-    migrated.nightclubSources = { ...DEFAULT_NIGHTCLUB_SOURCES };
+    return { ...migrated, nightclubSources: { ...DEFAULT_NIGHTCLUB_SOURCES } };
   }
 
   return migrated;
@@ -78,9 +80,12 @@ const migrateNightclubSources = (migrated) => {
 
 const migrateNightclubStorage = (migrated) => {
   if (!migrated.nightclubStorage) {
-    migrated.nightclubStorage = {
-      hasPounder: migrated.hasPounderCustom || false,
-      hasMule: migrated.hasMuleCustom || false,
+    return {
+      ...migrated,
+      nightclubStorage: {
+        hasPounder: migrated.hasPounderCustom || false,
+        hasMule: migrated.hasMuleCustom || false,
+      },
     };
   }
 
@@ -89,66 +94,63 @@ const migrateNightclubStorage = (migrated) => {
 
 const migrateStamina = (migrated) => {
   if (migrated.lungCapacity !== undefined && migrated.stamina === undefined) {
-    migrated.stamina = migrated.lungCapacity;
-    delete migrated.lungCapacity;
+    const { lungCapacity: _dropped, ...rest } = migrated;
+    return { ...rest, stamina: migrated.lungCapacity };
   }
 
   return migrated;
 };
 
 const migrateBunkerUpgrades = (migrated) => {
+  const upgrades = {
+    bunkerEquipmentUpgrade: migrated.bunkerEquipmentUpgrade !== undefined ? migrated.bunkerEquipmentUpgrade : false,
+    bunkerStaffUpgrade: migrated.bunkerStaffUpgrade !== undefined ? migrated.bunkerStaffUpgrade : false,
+    bunkerSecurityUpgrade: migrated.bunkerSecurityUpgrade !== undefined ? migrated.bunkerSecurityUpgrade : false,
+  };
+
   if (
     migrated.bunkerUpgraded &&
     migrated.bunkerEquipmentUpgrade === undefined &&
     migrated.bunkerStaffUpgrade === undefined
   ) {
-    migrated.bunkerEquipmentUpgrade = true;
-    migrated.bunkerStaffUpgrade = true;
-    migrated.bunkerSecurityUpgrade = false;
+    upgrades.bunkerEquipmentUpgrade = true;
+    upgrades.bunkerStaffUpgrade = true;
+    upgrades.bunkerSecurityUpgrade = false;
   }
 
-  if (migrated.bunkerEquipmentUpgrade === undefined) migrated.bunkerEquipmentUpgrade = false;
-  if (migrated.bunkerStaffUpgrade === undefined) migrated.bunkerStaffUpgrade = false;
-  if (migrated.bunkerSecurityUpgrade === undefined) migrated.bunkerSecurityUpgrade = false;
-
-  return migrated;
+  return { ...migrated, ...upgrades };
 };
 
 const migrateTimePlayedParts = (migrated) => {
+  let next = migrated;
+
   if (!hasTimeParts(migrated) && hasLegacyTotalTime(migrated)) {
     const totalHours = Number(migrated.timePlayed);
 
     if (!Number.isNaN(totalHours) && totalHours >= 0) {
       const parts = convertTotalHoursToParts(totalHours);
-      migrated.timePlayedDays = parts.days;
-      migrated.timePlayedHours = parts.hours;
-      migrated.timePlayedMinutes = parts.minutes;
+      next = { ...next, timePlayedDays: parts.days, timePlayedHours: parts.hours, timePlayedMinutes: parts.minutes };
     }
   }
 
-  setMissingTimePartDefaults(migrated);
-  return migrated;
+  return { ...next, ...setMissingTimePartDefaults(next) };
 };
 
 const ensureDefaults = (migrated) => {
-  if (!migrated.timePlayedMode) {
-    migrated.timePlayedMode = inferTimePlayedMode(migrated);
-  }
+  const { cayoCompletions: _c, cayoAvgTime: _a, cayoHistory: _h, lastCayoRun: _l, ...rest } = migrated;
 
-  if (!migrated.purchaseDates || typeof migrated.purchaseDates !== 'object') {
-    migrated.purchaseDates = { ...DEFAULT_PURCHASE_DATES };
-  }
+  const withDefaults = {
+    ...rest,
+    timePlayedMode: rest.timePlayedMode || inferTimePlayedMode(rest),
+    purchaseDates: (rest.purchaseDates && typeof rest.purchaseDates === 'object')
+      ? rest.purchaseDates
+      : { ...DEFAULT_PURCHASE_DATES },
+    nightclubStorage: (rest.nightclubStorage && typeof rest.nightclubStorage === 'object')
+      ? rest.nightclubStorage
+      : { ...DEFAULT_NIGHTCLUB_STORAGE },
+  };
 
-  if (!migrated.nightclubStorage || typeof migrated.nightclubStorage !== 'object') {
-    migrated.nightclubStorage = { ...DEFAULT_NIGHTCLUB_STORAGE };
-  }
-
-  delete migrated.cayoCompletions;
-  delete migrated.cayoAvgTime;
-  delete migrated.cayoHistory;
-  delete migrated.lastCayoRun;
-
-  ensureBooleanDefaults(migrated, [
+  return ensureBooleanDefaults(withDefaults, [
     'hasWeedFarm',
     'hasHeliTours',
     'sellsToStreetDealers',
@@ -156,8 +158,6 @@ const ensureDefaults = (migrated) => {
     'dailyGsCache',
     'dailySafeCollect',
   ]);
-
-  return migrated;
 };
 
 export const migrateUserData = (data) => {

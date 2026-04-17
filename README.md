@@ -1,7 +1,11 @@
 # GTA Online Meta Assessment
 
 [![Live Demo](https://img.shields.io/badge/demo-live-brightgreen)](https://reynaldoivory.github.io/gta-meta-assessment/)
-[![Build](https://img.shields.io/badge/build-passing-brightgreen)](https://github.com/reynaldoivory/gta-meta-assessment/actions)
+[![SonarQube](https://github.com/reynaldoivory/gta-meta-assessment/actions/workflows/sonarqube.yml/badge.svg)](https://github.com/reynaldoivory/gta-meta-assessment/actions/workflows/sonarqube.yml)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=reynaldoivory_gta-meta-assessment&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=reynaldoivory_gta-meta-assessment)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=reynaldoivory_gta-meta-assessment&metric=coverage)](https://sonarcloud.io/component_measures?id=reynaldoivory_gta-meta-assessment&metric=coverage)
+[![Bugs](https://sonarcloud.io/api/project_badges/measure?project=reynaldoivory_gta-meta-assessment&metric=bugs)](https://sonarcloud.io/project/issues?id=reynaldoivory_gta-meta-assessment&resolved=false&types=BUG)
+[![Code Smells](https://sonarcloud.io/api/project_badges/measure?project=reynaldoivory_gta-meta-assessment&metric=code_smells)](https://sonarcloud.io/project/issues?id=reynaldoivory_gta-meta-assessment&resolved=false&types=CODE_SMELL)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![React 19](https://img.shields.io/badge/react-19-61dafb)](https://react.dev)
 [![Vite 7](https://img.shields.io/badge/vite-7-646cff)](https://vitejs.dev)

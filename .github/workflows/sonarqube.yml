@@ -4,8 +4,24 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'CITATION.cff'
+      - '.gitignore'
   pull_request:
     types: [opened, synchronize, reopened]
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+      - 'LICENSE'
+      - 'CITATION.cff'
+      - '.gitignore'
+
+concurrency:
+  group: sonarqube-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   sonarqube:
@@ -23,7 +39,7 @@ jobs:
       - name: Install dependencies
         run: npm ci
       - name: Test and coverage
-        run: npm run test -- --coverage
+        run: npm test -- --coverage
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v7
         env:

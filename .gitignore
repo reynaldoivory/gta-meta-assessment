@@ -35,3 +35,4 @@ dist-ssr
 venv/
 __pycache__/
 *.py[cod]
+coverage/

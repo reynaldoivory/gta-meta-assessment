@@ -25,6 +25,7 @@ npm run deploy       # Build + gh-pages push to GitHub Pages
 | Styling | Tailwind CSS 3 |
 | Charts | Chart.js 4 + react-chartjs-2 |
 | Icons | lucide-react |
+| CSV Parser | papaparse |
 | Tests | Jest + jsdom |
 | Deploy | gh-pages to reynaldoivory.github.io |
 
@@ -32,15 +33,17 @@ npm run deploy       # Build + gh-pages push to GitHub Pages
 
 ```
 src/
-├── views/                    # Page-level components (4 views)
+├── views/                    # Page-level components (5 views)
 │   ├── AssessmentForm.jsx    # "Heist Planning Board" -- main input form
 │   ├── AssessmentResults.jsx # Results display after assessment runs
 │   ├── PriorityActionPlan.jsx # Prioritized action plan view
-│   └── QuickStartGuide.jsx   # Onboarding guide
+│   ├── QuickStartGuide.jsx   # Onboarding guide
+│   └── GarageTab.jsx         # Browse 795-vehicle database (read-only)
 ├── components/
 │   ├── GTAAssessment.jsx     # Root component, view router
 │   ├── shared/               # Reusable UI (40 components)
 │   ├── calculators/          # ROICalculator, SocialCardGenerator
+│   ├── garage/               # DetailModal, FilterPanel, VehicleTable
 │   └── gamification/         # Achievements, streaks, progress
 ├── context/                  # React context providers
 │   ├── AssessmentContext.tsx  # Form state, results, step navigation
@@ -73,6 +76,8 @@ AssessmentContext.runAssessment()
                                         ├── actionPlanBuilder.ts
                                         ├── dynamicIncome.ts (weekly event bonuses)
                                         └── AIAssistantTools (LLM prompt export)
+
+Garage (independent read path): GarageTab.jsx → FilterPanel + VehicleTable → loads public/data/vehicles.csv via papaparse
 ```
 
 ## Single Sources of Truth
@@ -87,6 +92,7 @@ These files are authoritative. Do not duplicate their values elsewhere.
 | **Scoring rules** | `src/utils/modelConfig.js` | Thresholds, tier boundaries, weights. |
 | **Form defaults** | `src/utils/assessmentFormDefaults.js` | Initial form state. |
 | **Business catalog** | `src/data/verifiedProperty/*.ts` | 7 category files, re-exported from `index.ts`. |
+| **Vehicle database** | `public/data/vehicles.csv` | 795 vehicles, updated Apr 17 2026. Source: github.com/reynaldoivory/gta-online-database |
 | **Formatting** | `src/utils/formatters.ts` | `formatCurrency`, `formatDollars`, `formatHours`, `formatHoursShort`. Do not redefine inline. |
 | **Domain types** | `src/types/domain.types.ts` | `AssessmentFormData`, `AssessmentResult`. |
 

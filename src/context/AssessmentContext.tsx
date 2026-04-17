@@ -81,12 +81,23 @@ const createInitialFormData = (): AssessmentFormData => ({
 export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   // 1. State Initialization
   const [formData, setFormData] = useState<AssessmentFormData>(() => {
+    const defaults = createInitialFormData();
     try {
       const saved = localStorage.getItem('gta_assessment_data');
-      return saved ? (JSON.parse(saved) as AssessmentFormData) : createInitialFormData();
+      if (!saved) return defaults;
+      const parsed = JSON.parse(saved);
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaults;
+      const allowed = Object.keys(defaults) as (keyof AssessmentFormData)[];
+      const safe: Partial<AssessmentFormData> = {};
+      for (const key of allowed) {
+        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
+          (safe as Record<string, unknown>)[key as string] = parsed[key];
+        }
+      }
+      return { ...defaults, ...safe } as AssessmentFormData;
     } catch (e) {
       console.warn("Failed to load saved data", e);
-      return createInitialFormData();
+      return defaults;
     }
   });
   

@@ -122,7 +122,7 @@ export const MODEL_CONFIG = {
   income: {
     // New optimized Cayo structure
     cayo: {
-      basePayout: 700000,         // Average post-nerf payout (~$700k)
+      basePayout: 1200000,        // Solo per-run reference (April 2026): $1.2M-$1.8M; low end used
       tequilaPayout: 630000,       // Most common (60% drop rate)
       pinkDiamondPayout: 1300000,  // Pink Diamond payout (boosted event weeks)
       masteryThreshold: 10,        // Runs needed for mastery
@@ -132,10 +132,10 @@ export const MODEL_CONFIG = {
       // Co-op cooldown: 48 min
       // Effective $/hr = payout * bagFill * (60 / max(runTime, cooldown))
       solo: {
-        basePayout: 1100000,      // $1.1M average solo payout (with decent secondary)
+        basePayout: 1300000,      // $1.3M average solo payout (reference: $1.2M-$1.8M, April 2026)
         cooldownMinutes: 144,     // 2h 24m cooldown (invite-only, verified)
         avgRunMinutes: 75,        // Safe-pace prep + finale (no elite assumption)
-        effectiveHourlyRate: 367000, // $700k * 0.8 * (60/144) ≈ $367k/hr solo-only
+        effectiveHourlyRate: 433000, // $1.3M * 0.8 * (60/144) ≈ $433k/hr solo-only
         blendedHourlyRate: 800000,  // With VIP/Agency cooldown fillers: ~$800k/hr
         defaultEstimate: 300000   // Default estimate if no time entered
       },
@@ -145,7 +145,7 @@ export const MODEL_CONFIG = {
       }
     },
     agency: {
-      payphoneBase: 85000,         // Base payphone hit payout
+      payphoneBase: 70000,         // Base payphone hit payout (April 2026 reference: $70k/hit)
       hitsPerHour: 3,             // Realistic solo hits per hour
       payphoneHits: 50000,         // Legacy: $50k/hr during Cayo cooldown
       safe: {

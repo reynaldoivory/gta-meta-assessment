@@ -51,16 +51,42 @@ const saveTrapHistory = (history) => {
 };
 
 /**
+ * Get list of fixed traps for celebration display
+ * @returns {Array} Array of fixed trap records
+ */
+const getTrapFixes = () => {
+  try {
+    return JSON.parse(localStorage.getItem(TRAP_FIXES_KEY) || '[]');
+  } catch (e) {
+    console.warn('Failed to parse trap fixes from localStorage:', e);
+    return [];
+  }
+};
+
+/**
+ * Save trap fixes to localStorage
+ */
+const saveTrapFixes = (fixes) => {
+  try {
+    // Keep only last 50 fixes
+    const trimmed = fixes.slice(-50);
+    localStorage.setItem(TRAP_FIXES_KEY, JSON.stringify(trimmed));
+  } catch (e) {
+    console.error('Failed to save trap fixes:', e);
+  }
+};
+
+/**
  * Record when a trap was detected (for tracking purposes)
  * @param {Object} trap - The detected trap
  * @param {Object} formData - Player form data at time of detection
  */
 const recordTrapDetection = (trap, formData) => {
   const history = getTrapHistory();
-  const existingIndex = history.findIndex(h => 
+  const existingIndex = history.findIndex(h =>
     h.trapId === trap.id && !h.fixedAt
   );
-  
+
   // Don't duplicate if already tracking this trap
   if (existingIndex === -1) {
     history.push({
@@ -86,16 +112,16 @@ const recordTrapDetection = (trap, formData) => {
  */
 const recordTrapFix = (trapId, formData, assessment = null) => {
   const history = getTrapHistory();
-  const trapIndex = history.findIndex(h => 
+  const trapIndex = history.findIndex(h =>
     h.trapId === trapId && !h.fixedAt
   );
-  
+
   if (trapIndex !== -1) {
     history[trapIndex].fixedAt = Date.now();
     history[trapIndex].scoreAfterFix = assessment?.score || null;
     history[trapIndex].incomeAfterFix = assessment?.incomePerHour || null;
     saveTrapHistory(history);
-    
+
     // Also save to fixes log for celebration display
     const fixes = getTrapFixes();
     fixes.push({
@@ -107,36 +133,10 @@ const recordTrapFix = (trapId, formData, assessment = null) => {
       incomeGained: (assessment?.incomePerHour || 0) - (history[trapIndex].lostPerHour || 0),
     });
     saveTrapFixes(fixes);
-    
+
     return history[trapIndex];
   }
   return null;
-};
-
-/**
- * Get list of fixed traps for celebration display
- * @returns {Array} Array of fixed trap records
- */
-const getTrapFixes = () => {
-  try {
-    return JSON.parse(localStorage.getItem(TRAP_FIXES_KEY) || '[]');
-  } catch (e) {
-    console.warn('Failed to parse trap fixes from localStorage:', e);
-    return [];
-  }
-};
-
-/**
- * Save trap fixes to localStorage
- */
-const saveTrapFixes = (fixes) => {
-  try {
-    // Keep only last 50 fixes
-    const trimmed = fixes.slice(-50);
-    localStorage.setItem(TRAP_FIXES_KEY, JSON.stringify(trimmed));
-  } catch (e) {
-    console.error('Failed to save trap fixes:', e);
-  }
 };
 
 /**

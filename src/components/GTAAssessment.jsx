@@ -5,6 +5,7 @@ import AssessmentForm from '../views/AssessmentForm';
 import AssessmentResults from '../views/AssessmentResults';
 import QuickStartGuide from '../views/QuickStartGuide';
 import PriorityActionPlan from '../views/PriorityActionPlan';
+import GarageTab from '../views/GarageTab';
 import DevTools from './shared/DevTools';
 import LoadingSpinner from './shared/LoadingSpinner';
 import ErrorBoundary from './shared/ErrorBoundary';
@@ -27,6 +28,8 @@ const AssessmentRouter = () => {
       return <QuickStartGuide />;
     case 'actionPlan':
       return <PriorityActionPlan />;
+    case 'garage':
+      return <GarageTab />;
     default:
       return <AssessmentForm />;
   }

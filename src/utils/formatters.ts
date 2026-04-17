@@ -16,6 +16,18 @@ export const formatDollars = (value: string | number): string => {
   return `$${(Number(value) || 0).toLocaleString()}`;
 };
 
+/**
+ * Compact price: $1.25M / $450K / $—.
+ * Returns '—' for 0 or NaN so delisted/missing prices render cleanly.
+ */
+export const formatPriceShort = (value: number | string): string => {
+  const num = Number(value);
+  if (!Number.isFinite(num) || num === 0) return '—';
+  if (num >= 1_000_000) return `$${(num / 1_000_000).toFixed(2)}M`;
+  if (num >= 1_000) return `$${(num / 1_000).toFixed(0)}K`;
+  return `$${num}`;
+};
+
 /** Format hours with smart decimal places: integers stay whole, decimals get 2 places. */
 export const formatHours = (value: number): string => {
   if (!Number.isFinite(value)) return '0';

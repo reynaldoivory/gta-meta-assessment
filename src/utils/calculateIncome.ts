@@ -118,7 +118,7 @@ export const calculateIncome = (params, formData) => { // NOSONAR
   // --- 2.2 Agency / Payphone Hits ---
   if (hasAgency && payphoneUnlocked) {
     const agencyCfg = MODEL_CONFIG.income?.agency || {};
-    const hitPayout = agencyCfg.payphoneBase ?? 85000;    // per hit
+    const hitPayout = agencyCfg.payphoneBase ?? 0;        // per hit; canonical value lives in modelConfig.js
     const hitsPerHour = agencyCfg.hitsPerHour ?? 3;       // realistic solo
     activeIncome += hitPayout * hitsPerHour;              // ~255k/hr default
   }

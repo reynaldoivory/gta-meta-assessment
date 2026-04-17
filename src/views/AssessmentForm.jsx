@@ -4,7 +4,8 @@
 
 import { useRef, useState } from 'react';
 import { useAssessment } from '../context/AssessmentContext';
-import { Save, Trash2, ChevronDown, ChevronRight, Check } from 'lucide-react';
+import { useToast } from '../context/ToastContext';
+import { Save, Trash2, ChevronDown, ChevronRight, Check, Car } from 'lucide-react';
 import WeeklyBonusBanner from '../components/shared/WeeklyBonusBanner';
 import { BusinessMatrixPanel } from '../components/shared/BusinessMatrixPanel';
 import { AssessmentVitalsSidebar } from '../components/shared/AssessmentVitalsSidebar';
@@ -19,8 +20,10 @@ export default function AssessmentForm() {
     formData, setFormData, errors, setErrors, clearFieldError,
     manualSave, localStorageAvailable, isSaving, lastSaved, clearSavedData,
     runAssessment, isCalculating,
-    cascadeTraps, criticalTraps, hasCriticalTrap
+    cascadeTraps, criticalTraps, hasCriticalTrap,
+    setStep,
   } = useAssessment();
+  const { showToast } = useToast();
 
   // 2. Local State definitions
   const formContainerRef = useRef(null);
@@ -136,6 +139,14 @@ export default function AssessmentForm() {
             <div className="flex justify-end gap-3 mb-3">
               <button
                 type="button"
+                onClick={() => setStep('garage')}
+                className="btn-secondary text-sm py-2 px-4"
+                title="Browse the vehicle database"
+              >
+                <Car className="w-4 h-4 inline-block mr-2" /> Garage
+              </button>
+              <button
+                type="button"
                 onClick={manualSave}
                 disabled={!localStorageAvailable || isSaving}
                 className="btn-secondary text-sm py-2 px-4 disabled:opacity-50 disabled:cursor-not-allowed"
@@ -145,7 +156,10 @@ export default function AssessmentForm() {
               </button>
               <button
                 type="button"
-                onClick={clearSavedData}
+                onClick={() => {
+                  clearSavedData();
+                  showToast('Empire wiped clean', 'success');
+                }}
                 className="px-4 py-2 rounded-xl font-bold text-accent-pink border-2 border-accent-pink/40 bg-accent-pink/10 hover:bg-accent-pink/20 transition-all duration-200 hover:scale-105 text-sm"
                 title="Clear all data"
               >

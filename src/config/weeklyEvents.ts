@@ -1,188 +1,207 @@
 // src/config/weeklyEvents.js
 // The "Source of Truth" for weekly events
 // Update this file every Thursday when Rockstar announces new bonuses
-// Last updated: Feb 12, 2026
-// Source: r/gtaonline weekly thread by PapaXan + rockstargames.com/gta-plus
+// Last updated: Apr 17, 2026
+// Source: rockstargames.com/newswire + fandomwire/rockstarintel weekly recaps
 
 export const WEEKLY_EVENTS: any = {
   meta: {
-    lastUpdated: '2026-02-12',
-    validFrom: '2026-02-12T10:00:00Z', // Thursday 5AM ET
-    validUntil: '2026-02-19T10:00:00Z', // Next Thursday 5AM ET
-    displayDate: 'Feb 12 - Feb 19',
+    lastUpdated: '2026-04-17',
+    validFrom: '2026-04-16T09:00:00Z', // Thursday 5AM EDT
+    validUntil: '2026-04-23T09:00:00Z', // Next Thursday 5AM EDT
+    displayDate: 'Apr 16 - Apr 23',
+    eventTag: 'ld_organics_420',
   },
   bonuses: {
-    // Valentine's Event (through Feb 18)
-    deadlineDuet: {
+    // "LD Organics Presents: The 420 Event" — two-week cannabis-themed event
+    stonerSurvival: {
       isActive: true,
-      multiplier: 3,
-      label: '3X Deadline Duet',
-      validUntil: '2026-02-18T10:00:00Z',
+      multiplier: 4,
+      label: '4X Stoner Survival',
+      validUntil: '2026-04-23T09:00:00Z',
       category: 'adversary',
-      tag: 'valentines',
+      tag: 'ld_organics_420',
+      note: 'New adversary mode introduced this week.',
     },
-    associateSalaries: {
+    huntingPackGetLamar: {
       isActive: true,
       multiplier: 4,
-      label: '4X Associate/Bodyguard Salaries',
-      validUntil: '2026-02-18T10:00:00Z',
-      category: 'freemode',
-      tag: 'valentines',
+      label: '4X Hunting Pack (Get Lamar)',
+      validUntil: '2026-04-23T09:00:00Z',
+      category: 'adversary',
+      tag: 'ld_organics_420',
       requiresMultiplayer: true,
-      soloNote: 'Requires being hired as Associate/Bodyguard by another CEO — not available solo in Invite Only.',
+      soloNote: 'Adversary mode — requires other players.',
     },
-    ceoVipWork: {
+    pizzaDelivery: {
       isActive: true,
       multiplier: 4,
-      label: '4X CEO/VIP Work',
-      validUntil: '2026-02-19T10:00:00Z',
+      label: '4X Pizza Delivery',
+      validUntil: '2026-04-23T09:00:00Z',
       category: 'freemode',
       soloFriendly: true,
-      estimatedHourlyRate: 700000,
-      soloTip: 'Loop Headhunter + Sightseer in Invite Only with Sparrow for ~$600-800k/hr.',
+      estimatedHourlyRate: 180000,
+      soloTip: 'Pizza Delivery jobs spawn from street payphones — pair with other freemode activities.',
     },
-    lunarNewYearStuntRaces: {
+    firstLastDose: {
       isActive: true,
       multiplier: 3,
-      label: '3X Lunar New Year Stunt Races',
-      validUntil: '2026-03-04T10:00:00Z',
-      category: 'race',
-      tag: 'lunar_new_year',
-      gtaPlusMultiplier: 6,
-      // GTA+ members get 6X instead of 3X — dedup logic in detectBottlenecks
-      // should show only the highest active multiplier, not both.
-      gtaPlusLabel: '6X Lunar New Year Stunt Races (GTA+)',
+      label: '3X First Dose & Last Dose Missions',
+      validUntil: '2026-04-23T09:00:00Z',
+      category: 'mission',
+      tag: 'ld_organics_420',
+      soloFriendly: true,
+      estimatedHourlyRate: 400000,
+      soloTip: 'Last Dose finale pays best. Chain doses back-to-back for sustained hourly.',
     },
-    communitySeries: {
+    shortTrips: {
       isActive: true,
       multiplier: 2,
-      label: '2X Community Series',
-      validUntil: '2026-02-19T10:00:00Z',
-      category: 'race',
+      label: '2X Short Trips',
+      validUntil: '2026-04-23T09:00:00Z',
+      category: 'mission',
+      soloFriendly: true,
+      soloTip: 'Franklin & Lamar Short Trips from Record A Studios — quick $20-40k each.',
     },
-    cayoPericoPinkDiamond: {
+    weedSellMissions: {
       isActive: true,
-      multiplier: 1,
-      label: 'Boosted Pink Diamond Chance (~50%)',
-      validUntil: '2026-02-19T10:00:00Z',
-      category: 'heist',
-      note: 'Cayo Perico Heist primary target',
+      multiplier: 2,
+      label: '2X Weed Sell Missions (incl. Nightclub Organic Produce)',
+      validUntil: '2026-04-23T09:00:00Z',
+      category: 'business',
+      tag: 'ld_organics_420',
       soloFriendly: true,
       highValue: true,
-      // Realistic solo $/hr accounting for 144-min cooldown:
-      // Pink Diamond ~$1.3M payout * 0.8 bag fill * (60/144 runs/hr) ≈ $433k/hr effective.
-      // Fill cooldown with VIP Work + Security Contracts to reach ~$700-900k/hr blended.
-      estimatedHourlyRate: 433000,
-      soloTip: 'Pink Diamond ($1.3M) boosts payout significantly. Solo route: Longfin → grab secondaries at airstrip/north dock FIRST → Drainage Tunnel → primary → swim escape. Fill 144-min cooldown with 4X VIP Work or 2X Security Contracts.',
-      soloRoutes: [
-        { name: 'Longfin First', steps: 'Longfin → Airstrip/North Dock secondaries → Drainage Tunnel → Primary → Swim escape', reliability: 'high', notes: 'Best for filling bags while staying undetected. Scope secondaries during intel.' },
-        { name: 'Drainage Direct', steps: 'Drainage Tunnel → Primary + office safe/paintings → Exit dock for quick secondary top-up', reliability: 'medium', notes: 'Fastest compound clear but partial bag fill. Accept ~80% bag.' },
-        { name: 'Longfin Partial', steps: 'Longfin → Closest high-value dock stack only → Drainage → Primary → Escape', reliability: 'high', notes: 'Skip low-value cash stacks. Preserves stealth consistency over greed.' },
-      ],
-      cooldownMinutes: 144,
-      cooldownNote: 'Solo invite-only cooldown is 144 minutes (2h 24m). Fill with VIP Work / Security Contracts.',
+      soloTip: 'Upgrade Weed MC to full stock then sell solo in Invite Only. Doubles Nightclub Organic Produce warehouse sells too.',
+    },
+    communityCombatSeries: {
+      isActive: true,
+      multiplier: 2,
+      label: '2X Community Combat Series',
+      validUntil: '2026-04-23T09:00:00Z',
+      category: 'race',
     },
   },
   specialEvents: {
-    valentines: {
-      label: "Valentine's Day Event",
-      validUntil: '2026-02-18T10:00:00Z',
+    ldOrganics420: {
+      label: 'LD Organics Presents: The 420 Event',
+      validUntil: '2026-04-30T09:00:00Z',
       rewards: [
-        'Valentines Onesie (login reward)',
-        '50% off Valentine\'s Clothing',
-        '50% off Nagasaki Shotaro',
-        'Free Champagne in all Nightclubs',
-      ],
-    },
-    lunarNewYear: {
-      label: 'Lunar New Year: Year of the Fire Horse',
-      validUntil: '2026-03-04T10:00:00Z',
-      rewards: [
-        'Red Year of the Horse Tee (login reward)',
-        'Free Horse Masks & Tattoos',
-        'Yuanbao Collectibles Return (36 total)',
-        'New Stunt Race: The Senora Derby',
+        'Black LD Organics Tee (login reward)',
+        'Multicolor 420 Festival Outfit (Propaganda email subscribers, within 72hr of playing Apr 16-29)',
+        'Sasquatch Outfit (complete Community Combat Series challenge)',
+        'Returning Peyote Plants',
+        '2X Weed Sell Missions',
       ],
     },
   },
   oneTimeBonuses: [
     {
-      id: 'valentines_blazer_challenge',
-      reward: 100000,
-      description: 'Earn $100k as Associate/Bodyguard → Valentines Blazer + $100k',
-      expires: '2026-02-19T10:00:00Z',
+      id: 'community_combat_sasquatch',
+      reward: 0,
+      description: 'Complete the Community Combat Series challenge → Sasquatch Outfit',
+      expires: '2026-04-23T09:00:00Z',
       deliveryTime: 'immediate',
     },
   ],
   discounts: {
-    executiveOffices: {
-      label: 'Executive Offices',
+    weedFarms: {
+      label: 'Weed Farms',
       percent: 40,
       requiresGTAPlus: false,
-      validUntil: '2026-02-19T10:00:00Z',
+      validUntil: '2026-04-23T09:00:00Z',
+      tag: 'ld_organics_420',
     },
-    executiveOfficeUpgrades: {
-      label: 'Executive Office Upgrades',
+    weedFarmUpgrades: {
+      label: 'Weed Farm Upgrades',
       percent: 40,
       requiresGTAPlus: false,
-      validUntil: '2026-02-19T10:00:00Z',
+      validUntil: '2026-04-23T09:00:00Z',
+      tag: 'ld_organics_420',
     },
-    valentinesClothing: {
-      label: "Valentine's Clothing",
+    festivalBus: {
+      label: 'Vapid Festival Bus',
       percent: 50,
       requiresGTAPlus: false,
-      validUntil: '2026-02-18T10:00:00Z',
-      tag: 'valentines',
+      validUntil: '2026-04-23T09:00:00Z',
+      tag: 'ld_organics_420',
     },
-    nagasakiShotaro: {
-      label: 'Nagasaki Shotaro',
+    greenTireSmoke: {
+      label: 'Green Tire Smoke',
       percent: 50,
       requiresGTAPlus: false,
-      validUntil: '2026-02-18T10:00:00Z',
-      tag: 'valentines',
+      validUntil: '2026-04-23T09:00:00Z',
+      tag: 'ld_organics_420',
+    },
+    greenSpaceHorrorSuit: {
+      label: 'Green Space Horror Suit',
+      percent: 50,
+      requiresGTAPlus: false,
+      validUntil: '2026-04-23T09:00:00Z',
+      tag: 'ld_organics_420',
     },
     vehicles30: {
-      label: 'Select Vehicles (Hotring Everon, Tulip M-100, Vagner, Tahoma Coupe, Neon, Raiden, Velum 5-Seat, Yosemite 1500, Torero, Cheetah Classic)',
+      label: 'Select Vehicles (Baller ST-D, Baller ST, Walton L35, Neon, Tug, Hakuchou Drag, Caracara 4x4, Ultralight, Nightshade)',
       percent: 30,
       requiresGTAPlus: false,
-      validUntil: '2026-02-19T10:00:00Z',
+      validUntil: '2026-04-23T09:00:00Z',
     },
-    gunVanGusenberg: {
-      label: 'Gusenberg Sweeper (Gun Van)',
-      percent: 100,
-      requiresGTAPlus: false,
-      validUntil: '2026-02-19T10:00:00Z',
-    },
-    gunVanTacticalSMG: {
-      label: 'Tactical SMG (Gun Van)',
+    gunVanRailgun: {
+      label: 'Railgun (Gun Van)',
       percent: 30,
+      requiresGTAPlus: false,
+      validUntil: '2026-04-23T09:00:00Z',
+    },
+    gunVanMilitaryRifle: {
+      label: 'Military Rifle (Gun Van)',
+      percent: 40,
       requiresGTAPlus: true,
-      validUntil: '2026-02-19T10:00:00Z',
+      validUntil: '2026-04-23T09:00:00Z',
+    },
+    gunVanBodyArmor: {
+      label: 'Body Armor (Gun Van)',
+      percent: 70,
+      requiresGTAPlus: true,
+      validUntil: '2026-04-23T09:00:00Z',
     },
   },
   gtaPlus: {
-    freeCar: 'Dewbauchee Champion',
-    freeCarValue: 1850000,
+    freeCar: 'Bravado Buffalo STX Pursuit',
+    freeCarValue: 5370000,
     freeCarLocation: 'The Vinewood Car Club',
-    earlyAccess: 'Grotti Itali Classic',
-    earlyAccessDiscount: 20,
+    earlyAccess: 'Bravado Buffalo STX Pursuit (general release Apr 8)',
+    earlyAccessDiscount: 0,
     monthlyCash: 500000,
-    benefitsExpire: '2026-03-04T10:00:00Z',
+    benefitsExpire: '2026-05-06T09:00:00Z',
     monthlyBonuses: [
       {
-        activity: 'lunar_stunt_races',
-        multiplier: 6,
-        label: '6X Lunar New Year Stunt Races (vs 3X)',
-        expires: '2026-03-04T10:00:00Z',
+        activity: 'bounty_hunting',
+        multiplier: 2,
+        label: '2X Bounty Hunting (GTA+ Perk)',
+        expires: '2026-05-06T09:00:00Z',
+        soloFriendly: true,
+        estimatedHourlyRate: 300000,
+        soloTip: 'Bail Office bounties + Most Wanted Targets — chain back-to-back for ~$300k/hr.',
       },
       {
-        activity: 'security_contracts',
-        multiplier: 2,
-        label: '2X Security Contracts (GTA+ Perk)',
-        expires: '2026-03-04T10:00:00Z',
+        activity: 'dispatch_work',
+        multiplier: 1.5,
+        label: '1.5X Dispatch Work (GTA+ Perk)',
+        expires: '2026-05-06T09:00:00Z',
         soloFriendly: true,
-        estimatedHourlyRate: 280000,
-        soloTip: 'Run Specialist+ difficulty contracts from Agency during Cayo cooldown (~$100-140k each).',
+      },
+      {
+        activity: 'wildlife_photography',
+        multiplier: 2,
+        label: '2X Wildlife Photography (GTA+ Perk)',
+        expires: '2026-05-06T09:00:00Z',
+        soloFriendly: true,
+      },
+      {
+        activity: 'gun_van_stun_gun',
+        multiplier: 1,
+        label: 'Free Stun Gun at Gun Van (GTA+ Perk)',
+        expires: '2026-04-23T09:00:00Z',
       },
     ],
   },
@@ -233,7 +252,7 @@ export const isEventActive = () => {
 
 export const getWeeklyBonuses = (options: any = {}) => {
   const { hasGTAPlus = false, includeGTAPlus = false } = options;
-  
+
   // Dynamically build from bonuses object for backward compatibility
   const regularBonuses = Object.entries(WEEKLY_EVENTS.bonuses)
     .filter(([, bonus]: any) => {
@@ -247,7 +266,7 @@ export const getWeeklyBonuses = (options: any = {}) => {
       note: bonus.label,
       isGTAPlus: bonus.gtaPlusOnly || false,
     }));
-  
+
   // Add GTA+ monthly bonuses if includeGTAPlus is true
   if (includeGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
     const gtaPlusBonuses = WEEKLY_EVENTS.gtaPlus.monthlyBonuses.map(bonus => ({
@@ -259,6 +278,6 @@ export const getWeeklyBonuses = (options: any = {}) => {
     }));
     return [...regularBonuses, ...gtaPlusBonuses];
   }
-  
+
   return regularBonuses;
 };

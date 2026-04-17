@@ -95,6 +95,9 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [lastResetTime, setLastResetTime] = useState(() => Date.now());
 
   // Load tasks from localStorage on mount and sync with formData
+  // Run on mount only: load tasks from localStorage and sync initial state into formData.
+  // formData must NOT be in deps -- adding it would cause an infinite loop because
+  // this effect calls setFormData, which produces a new formData reference, re-triggering the effect.
   useEffect(() => {
     const { tasks: loadedTasks, resetTime, syncMode } = loadSavedTasks();
     setTasks(loadedTasks);
@@ -102,7 +105,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
 
     if (syncMode === 'reset' && setFormData) {
       setFormData(prev => ({ ...prev, dailyStashHouse: false, dailyGsCache: false, dailySafeCollect: false }));
-    } else if (syncMode === 'load' && setFormData && formData) {
+    } else if (syncMode === 'load' && setFormData) {
       setFormData(prev => ({
         ...prev,
         dailyStashHouse: loadedTasks[0]?.isCompleted || false,
@@ -110,7 +113,8 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
         dailySafeCollect: loadedTasks[2]?.isCompleted || false,
       }));
     }
-  }, [formData, setFormData]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only effect; setFormData is stable
+  }, []);
 
   // Calculate time until next reset
   const nowRef = useRef(Date.now());

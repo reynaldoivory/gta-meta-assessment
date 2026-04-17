@@ -99,11 +99,7 @@ Full architecture notes and single-source-of-truth registry: see [CLAUDE.md](CLA
 
 ## Contributing
 
-Not accepting external PRs at this time — the project serves as a personal portfolio artifact. Issues and discussion are welcome.
-
-## Citation
-
-If you reference this project in academic work, see [CITATION.cff](CITATION.cff).
+Not accepting external PRs at this time. Issues and discussion are welcome.
 
 ## License
 

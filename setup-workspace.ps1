@@ -55,7 +55,7 @@ $agentsContent = @"
 | **React Components / JSX / UI State** | Claude Sonnet 4.5 | `$0 | 1M context. Significantly lower hallucination rate for nested JSX props. |
 | **Unit Tests / Offline TDD** | DeepSeek‑R1 (Distilled) | `$0 | Use via Ollama when offline or to save bandwidth. |
 | **Background Janitor Ops** | GLM‑4.7 Flash | ~`$0.07/1M | Ultra‑cheap for narrow, repetitive tasks (OpenRouter). |
-| **Visual / UI Polish** | Claude 3.7 Sonnet | `$0 | Amazon Bedrock free credits (Student tier). |
+| **Visual / UI Polish** | Claude 3.7 Sonnet | `$0 | Amazon Bedrock free credits. |
 | **Final Security / Logic Review** | GPT‑5.3‑Codex | `$0 | Use a second model to catch blind spots. |
 
 ## ⚠️ Critical Rules

@@ -41,15 +41,23 @@ instead of raw `hud-pink` for pink body text -- pure Vice Pink drops to 3.86:1 o
 `bg-raised`, which fails AA at body size (it's fine for large/bold text, icons,
 borders, and filled buttons with dark ink).
 
-**Documented exception -- achievement tiers.** `gamification/AchievementsGallery.jsx`
-keeps a 4-hue `TIER_COLORS` map (bronze/silver/gold/platinum, raw Tailwind
-`amber`/`slate`/`yellow` + `hud-blue` for platinum) instead of collapsing to
-the two-channel rule. Tier is a categorical rank (like an Olympic medal), not
-a good/bad status signal -- forcing it into cyan/pink would erase real
-information (you couldn't tell a gold unlock from a platinum one). This is the
-only place in the app where raw palette classes are intentional, not
-technical debt; the per-view "grep-clean of raw palette" acceptance criterion
-excludes this file for exactly this reason.
+**Documented exceptions to the two-channel rule** (raw palette classes here are
+intentional, not technical debt -- the per-view "grep-clean of raw palette"
+acceptance criterion excludes these two files for exactly this reason):
+
+1. `gamification/AchievementsGallery.jsx` keeps a 4-hue `TIER_COLORS` map
+   (bronze/silver/gold/platinum, raw Tailwind `amber`/`slate`/`yellow` +
+   `hud-blue` for platinum). Tier is a categorical rank (like an Olympic
+   medal), not a good/bad status signal -- forcing it into cyan/pink would
+   erase real information (you couldn't tell a gold unlock from a platinum
+   one).
+2. `garage/VehicleTable.jsx` keeps a 22-hue `classColors` map (one per GTA
+   vehicle class: Super, Sports, Muscle, SUVs, ...). Class is the primary
+   column a player scans a 795-row table by; collapsing it to two colors
+   would make the table far harder to skim. The five capability flag badges
+   in the same table (HSW/IMANI/WPN/BNY/ARN) are NOT an exception -- they're
+   all-positive informational tags, not a categorical rank, so they share one
+   `hud-blue` treatment.
 
 **Type:** `font-display` / `font-body` = Outfit (self-hosted variable woff2,
 `public/fonts/Outfit-var.woff2`). `font-mono` = Fira Code (self-hosted,

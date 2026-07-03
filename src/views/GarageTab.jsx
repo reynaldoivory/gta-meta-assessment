@@ -1,10 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import Papa from 'papaparse';
-import { ArrowLeft, Car, Database, AlertTriangle } from 'lucide-react';
+import { Car, Database, AlertTriangle } from 'lucide-react';
 import { useAssessment } from '../context/AssessmentContext';
+import { useMediaQuery } from '../utils/useMediaQuery';
 import FilterPanel from '../components/garage/FilterPanel';
 import VehicleTable from '../components/garage/VehicleTable';
+import { VehicleCardList } from '../components/garage/VehicleCardList';
 import DetailModal from '../components/garage/DetailModal';
+import { AppShell } from '../components/ui';
 
 const BASE_URL = import.meta.env.BASE_URL || '/';
 const CSV_URL = new URL(
@@ -87,6 +90,7 @@ export default function GarageTab() {
   const [search, setSearch] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'Vehicle_ID', direction: 'asc' });
   const [selected, setSelected] = useState(null);
+  const isDesktop = useMediaQuery('(min-width: 768px)');
 
   useEffect(() => {
     let cancelled = false;
@@ -164,93 +168,86 @@ export default function GarageTab() {
   );
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-8 font-body text-slate-50">
-      <div className="max-w-7xl mx-auto mb-6">
-        <div className="flex items-center justify-between pb-6 border-b-2 border-slate-700">
+    <AppShell
+      width="wide"
+      title="THE GARAGE"
+      subtitle={(
+        <span className="flex items-center gap-2">
+          <Car className="w-5 h-5" />
+          Vehicle intel updated Apr 17, 2026 — wiki & gta5-mods.com live
+        </span>
+      )}
+      onBack={{ label: 'Back to Planning Board', action: () => setStep('form') }}
+      actions={(
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-bg-surface border border-border text-xs text-text-muted">
+          <Database className="w-3.5 h-3.5" />
+          {vehicles.length} vehicles · {delistedCount} delisted
+        </div>
+      )}
+    >
+      {loading && (
+        <div className="text-center py-20 text-text-muted">Loading vehicle database…</div>
+      )}
+
+      {error && !loading && (
+        <div className="bg-hud-pink/10 border border-hud-pink/40 rounded-xl p-6 text-accent-pink-text flex items-start gap-3">
+          <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
           <div>
-            <button
-              type="button"
-              onClick={() => setStep('form')}
-              className="btn-secondary text-sm py-2 px-4 mb-4 inline-flex items-center gap-2"
-            >
-              <ArrowLeft className="w-4 h-4" /> Back to Planning Board
-            </button>
-            <h1 className="text-4xl md:text-5xl font-display font-black text-white tracking-tight">
-              <span className="heading-gradient-purple">THE GARAGE</span>
-            </h1>
-            <p className="text-primary-cyan-400 text-base font-bold flex items-center gap-2 mt-2">
-              <Car className="w-5 h-5" />
-              Vehicle intel updated Apr 17, 2026 — wiki & gta5-mods.com live
-            </p>
-          </div>
-          <div className="text-right text-xs text-slate-400">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-lg bg-slate-800 border border-slate-700">
-              <Database className="w-3.5 h-3.5" />
-              {vehicles.length} vehicles · {delistedCount} delisted
-            </div>
+            <div className="font-semibold mb-1">Wasted! Couldn't load the garage.</div>
+            <div className="text-sm text-accent-pink-text">{error}</div>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto">
-        {loading && (
-          <div className="text-center py-20 text-slate-400">Loading vehicle database…</div>
-        )}
-
-        {error && !loading && (
-          <div className="bg-rose-500/10 border border-rose-500/40 rounded-xl p-6 text-rose-300 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-            <div>
-              <div className="font-semibold mb-1">Wasted! Couldn't load the garage.</div>
-              <div className="text-sm text-rose-400">{error}</div>
+      {!loading && !error && (
+        <>
+          <div className="bg-bg-surface/50 border border-border rounded-xl p-4 mb-6">
+            <FilterPanel
+              filters={filters}
+              setFilters={setFilters}
+              classes={classes}
+              shops={shops}
+              makes={makes}
+              search={search}
+              setSearch={setSearch}
+              sortConfig={sortConfig}
+              onSort={handleSort}
+            />
+            <div className="mt-3 text-xs text-text-muted">
+              Showing {sorted.length} of {vehicles.length} vehicles
             </div>
           </div>
-        )}
 
-        {!loading && !error && (
-          <>
-            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-4 mb-6">
-              <FilterPanel
-                filters={filters}
-                setFilters={setFilters}
-                classes={classes}
-                shops={shops}
-                makes={makes}
-                search={search}
-                setSearch={setSearch}
-              />
-              <div className="mt-3 text-xs text-slate-500">
-                Showing {sorted.length} of {vehicles.length} vehicles
-              </div>
-            </div>
-
-            <div className="bg-slate-900/50 border border-slate-700 rounded-xl p-2">
+          <div className="bg-bg-surface/50 border border-border rounded-xl p-2">
+            {isDesktop ? (
               <VehicleTable
                 vehicles={sorted}
                 sortConfig={sortConfig}
                 onSort={handleSort}
                 onSelect={setSelected}
               />
-            </div>
+            ) : (
+              <VehicleCardList vehicles={sorted} onSelect={setSelected} />
+            )}
+          </div>
 
-            <p className="text-center text-xs text-slate-600 mt-6">
-              Vehicle data sourced from the community-maintained{' '}
-              <a
-                href="https://github.com/reynaldoivory/gta-online-database"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-primary-cyan-400 underline"
-              >
-                gta-online-database
-              </a>
-              . Stats cross-checked against GTA Wiki and Broughy1322 as of Apr 17, 2026.
-              Mod links resolve live — nothing cached or shipped in-app.
-            </p>
-          </>
-        )}
-      </div>
+          <p className="text-center text-xs text-text-muted mt-6">
+            Vehicle data sourced from the community-maintained{' '}
+            <a
+              href="https://github.com/reynaldoivory/gta-online-database"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hover:text-hud-blue underline"
+            >
+              gta-online-database
+            </a>
+            . Stats cross-checked against GTA Wiki and Broughy1322 as of Apr 17, 2026.
+            Mod links resolve live — nothing cached or shipped in-app.
+          </p>
+        </>
+      )}
 
       {selected && <DetailModal vehicle={selected} onClose={() => setSelected(null)} />}
-    </div>
+    </AppShell>
   );
 }

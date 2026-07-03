@@ -1,6 +1,10 @@
 import { ChevronUp, ChevronDown } from 'lucide-react';
 import { formatPriceShort } from '../../utils/formatters';
+import { TableWrap, Table, THead, TBody, TR, TH, TD } from '../ui';
 
+// Documented exception to the Arcade HUD two-channel rule (see DESIGN_SYSTEM.md):
+// vehicle Class is a categorical label users scan a 795-row table by, so it
+// keeps a rich raw-Tailwind hue map rather than collapsing to cyan/pink.
 const classColors = {
   Super: 'text-purple-400',
   Sports: 'text-blue-400',
@@ -39,6 +43,25 @@ const columns = [
   { key: 'Tags', label: 'Flags', width: 'w-32' },
 ];
 
+// All flag badges are informational capability tags (not a good/bad status),
+// so they share one hud-blue treatment rather than 5 competing raw hues.
+const FLAG_DEFS = [
+  { key: 'HSW', test: (v) => v.HSW, label: 'HSW' },
+  { key: 'Imani', test: (v) => v.Imani, label: 'IMANI' },
+  { key: 'Weaponized', test: (v) => v.Weaponized, label: 'WPN' },
+  { key: 'Bennys', test: (v) => v.Bennys, label: 'BNY' },
+  { key: 'Arena', test: (v) => v.Arena, label: 'ARN' },
+];
+
+const renderFlags = (v) => (
+  <div className="flex flex-wrap gap-1">
+    {FLAG_DEFS.filter((f) => f.test(v)).map((f) => (
+      <span key={f.key} className="px-1.5 py-0.5 rounded text-2xs font-bold bg-hud-blue/20 text-hud-blue border border-hud-blue/40">
+        {f.label}
+      </span>
+    ))}
+  </div>
+);
 
 export default function VehicleTable({ vehicles, sortConfig, onSort, onSelect }) {
   const SortIcon = ({ columnKey }) => {
@@ -48,69 +71,63 @@ export default function VehicleTable({ vehicles, sortConfig, onSort, onSelect })
       : <ChevronDown className="w-4 h-4 inline ml-1" />;
   };
 
-  const renderFlags = (v) => {
-    const badges = [];
-    if (v.HSW) badges.push(<span key="hsw" className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-yellow-500/20 text-yellow-400 border border-yellow-500/40">HSW</span>);
-    if (v.Imani) badges.push(<span key="imani" className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-500/20 text-blue-400 border border-blue-500/40">IMANI</span>);
-    if (v.Weaponized) badges.push(<span key="wpn" className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-red-500/20 text-red-400 border border-red-500/40">WPN</span>);
-    if (v.Bennys) badges.push(<span key="bny" className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-green-500/20 text-green-400 border border-green-500/40">BNY</span>);
-    if (v.Arena) badges.push(<span key="arena" className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-orange-500/20 text-orange-400 border border-orange-500/40">ARN</span>);
-    return <div className="flex flex-wrap gap-1">{badges}</div>;
-  };
-
   return (
-    <div className="overflow-x-auto">
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-slate-700">
-            {columns.map(col => (
-              <th
-                key={col.key}
-                onClick={() => onSort(col.key)}
-                className={`${col.width} px-3 py-3 text-left text-xs font-semibold text-slate-400 uppercase tracking-wider cursor-pointer hover:text-primary-cyan-400 transition-colors`}
+    // contain-paint contain-layout: bounds this 795-row table's paint/layout
+    // work so it doesn't cascade into the rest of the garage view.
+    <div className="contain-paint contain-layout">
+      <TableWrap>
+        <Table>
+          <THead>
+            <TR>
+              {columns.map(col => (
+                <TH
+                  key={col.key}
+                  onClick={() => onSort(col.key)}
+                  className={`${col.width} cursor-pointer hover:text-hud-blue transition-colors`}
+                >
+                  {col.label}
+                  <SortIcon columnKey={col.key} />
+                </TH>
+              ))}
+            </TR>
+          </THead>
+          <TBody>
+            {vehicles.map((v) => (
+              <TR
+                key={v.Vehicle_ID}
+                onClick={() => onSelect(v)}
+                onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(v); } }}
+                tabIndex={0}
+                role="button"
+                aria-label={`View details for ${v.GTA_Make} ${v.GTA_Model}`}
+                className="hover:bg-bg-raised/50 cursor-pointer focus:outline-none focus-visible:bg-bg-raised/70"
               >
-                {col.label}
-                <SortIcon columnKey={col.key} />
-              </th>
+                <TD className="text-text-muted text-xs">{v.Vehicle_ID}</TD>
+                <TD className="text-text-primary font-medium text-sm">{v.GTA_Make}</TD>
+                <TD className="text-text-primary text-sm">{v.GTA_Model}</TD>
+                <TD className={`font-medium text-sm ${classColors[v.Class] || 'text-text-muted'}`}>
+                  {v.Class}
+                </TD>
+                <TD className="text-text-muted text-xs">{v.Real_World}</TD>
+                <TD className={`font-medium text-sm ${v.Shop === 'Delisted' ? 'text-text-muted line-through' : 'text-hud-blue'}`}>
+                  {formatPriceShort(v.Price)}
+                </TD>
+                <TD className={`text-xs ${v.Shop === 'Delisted' ? 'text-accent-pink-text' : 'text-text-muted'}`}>
+                  {v.Shop || '—'}
+                </TD>
+                <TD className="text-text-secondary text-xs font-mono">
+                  {v.Top_Speed_MPH ? `${v.Top_Speed_MPH}` : '—'}
+                </TD>
+                <TD className="text-text-secondary text-xs font-mono">{v.Lap_Time || '—'}</TD>
+                <TD>{renderFlags(v)}</TD>
+              </TR>
             ))}
-          </tr>
-        </thead>
-        <tbody>
-          {vehicles.map((v) => (
-            <tr
-              key={v.Vehicle_ID}
-              onClick={() => onSelect(v)}
-              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); onSelect(v); } }}
-              tabIndex={0}
-              role="button"
-              aria-label={`View details for ${v.GTA_Make} ${v.GTA_Model}`}
-              className="border-b border-slate-800 hover:bg-slate-800/50 cursor-pointer transition-colors focus:outline-none focus:bg-slate-800/70"
-            >
-              <td className="px-3 py-2 text-slate-500 text-xs">{v.Vehicle_ID}</td>
-              <td className="px-3 py-2 text-white font-medium text-sm">{v.GTA_Make}</td>
-              <td className="px-3 py-2 text-white text-sm">{v.GTA_Model}</td>
-              <td className={`px-3 py-2 font-medium text-sm ${classColors[v.Class] || 'text-slate-400'}`}>
-                {v.Class}
-              </td>
-              <td className="px-3 py-2 text-slate-400 text-xs">{v.Real_World}</td>
-              <td className={`px-3 py-2 font-medium text-sm ${v.Shop === 'Delisted' ? 'text-slate-600 line-through' : 'text-emerald-400'}`}>
-                {formatPriceShort(v.Price)}
-              </td>
-              <td className={`px-3 py-2 text-xs ${v.Shop === 'Delisted' ? 'text-rose-400' : 'text-slate-400'}`}>
-                {v.Shop || '—'}
-              </td>
-              <td className="px-3 py-2 text-slate-300 text-xs font-mono">
-                {v.Top_Speed_MPH ? `${v.Top_Speed_MPH}` : '—'}
-              </td>
-              <td className="px-3 py-2 text-slate-300 text-xs font-mono">{v.Lap_Time || '—'}</td>
-              <td className="px-3 py-2">{renderFlags(v)}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+          </TBody>
+        </Table>
+      </TableWrap>
 
       {vehicles.length === 0 && (
-        <div className="text-center py-12 text-slate-500">
+        <div className="text-center py-12 text-text-muted">
           No vehicles match your filters
         </div>
       )}

@@ -1,9 +1,9 @@
-import type { ElementType, ReactNode } from 'react';
+import type { ComponentPropsWithoutRef, ElementType, ReactNode } from 'react';
 
 export type CardVariant = 'default' | 'elevated' | 'interactive';
 export type CardPadding = 'none' | 'sm' | 'md';
 
-export interface CardProps {
+export interface CardProps extends Omit<ComponentPropsWithoutRef<'div'>, 'className'> {
   variant?: CardVariant;
   padding?: CardPadding;
   as?: ElementType;
@@ -30,9 +30,10 @@ export function Card({
   as: Tag = 'div',
   className = '',
   children,
+  ...rest
 }: CardProps) {
   return (
-    <Tag className={['rounded-2xl', VARIANTS[variant], PADDING[padding], className].join(' ')}>
+    <Tag className={['rounded-2xl', VARIANTS[variant], PADDING[padding], className].join(' ')} {...rest}>
       {children}
     </Tag>
   );

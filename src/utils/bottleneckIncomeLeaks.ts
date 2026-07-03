@@ -165,7 +165,7 @@ const upgradeExistingBonusEntry = (
   expiryDate: Date,
   nowTs: number,
 ): void => {
-  if (bonus.multiplier > ((existing as Record<string, unknown>).multiplier as number || 0)) {
+  if (bonus.multiplier > (existing.multiplier ?? 0)) {
     existing.label = `\uD83D\uDC8E ${bonus.label}`;
     existing.detail = `GTA+ enhanced (${bonus.multiplier}X vs base). Expires ${formatExpiry(bonus.expires)} (${Math.ceil((expiryDate.getTime() - nowTs) / (1000 * 60 * 60 * 24))} days left).`;
     existing.savingsPerHour = bonus.estimatedHourlyRate || existing.savingsPerHour;

@@ -193,7 +193,7 @@ export const WEEKLY_EVENTS: any = {
  * @param {string} isoDate - ISO date string (e.g., '2026-02-12T10:00:00Z')
  * @returns {string} Formatted short date (e.g., 'Feb 12')
  */
-export const formatExpiry = (isoDate) => {
+export const formatExpiry = (isoDate: string) => {
   if (!isoDate) return 'Unknown';
   const date = new Date(isoDate);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -205,7 +205,7 @@ export const formatExpiry = (isoDate) => {
  * @param {number} [now] - Current timestamp (defaults to Date.now())
  * @returns {string} e.g., 'Expires Feb 12 (3 days left)'
  */
-export const getExpiryLabel = (isoDate, now = Date.now()) => {
+export const getExpiryLabel = (isoDate: string, now = Date.now()) => {
   if (!isoDate) return '';
   const expiryMs = new Date(isoDate).getTime();
   const hoursLeft = Math.ceil((expiryMs - now) / (1000 * 60 * 60));
@@ -231,23 +231,36 @@ export const isEventActive = () => {
 
 
 
-export const getWeeklyBonuses = (options: any = {}) => {
+interface WeeklyBonusOption {
+  hasGTAPlus?: boolean;
+  includeGTAPlus?: boolean;
+}
+
+interface BonusEntry {
+  isActive: boolean;
+  multiplier: number;
+  label: string;
+  gtaPlusOnly?: boolean;
+  [key: string]: unknown;
+}
+
+export const getWeeklyBonuses = (options: WeeklyBonusOption = {}) => {
   const { hasGTAPlus = false, includeGTAPlus = false } = options;
-  
+
   // Dynamically build from bonuses object for backward compatibility
-  const regularBonuses = Object.entries(WEEKLY_EVENTS.bonuses)
-    .filter(([, bonus]: any) => bonus.isActive)
-    .map(([, bonus]: any) => ({
-      activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
+  const regularBonuses = (Object.entries(WEEKLY_EVENTS.bonuses) as [string, BonusEntry][])
+    .filter(([, bonus]) => bonus.isActive)
+    .map(([, bonus]) => ({
+      activity: String(bonus.label).replace(/^\d+(\.\d+)?X\s*/, ''), // Strip multiplier prefix if present
       multiplier: `${bonus.multiplier}X`,
       note: bonus.label,
       isGTAPlus: bonus.gtaPlusOnly || false,
     }));
-  
+
   // Add GTA+ monthly bonuses if includeGTAPlus is true
   if (includeGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
-    const gtaPlusBonuses = WEEKLY_EVENTS.gtaPlus.monthlyBonuses.map(bonus => ({
-      activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''),
+    const gtaPlusBonuses = (WEEKLY_EVENTS.gtaPlus.monthlyBonuses as BonusEntry[]).map((bonus: BonusEntry) => ({
+      activity: String(bonus.label).replace(/^\d+(\.\d+)?X\s*/, ''),
       multiplier: `${bonus.multiplier}X`,
       note: bonus.label,
       isGTAPlus: true,
@@ -255,6 +268,6 @@ export const getWeeklyBonuses = (options: any = {}) => {
     }));
     return [...regularBonuses, ...gtaPlusBonuses];
   }
-  
+
   return regularBonuses;
 };

@@ -136,7 +136,7 @@ export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }
     formData.hasAcidLab && 'Acid Lab',
     formData.acidLabUpgraded && '  └─ Equipment Upgraded',
     formData.hasNightclub && 'Nightclub',
-    formData.nightclubTechs > 0 && `  └─ ${formData.nightclubTechs}/5 Technicians`,
+    Number(formData.nightclubTechs) > 0 && `  └─ ${formData.nightclubTechs}/5 Technicians`,
     formData.hasBunker && 'Bunker',
     formData.bunkerUpgraded && '  └─ Upgraded',
     formData.hasSalvageYard && 'Salvage Yard',
@@ -148,7 +148,7 @@ export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }
     formData.hasArmoredKuruma && 'Armored Kuruma',
   ].filter(Boolean);
 
-  const bottlenecksList = assessmentResults.bottlenecks.length
+  const bottlenecksList = assessmentResults.bottlenecks?.length
     ? assessmentResults.bottlenecks
         .map((b, idx) => `${idx + 1}. ${b.label} (${b.critical ? 'CRITICAL' : b.impact})`)
         .join('\n')
@@ -200,12 +200,12 @@ export const buildGoogleDocExport = ({ formData, assessmentResults, actionPlan }
     '📈 STATS BREAKDOWN',
     '───────────────────────────────────────────────────',
     '',
-    `Strength:    ${formData.strength}/5 bars (${formData.strength * 20}%)`,
-    `Flying:      ${formData.flying}/5 bars (${formData.flying * 20}%)`,
-    `Shooting:    ${formData.shooting}/5 bars (${formData.shooting * 20}%)`,
-    `Stealth:     ${formData.stealth}/5 bars (${formData.stealth * 20}%)`,
-    `Stamina:     ${formData.stamina}/5 bars (${formData.stamina * 20}%)`,
-    `Driving:     ${formData.driving}/5 bars (${formData.driving * 20}%)`,
+    `Strength:    ${formData.strength ?? 0}/5 bars (${Number(formData.strength ?? 0) * 20}%)`,
+    `Flying:      ${formData.flying ?? 0}/5 bars (${Number(formData.flying ?? 0) * 20}%)`,
+    `Shooting:    ${formData.shooting ?? 0}/5 bars (${Number(formData.shooting ?? 0) * 20}%)`,
+    `Stealth:     ${formData.stealth ?? 0}/5 bars (${Number(formData.stealth ?? 0) * 20}%)`,
+    `Stamina:     ${formData.stamina ?? 0}/5 bars (${Number(formData.stamina ?? 0) * 20}%)`,
+    `Driving:     ${formData.driving ?? 0}/5 bars (${Number(formData.driving ?? 0) * 20}%)`,
     `Lung Cap.:   ${Number(formData.lungCapacity || 0)}/5 bars (${Number(formData.lungCapacity || 0) * 20}%)`,
     '',
     '───────────────────────────────────────────────────',

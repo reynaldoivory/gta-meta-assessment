@@ -30,10 +30,10 @@ export const AssetToggleCard = ({
   label,
   emoji,
   cost,
-  details,
+  details = '',
   isOwned,
   onChange,
-  children,
+  children = /** @type {*} */ (undefined),
   compact = false,
   disabled = false,
 }) => {

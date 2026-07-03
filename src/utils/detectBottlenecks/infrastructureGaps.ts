@@ -1,37 +1,20 @@
-// src/utils/bottleneckInfra.ts
-// Infrastructure investment bottleneck detection (bunker, nightclub).
+// src/utils/detectBottlenecks/infrastructureGaps.ts
+// INFRASTRUCTURE INVESTMENT BOTTLENECKS (Smart Shopping)
 
-import type { Bottleneck, DetectionParams, ActiveEvent, DetectionFormData, NightclubState } from './bottleneckTypes';
-import { WEEKLY_EVENTS, getExpiryLabel } from '../config/weeklyEvents.js';
 import {
-  calculateBunkerLeak,
-  calculateNightclubOptimization,
   INFRASTRUCTURE_COSTS,
   NIGHTCLUB_FLOOR_AFK,
+  calculateBunkerLeak,
+  calculateNightclubOptimization,
   getDiscountedPrice,
-} from './infrastructureAdvisor.ts';
+} from '../infrastructureAdvisor.js';
+import type { NightclubOptimizationResult } from '../infrastructureAdvisor.js';
+import { WEEKLY_EVENTS, getExpiryLabel } from '../../config/weeklyEvents.js';
+import type { DetectionParams, ActiveEvent, DetectionFormData, Bottleneck, NightclubState } from '../bottleneckTypes';
 
-// ============================================
-// Bunker Infrastructure
-// ============================================
-
-/** Resolve bunker upgrade solution text and cost. */
-const resolveBunkerUpgrade = (bunkerLeak: Record<string, unknown>): { solution: string; cost: number } => {
-  const equipCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade;
-  const staffCost = INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
-
-  if (bunkerLeak.missingEquipment && bunkerLeak.missingStaff) {
-    return {
-      solution: `Buy Equipment ($${(equipCost / 1000000).toFixed(2)}M) + Staff ($${(staffCost / 1000).toFixed(0)}k) upgrades.`,
-      cost: equipCost + staffCost,
-    };
-  }
-  if (bunkerLeak.missingEquipment) {
-    return { solution: `Buy Equipment Upgrade ($${(equipCost / 1000000).toFixed(2)}M)`, cost: equipCost };
-  }
-  return { solution: `Buy Staff Upgrade ($${(staffCost / 1000).toFixed(0)}k)`, cost: staffCost };
-};
-
+/**
+ * Detect bunker infrastructure issues
+ */
 const detectBunkerInfra = (params: DetectionParams, formData: DetectionFormData): Bottleneck[] => {
   const { hasBunker, bunkerUpgraded } = params;
   if (!hasBunker) return [];
@@ -45,7 +28,17 @@ const detectBunkerInfra = (params: DetectionParams, formData: DetectionFormData)
   const bunkerLeak = calculateBunkerLeak(bunkerState);
   if (!bunkerLeak.hasLeak) return [];
 
-  const { solution, cost } = resolveBunkerUpgrade(bunkerLeak);
+  let bunkerSolution: string, bunkerUpgradeCost: number;
+  if (bunkerLeak.missingEquipment && bunkerLeak.missingStaff) {
+    bunkerSolution = `Buy Equipment ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M) + Staff ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k) upgrades.`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade + INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
+  } else if (bunkerLeak.missingEquipment) {
+    bunkerSolution = `Buy Equipment Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade / 1000000).toFixed(2)}M)`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade;
+  } else {
+    bunkerSolution = `Buy Staff Upgrade ($${(INFRASTRUCTURE_COSTS.bunker.staffUpgrade / 1000).toFixed(0)}k)`;
+    bunkerUpgradeCost = INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
+  }
 
   return [{
     id: 'bunker_passive_leak',
@@ -53,23 +46,21 @@ const detectBunkerInfra = (params: DetectionParams, formData: DetectionFormData)
     critical: true,
     urgent: bunkerLeak.lostPerHour >= 30000,
     impact: 'high',
-    solution,
+    solution: bunkerSolution,
     actionType: 'infrastructure',
     detail: `You're earning $${bunkerLeak.currentIncome.toLocaleString()}/hr instead of $${bunkerLeak.potentialIncome.toLocaleString()}/hr. Losing $${bunkerLeak.lostPerHour.toLocaleString()}/hr. ROI: ${bunkerLeak.roiHours} hours of passive income.`,
     timeHours: 0.25,
     savingsPerHour: bunkerLeak.lostPerHour,
-    cost,
+    cost: bunkerUpgradeCost,
     roiHours: bunkerLeak.roiHours,
   }];
 };
 
-// ============================================
-// Nightclub Infrastructure
-// ============================================
-
-const buildNightclubMuleTrapBottleneck = (ncOptimization: Record<string, unknown>): Bottleneck | null => {
-  const issues = ncOptimization.issues as Array<{ id: string; detail: string }>;
-  const muleTrap = issues.find(i => i.id === 'nc_mule_trap');
+/**
+ * Build nightclub mule trap bottleneck
+ */
+const buildNightclubMuleTrapBottleneck = (ncOptimization: NightclubOptimizationResult): Bottleneck | null => {
+  const muleTrap = ncOptimization.issues.find((i: any) => i.id === 'nc_mule_trap');
   if (!muleTrap) return null;
 
   return {
@@ -87,19 +78,20 @@ const buildNightclubMuleTrapBottleneck = (ncOptimization: Record<string, unknown
   };
 };
 
+/**
+ * Build nightclub equipment bottleneck
+ */
 const buildNightclubEquipmentBottleneck = (
-  ncOptimization: Record<string, unknown>,
+  ncOptimization: NightclubOptimizationResult,
   nightclubDiscountEvent: ActiveEvent | undefined,
 ): Bottleneck | null => {
-  const issues = ncOptimization.issues as Array<{ id: string; detail: string }>;
-  const needsEquipment = issues.find(i => i.id === 'nc_no_equipment');
+  const needsEquipment = ncOptimization.issues.find((i: any) => i.id === 'nc_no_equipment');
   if (!needsEquipment) return null;
 
   const { price, isDiscounted, discountPercent } = getDiscountedPrice(
     INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
-    'nightclub',
-  ) as { price: number; savings: number; isDiscounted: boolean; discountPercent: number };
-
+    'nightclub'
+  );
   return {
     id: 'nightclub_equipment',
     label: isDiscounted
@@ -115,86 +107,57 @@ const buildNightclubEquipmentBottleneck = (
     cost: price,
     originalCost: INFRASTRUCTURE_COSTS.nightclub.equipmentUpgrade,
     isDiscounted,
-    expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : undefined,
+    expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
   };
 };
 
-/** Calculate total cost to upgrade from current floors to 5. */
-const calculateFloorUpgradeCost = (currentFloors: number): number => {
-  const floorCosts = INFRASTRUCTURE_COSTS.nightclub.floors as Record<number, number>;
-  let cost = 0;
-  for (let f = currentFloors + 1; f <= 5; f++) {
-    cost += floorCosts[f];
-  }
-  return cost;
-};
-
-/** Resolve discount-dependent display properties for nightclub floors. */
-const resolveFloorDiscountDisplay = (
-  isDiscounted: boolean,
-  discountPercent: number,
-  currentFloors: number,
-  nightclubDiscountEvent: ActiveEvent | undefined,
-) => {
-  if (isDiscounted) {
-    return {
-      label: `\uD83D\uDCB0 NC Floors ${discountPercent}% OFF (AFK Limited)`,
-      impact: 'high' as const,
-      solutionSuffix: ` - ${discountPercent}% OFF!`,
-      detailSuffix: ' \uD83C\uDF89 Discount expires soon!',
-      expiresAt: nightclubDiscountEvent?.expiryTimestamp,
-    };
-  }
-  return {
-    label: `\uD83C\uDFAD Nightclub Floors ${currentFloors}/5 (AFK Limited)`,
-    impact: 'medium' as const,
-    solutionSuffix: '',
-    detailSuffix: '',
-    expiresAt: undefined,
-  };
-};
-
+/**
+ * Build nightclub floors bottleneck
+ */
 const buildNightclubFloorsBottleneck = (
-  ncOptimization: Record<string, unknown>,
+  ncOptimization: NightclubOptimizationResult,
   nightclubState: NightclubState,
   nightclubDiscountEvent: ActiveEvent | undefined,
 ): Bottleneck | null => {
-  const issues = ncOptimization.issues as Array<{ id: string; detail: string }>;
-  const needsFloors = issues.find(i => i.id === 'nc_floors_low');
+  const needsFloors = ncOptimization.issues.find((i: any) => i.id === 'nc_floors_low');
   if (!needsFloors) return null;
 
   const currentFloors = nightclubState.floors;
-  const floorAFK = NIGHTCLUB_FLOOR_AFK as Record<number, { maxHours: number }>;
-  const currentAFK = floorAFK[currentFloors]?.maxHours || 20;
-  const maxAFK = floorAFK[5].maxHours;
-  const floorCost = calculateFloorUpgradeCost(currentFloors);
-  const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub') as { price: number; savings: number; isDiscounted: boolean; discountPercent: number };
-  const display = resolveFloorDiscountDisplay(isDiscounted, discountPercent, currentFloors, nightclubDiscountEvent);
-
+  const currentAFK = NIGHTCLUB_FLOOR_AFK[currentFloors]?.maxHours || 20;
+  const maxAFK = NIGHTCLUB_FLOOR_AFK[5].maxHours;
+  let floorCost = 0;
+  for (let f = currentFloors + 1; f <= 5; f++) {
+    floorCost += (INFRASTRUCTURE_COSTS.nightclub.floors as Record<number, number>)[f];
+  }
+  const { price, isDiscounted, discountPercent } = getDiscountedPrice(floorCost, 'nightclub');
   return {
     id: 'nightclub_floors',
-    label: display.label,
+    label: isDiscounted
+      ? `\uD83D\uDCB0 NC Floors ${discountPercent}% OFF (AFK Limited)`
+      : `\uD83C\uDFAD Nightclub Floors ${currentFloors}/5 (AFK Limited)`,
     critical: false,
     urgent: isDiscounted,
-    impact: display.impact,
-    solution: `Buy Floors ${currentFloors + 1}-5 ($${(price / 1000000).toFixed(2)}M${display.solutionSuffix})`,
+    impact: isDiscounted ? 'high' : 'medium',
+    solution: `Buy Floors ${currentFloors + 1}-5 ($${(price / 1000000).toFixed(2)}M${isDiscounted ? ' - ' + discountPercent + '% OFF!' : ''})`,
     actionType: 'infrastructure',
-    detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).${display.detailSuffix}`,
+    detail: `AFK limited to ${currentAFK} hours. With 5 floors: ${maxAFK} hours (overnight safe).${isDiscounted ? ' \uD83C\uDF89 Discount expires soon!' : ''}`,
     timeHours: 0.25,
     cost: price,
     originalCost: floorCost,
     isDiscounted,
-    expiresAt: display.expiresAt,
+    expiresAt: isDiscounted && nightclubDiscountEvent ? nightclubDiscountEvent.expiryTimestamp : null,
   };
 };
 
+/**
+ * Build nightclub pounder bottleneck
+ */
 const buildNightclubPounderBottleneck = (
-  ncOptimization: Record<string, unknown>,
+  ncOptimization: NightclubOptimizationResult,
   nightclubState: NightclubState,
   hasMuleTrap: boolean,
 ): Bottleneck | null => {
-  const recommendations = ncOptimization.recommendations as Array<{ id: string }>;
-  const needsPounder = recommendations.find(r => r.id === 'buy_nc_pounder');
+  const needsPounder = ncOptimization.recommendations.find((r: any) => r.id === 'buy_nc_pounder');
   if (!needsPounder || hasMuleTrap) return null;
 
   return {
@@ -211,16 +174,17 @@ const buildNightclubPounderBottleneck = (
   };
 };
 
+/**
+ * Build nightclub tech/feeder bottleneck
+ */
 const buildNightclubTechFeederBottleneck = (
-  ncOptimization: Record<string, unknown>,
+  ncOptimization: NightclubOptimizationResult,
   nightclubTechs: number,
   nightclubFeeders: number,
 ): Bottleneck | null => {
   if (nightclubTechs >= 5 && nightclubFeeders >= 5) return null;
 
-  const issues = ncOptimization.issues as Array<{ id: string; detail: string }>;
-  const techImbalance = issues.find(i => i.id === 'nc_tech_imbalance');
-
+  const techImbalance = ncOptimization.issues.find((i: any) => i.id === 'nc_tech_imbalance');
   return {
     id: 'nightclub_partial',
     label: 'Nightclub Not Fully Optimized',
@@ -235,6 +199,9 @@ const buildNightclubTechFeederBottleneck = (
   };
 };
 
+/**
+ * Detect nightclub infrastructure issues
+ */
 const detectNightclubInfra = (
   params: DetectionParams,
   formData: DetectionFormData,
@@ -243,7 +210,7 @@ const detectNightclubInfra = (
   const { hasNightclub, nightclubTechs, nightclubFeeders } = params;
   if (!hasNightclub) return [];
 
-  const storage = (formData.nightclubStorage || {}) as Record<string, boolean>;
+  const storage = (formData.nightclubStorage || {}) as Record<string, any>;
   const nightclubState: NightclubState = {
     owned: true,
     floors: Number(formData.nightclubFloors) || 1,
@@ -267,12 +234,8 @@ const detectNightclubInfra = (
   ].filter((b): b is Bottleneck => b !== null);
 };
 
-// ============================================
-// Main Export
-// ============================================
-
 /**
- * Detect infrastructure investment bottlenecks (bunker and nightclub).
+ * Detect infrastructure gaps
  */
 export const detectInfrastructureGaps = (
   params: DetectionParams,
@@ -285,24 +248,17 @@ export const detectInfrastructureGaps = (
     ...detectNightclubInfra(params, formData, nightclubDiscountEvent),
   ];
 
+  // Recommend buying Nightclub if player doesn't have one and discount is active
   if (!hasNightclub && nightclubDiscountEvent) {
-    const hoursLeftDisplay = nightclubDiscountEvent.hoursLeft < 48
-      ? nightclubDiscountEvent.hoursLeft + ' hours'
-      : nightclubDiscountEvent.daysLeft + ' days';
-    const expiryLabel = getExpiryLabel(
-      nightclubDiscountEvent.expiryTimestamp
-        ? new Date(nightclubDiscountEvent.expiryTimestamp).toISOString()
-        : WEEKLY_EVENTS.meta.validUntil,
-    );
     bottlenecks.push({
       id: 'nightclub_discount_buy',
       label: '\uD83C\uDFE2 40% Off Nightclub Properties THIS WEEK',
-      critical: nightclubDiscountEvent.hoursLeft < 24,
+      critical: (nightclubDiscountEvent.hoursLeft ?? 0) < 24,
       urgent: true,
       impact: 'high',
       solution: 'Purchase Nightclub from Maze Bank Foreclosures at 40% off. Best time to buy!',
       actionType: 'purchase',
-      detail: `40% off Nightclub properties ${expiryLabel} (${hoursLeftDisplay} left). Save ~$600k on property. Unlocks passive income + Business Battles synergy.`,
+      detail: `40% off Nightclub properties ${getExpiryLabel(nightclubDiscountEvent.expiryTimestamp ? new Date(nightclubDiscountEvent.expiryTimestamp).toISOString() : WEEKLY_EVENTS.meta.validUntil)} (${(nightclubDiscountEvent.hoursLeft ?? 0) < 48 ? nightclubDiscountEvent.hoursLeft + ' hours' : nightclubDiscountEvent.daysLeft + ' days'} left). Save ~$600k on property. Unlocks passive income + Business Battles synergy.`,
       timeHours: 0.25,
       expiresAt: nightclubDiscountEvent.expiryTimestamp,
       savingsValue: 600000,

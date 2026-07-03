@@ -25,3 +25,5 @@ dist-ssr
 
 # Prevent accidental nested repo clones
 /gta-meta-assessment/
+*.txt
+*.bak

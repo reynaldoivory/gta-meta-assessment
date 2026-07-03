@@ -1,4 +1,4 @@
-import { computeAssessment } from '../computeAssessment.js';
+import { computeAssessment } from '../computeAssessment/index.js';
 
 describe('computeAssessment', () => {
   // Helper to create base form data

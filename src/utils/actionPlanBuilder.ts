@@ -1,12 +1,12 @@
 // src/utils/actionPlanBuilder.ts
 // Time-Sensitive Meta Logic - Prioritizes time-limited opportunities over generic grind advice
 // ENFORCED: Always returns 3-5 actions minimum
-/* eslint-disable @typescript-eslint/no-explicit-any, complexity, max-lines */
+/* eslint-disable complexity, max-lines */
 
 import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
-import { getNightclubTechnicianCost, generateInfrastructureRecommendations } from './infrastructureAdvisor.js';
+import { getNightclubTechnicianCost, generateInfrastructureRecommendations } from './infrastructureAdvisor.ts';
 import { checkGatekeeper } from './gatekeeperEngine.js';
 
 
@@ -14,8 +14,77 @@ import { checkGatekeeper } from './gatekeeperEngine.js';
 const WEEKLY_EVENTS = _rawWEEKLY_EVENTS;
 
 // ======================================================================
-// Types & Interfaces
+// Types & Interfaces (centralized in actionPlanTypes.ts / bottleneckTypes.ts)
 // ======================================================================
+
+import type { Bottleneck } from './bottleneckTypes';
+import type { Action, Results, FormData } from './actionPlanTypes';
+export type { Bottleneck, Action, FormData };
+
+// ── Local interfaces for untyped external data ──────────────────────
+
+/** Shape of a single bonus entry in WEEKLY_EVENTS.bonuses */
+interface WeeklyEventBonus {
+  isActive?: boolean;
+  multiplier?: number;
+  label?: string;
+  validUntil?: string;
+  gtaPlusValidUntil?: string;
+  gtaPlusOnly?: boolean;
+  category?: string;
+  tag?: string;
+}
+
+/** Shape of a single discount entry in WEEKLY_EVENTS.discounts */
+interface WeeklyEventDiscount {
+  isActive?: boolean;
+  validUntil?: string;
+  priceEstimate?: number;
+  label?: string;
+  percent?: number;
+}
+
+/** Return type of checkGatekeeper() */
+interface GatekeeperResult {
+  status: 'LOCKED' | 'WARNING' | 'GREEN';
+  reason: string;
+  score_penalty: number;
+}
+
+/** Shape matching gatekeeperEngine.UserProfile (not exported) */
+interface GatekeeperUserProfile {
+  stats: Record<string, number>;
+  assets: string[];
+}
+
+/** Shape matching infrastructureAdvisor.InfrastructureRecommendation (not exported) */
+interface InfraRecommendation {
+  id: string;
+  category: string;
+  priority: number;
+  type: string;
+  title: string;
+  cost?: number;
+  originalCost?: number;
+  isDiscounted?: boolean;
+  discountPercent?: number;
+  benefit?: string;
+  why?: string;
+  roiHours?: number;
+  canAfford?: boolean;
+  urgency: string;
+  expiresAt?: number | null;
+  wastedMoney?: number;
+  isTrap?: boolean;
+  isWarning?: boolean;
+  savingsValue?: number;
+}
+
+/** Results of buildUserProfile — matches GatekeeperUserProfile */
+interface UserProfile extends GatekeeperUserProfile {
+  stats: UserStats & Record<string, number>;
+  assets: string[];
+}
 
 interface UserStats {
   flying: number;
@@ -27,100 +96,10 @@ interface UserStats {
   hacking?: number;
 }
 
-export interface FormData {
-  strength?: number;
-  flying?: number;
-  shooting?: number;
-  stealth?: number;
-  stamina?: number;
-  driving?: number;
-  hacking?: number;
-  hasKosatka?: boolean;
-  hasAgency?: boolean;
-  hasAcidLab?: boolean;
-  acidLabUpgraded?: boolean;
-  hasNightclub?: boolean;
-  hasBunker?: boolean;
-  bunkerUpgraded?: boolean;
-  hasAutoShop?: boolean;
-  hasSparrow?: boolean;
-  hasOppressor?: boolean;
-  hasRaiju?: boolean;
-  hasMansion?: boolean;
-  hasArcade?: boolean;
-  hasBrickade6x6?: boolean;
-  hasCarWash?: boolean;
-  rank?: number;
-  liquidCash?: number;
-  hasGTAPlus?: boolean;
-  gtaPlus?: boolean;
-  dreContractDone?: boolean;
-  nightclubTechs?: number | string;
-  nightclubFeeders?: number | string;
-  nightclubSources?: Record<string, boolean>;
-  dailyStashHouse?: boolean;
-  dailyGsCache?: boolean;
-  dailySafeCollect?: boolean;
-  payphoneUnlocked?: boolean;
-  securityContracts?: string | number;
-  [key: string]: any;
-}
-
-interface User {
-  gtaPlus?: boolean;
+interface User extends FormData {
   formData?: FormData;
   assets?: string[];
   stats?: UserStats;
-  [key: string]: any;
-}
-
-export interface Bottleneck {
-  id?: string;
-  label: string;
-  detail: string;
-  solution: string;
-  actionType?: string;
-  impact?: 'CRITICAL' | 'high' | 'medium' | 'low';
-  urgent?: boolean;
-  critical?: boolean;
-  expiresAt?: number;
-  timeHours?: number;
-  savingsPerHour?: number;
-  [key: string]: any;
-}
-
-export interface Action {
-  priority: number;
-  urgency: string;
-  type: string;
-  title: string;
-  why: string;
-  solution?: string;
-  timeToComplete?: string;
-  estimatedMinutes?: number | null;
-  cost?: number;
-  timeRemaining?: string | null;
-  expiresAt?: number | null;
-  savingsPerHour?: number;
-  impact?: string;
-  bottleneckId?: string;
-  launchesPassiveTimer?: boolean;
-  unlockVelocity?: number;
-  blockedBy?: string[];
-  compoundScore?: number;
-  _priorityScore?: number;
-  _compoundMeta?: {
-    passiveReady: number;
-    passiveTotal: number;
-    passiveAllMaxed: boolean;
-    annotatedAt: number;
-  };
-  [key: string]: any;
-}
-
-interface Results {
-  bottlenecks?: Bottleneck[];
-  [key: string]: any;
 }
 
 // ======================================================================
@@ -153,7 +132,7 @@ const parseMinutes = (timeToComplete?: string): number | null => {
 // Compound Efficiency Helpers (complexity < 15 each)
 // ======================================================================
 
-const buildUserProfile = (user: User): { stats: UserStats; assets: string[] } => {
+const buildUserProfile = (user: User): UserProfile => {
   const userData = user.formData ?? user;
   const assets = [
     userData?.hasKosatka && 'kosatka',
@@ -413,7 +392,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
   const hasGTAPlus = !!formData.hasGTAPlus;
   const playerRank = Number(formData.rank) || 0;
 
-  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop as any;
+  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop as WeeklyEventBonus | undefined;
   const isAutoShopEventAvailable =
     daysLeft > 0 &&
     autoShopBonus?.isActive &&
@@ -528,8 +507,9 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
     const needed = shopCost - cash;
     const bestGrindIncome = 466_000;
     const hoursNeeded = needed / bestGrindIncome;
-    const autoShopExpiry = (WEEKLY_EVENTS.bonuses?.autoShop as any)?.gtaPlusValidUntil
-      ? new Date((WEEKLY_EVENTS.bonuses.autoShop as any).gtaPlusValidUntil).getTime()
+    const autoShopBonusFallback = WEEKLY_EVENTS.bonuses?.autoShop as WeeklyEventBonus | undefined;
+    const autoShopExpiry = autoShopBonusFallback?.gtaPlusValidUntil
+      ? new Date(autoShopBonusFallback.gtaPlusValidUntil).getTime()
       : null;
 
     actions.push({
@@ -550,10 +530,11 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
 
 const buildBusinessBattlesActions = (formData: FormData, now: number): Action[] => {
   const actions: Action[] = [];
-  const bbExpiry = (WEEKLY_EVENTS.bonuses?.businessBattles as any)?.validUntil
-    ? new Date((WEEKLY_EVENTS.bonuses.businessBattles as any).validUntil).getTime()
+  const bbBonus = WEEKLY_EVENTS.bonuses?.businessBattles as WeeklyEventBonus | undefined;
+  const bbExpiry = bbBonus?.validUntil
+    ? new Date(bbBonus.validUntil).getTime()
     : null;
-  const bbActive = !!(WEEKLY_EVENTS.bonuses?.businessBattles as any)?.isActive && bbExpiry != null && bbExpiry > now;
+  const bbActive = !!bbBonus?.isActive && bbExpiry != null && bbExpiry > now;
 
   if (!bbActive) return actions;
 
@@ -664,7 +645,7 @@ const buildCombatPrepActions = (formData: FormData): Action[] => {
 
 const buildInfrastructureActions = (formData: FormData, cash: number): Action[] => {
   const actions: Action[] = [];
-  const infraRecommendations = generateInfrastructureRecommendations(formData) || [];
+  const infraRecommendations = generateInfrastructureRecommendations(formData as unknown as import('./infrastructureAdvisor').InfrastructureFormData) || [];
   const criticalInfra = infraRecommendations.filter(
     (r: any) => r.urgency === 'CRITICAL' || r.urgency === 'URGENT' || r.type === 'CRITICAL'
   );
@@ -863,7 +844,7 @@ const generateSessionTaxActions = (formData: FormData): Action[] => {
   const actions: Action[] = [];
   const hasPassiveEmpire = formData.hasAcidLab || formData.hasBunker || formData.hasNightclub;
   const hasAnySafe = formData.hasNightclub || formData.hasAgency || formData.hasCarWash;
-  const missingDaily = getMissingDailyTasks(formData, hasAnySafe);
+  const missingDaily = getMissingDailyTasks(formData, !!hasAnySafe);
 
   if (missingDaily.length > 0) {
     actions.push({

@@ -26,7 +26,27 @@ const MODEL_CONFIG: any = _MODEL_CONFIG;
  * @param {boolean} params.hasOppressor - Owns Oppressor
  * @returns {Object} Score calculation results
  */
-export const calculateScore = (params) => { // NOSONAR
+interface ScoreParams {
+  activeIncome: number;
+  passiveIncome: number;
+  strength: number;
+  flying: number;
+  shooting: number;
+  hasKosatka: boolean;
+  hasSparrow: boolean;
+  hasAgency: boolean;
+  hasAcidLab: boolean;
+  acidLabUpgraded: boolean;
+  hasNightclub: boolean;
+  hasBunker: boolean;
+  bunkerUpgraded: boolean;
+  hasSalvageYard: boolean;
+  hasTowTruck: boolean;
+  hasRaiju: boolean;
+  hasOppressor: boolean;
+}
+
+export const calculateScore = (params: ScoreParams) => { // NOSONAR
   const {
     activeIncome,
     passiveIncome,

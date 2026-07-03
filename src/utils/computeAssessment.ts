@@ -5,7 +5,7 @@ import { MODEL_CONFIG } from './modelConfig.js';
 import { validateStat, validateNumericInput } from './assessmentHelpers.js';
 import { getCurrentEvents } from './eventHelpers.js';
 import { calculateIncome } from './calculateIncome';
-import { detectBottlenecks } from './detectBottlenecks';
+import { detectBottlenecks } from './detectBottlenecks/index.js';
 import { calculateScore } from './calculateScore';
 import type { AssessmentFormData } from '../types/domain.types';
 
@@ -215,7 +215,9 @@ const calculateHeistReadiness = (normalizedParams: ReturnType<typeof normalizeFo
 };
 
 /** Estimate total net worth from properties and cash. */
-const estimateNetWorth = (normalizedParams, formData, timePlayed) => {
+type NormalizedParams = ReturnType<typeof normalizeFormData>;
+
+const estimateNetWorth = (normalizedParams: NormalizedParams, formData: AssessmentFormData, timePlayed: number) => {
   const {
     liquidCash, hasKosatka, hasSparrow, hasAgency, hasAcidLab,
     hasNightclub, hasBunker, hasSalvageYard, hasAutoShop, hasRaiju, hasOppressor,
@@ -245,7 +247,7 @@ const estimateNetWorth = (normalizedParams, formData, timePlayed) => {
 };
 
 /** Calculate time remaining to reach the next purchase goal. */
-const calculateTimeToGoal = (normalizedParams, formData, liquidCash, incomePerHour, dynamicIncome) => {
+const calculateTimeToGoal = (normalizedParams: NormalizedParams, formData: AssessmentFormData, liquidCash: number, incomePerHour: number, dynamicIncome: Record<string, unknown>) => {
   const { hasKosatka, hasAgency, hasAutoShop, hasGTAPlus, hasAcidLab, hasSparrow } = normalizedParams;
 
   const targets = [];
@@ -287,7 +289,7 @@ const calculateTimeToGoal = (normalizedParams, formData, liquidCash, incomePerHo
 };
 
 /** Calculate efficiency metrics and compare to Feb 2026 benchmarks. */
-const calculateEfficiencyMetrics = (timePlayed, totalIncomeCollected, totalRPCollected) => {
+const calculateEfficiencyMetrics = (timePlayed: number, totalIncomeCollected: number, totalRPCollected: number) => {
   // Feb 2026 Benchmarks (community average/realistic expectations)
   const BENCHMARKS = {
     incomePerHour: 750000,        // Post-Cayo nerf avg grind
@@ -317,7 +319,7 @@ const calculateEfficiencyMetrics = (timePlayed, totalIncomeCollected, totalRPCol
   const rpEfficiency = Math.round((rpPerHour / BENCHMARKS.rpPerHour) * 100);
 
   // Grade letter (A+ to F)
-  const getGrade = (efficiency) => {
+  const getGrade = (efficiency: number) => {
     if (efficiency >= 150) return 'S+';
     if (efficiency >= 130) return 'A+';
     if (efficiency >= 110) return 'A';
@@ -351,7 +353,7 @@ const calculateEfficiencyMetrics = (timePlayed, totalIncomeCollected, totalRPCol
  * Core logic engine.
  * Pure function: same formData → same result, no side effects.
  */
-export const computeAssessment = (formData) => {
+export const computeAssessment = (formData: AssessmentFormData) => {
   // Validate formData exists
   if (!formData || typeof formData !== 'object') {
     throw new Error('Invalid formData: formData must be an object');
@@ -370,7 +372,7 @@ export const computeAssessment = (formData) => {
   } = normalizedParams;
 
   // ---------- 2. INCOME CALCULATIONS ----------
-  const incomeResult = calculateIncome(normalizedParams, formData);
+  const incomeResult = calculateIncome(normalizedParams, formData as unknown as Record<string, unknown>);
   const { activeIncome, passiveIncome, gtaPlusBonusPerHour, incomePerHour, dynamicIncome } = incomeResult;
 
   // ---------- 3. GET ACTIVE EVENTS ----------

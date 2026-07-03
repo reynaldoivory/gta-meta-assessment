@@ -193,13 +193,13 @@ const createSafeIncomeRows = (state: EmpireState, effectiveHeat: number) => {
   const frontsCycle = (hasCarWash ? 8500 : 0) + (hasDispensary ? 5000 : 0) + (hasHelitours ? 5000 : 0);
   const activeFrontsCycle = isRedHeat ? 0 : frontsCycle;
 
-  const rows: Array<IncomeRow | null> = [
+  const rows: IncomeRow[] = [
     hasBusiness(state, 'nightclub') ? toIncomeRow('nightclub_safe', '🟢 Nightclub Safe (Max Pop.)', 50000, 48) : null,
     hasBusiness(state, 'agency') ? toIncomeRow('agency_safe', '🟢 Agency Safe', 20000, 48) : null,
     hasCarWash || hasDispensary || hasHelitours
       ? toIncomeRow('front_safe', '⚡ Money Fronts (Combined)', activeFrontsCycle, 48, isRedHeat)
       : null,
-  ].filter((row): row is IncomeRow => Boolean(row));
+  ].filter((row): row is IncomeRow => row !== null);
 
   return {
     rows,

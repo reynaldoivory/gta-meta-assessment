@@ -9,7 +9,7 @@ import { calculateDynamicIncome } from './dynamicIncome.js';
 // 2026 Meta Rates (Dollars per Hour)
 // Source: GTA Online After Hours Business Rates
 // ============================================
-const NC_RATES = {
+const NC_RATES: Record<string, number> = {
   imports: 10000,  // Cocaine (South American Imports)
   cargo: 8570,     // CEO/Hangar (Cargo & Shipments)
   pharma: 8500,    // Meth (Pharmaceutical Research)
@@ -25,15 +25,16 @@ const NC_RATES = {
  * @param {Object} formData - Player form data
  * @returns {number} Income per hour in GTA$
  */
-export const calculateNightclubIncome = (formData) => {
+export const calculateNightclubIncome = (formData: Record<string, unknown>) => {
   // 1. Get Technician Count (max 5)
   const techs = Math.min(5, Number(formData.nightclubTechs) || 0);
   
   // 2. Exact Math (New System) - Uses nightclubSources object
-  if (formData.nightclubSources) {
+  const nightclubSources = formData.nightclubSources as Record<string, boolean> | undefined;
+  if (nightclubSources) {
     // Identify which businesses are OWNED (set to true)
-    const ownedIds = Object.keys(formData.nightclubSources)
-      .filter(key => formData.nightclubSources[key]);
+    const ownedIds = Object.keys(nightclubSources)
+      .filter(key => nightclubSources[key]);
 
     // Sort owned businesses by value (Highest to Lowest)
     // This simulates "Smart Assignment": techs assigned to best available slots
@@ -81,7 +82,27 @@ export const getNightclubRates = () => NC_RATES;
  * @param {Object} formData - Original form data for dynamic income calculation
  * @returns {Object} Income calculation results
  */
-export const calculateIncome = (params, formData) => { // NOSONAR
+interface IncomeParams {
+  securityContracts: number;
+  hasKosatka: boolean;
+  hasAgency: boolean;
+  hasAcidLab: boolean;
+  acidLabUpgraded: boolean;
+  hasNightclub: boolean;
+  hasBunker: boolean;
+  bunkerUpgraded: boolean;
+  hasSalvageYard: boolean;
+  hasTowTruck: boolean;
+  payphoneUnlocked: boolean;
+  hasGTAPlus: boolean;
+  hasAutoShop: boolean;
+  hasCarWash: boolean;
+  hasWeedFarm: boolean;
+  hasHeliTours: boolean;
+  sellsToStreetDealers: boolean;
+}
+
+export const calculateIncome = (params: IncomeParams, formData: Record<string, unknown>) => { // NOSONAR
   const {
     securityContracts,
     hasKosatka,

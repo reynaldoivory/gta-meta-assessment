@@ -5,6 +5,63 @@ const COMMUNITY_STATS_KEY = 'gta_community_stats_pool';
 const TRAP_STATS_KEY = 'gta_community_trap_stats';
 const STATS_VERSION = 'v1';
 
+interface CommunityPoolEntry {
+  version: string;
+  timestamp: number;
+  rank: number;
+  timePlayed: number;
+  score: number;
+  tier: string;
+  incomePerHour: number;
+  hasGTAPlus: boolean;
+  assets: {
+    kosatka: boolean;
+    sparrow: boolean;
+    agency: boolean;
+    acidLab: boolean;
+    nightclub: boolean;
+    bunker?: boolean;
+    autoShop?: boolean;
+  };
+  avgStat: string;
+  cayoCompletions: number;
+  heistReadyPercent: number;
+}
+
+interface TrapPoolEntry {
+  version: string;
+  timestamp: number;
+  rank: number;
+  totalTraps: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  totalLostPerHour: number;
+  assets: {
+    nightclub: boolean;
+    bunker: boolean;
+    kosatka: boolean;
+    acidLab: boolean;
+    agency: boolean;
+  };
+}
+
+interface TrapItem {
+  id?: string;
+  title?: string;
+  severity?: string;
+  lostPerHour?: number;
+  [key: string]: unknown;
+}
+
+interface FellForItem {
+  trapId: string | undefined;
+  trap: string | undefined;
+  lostPerHour: number;
+  severity: string;
+}
+
 // Anonymize and aggregate data
 export const submitAnonymousStats = (formData: AssessmentFormData, assessmentResults: AssessmentResult) => {
   // Get existing pool
@@ -35,13 +92,13 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
     
     // Stat averages
     avgStat: (
-      (formData.strength +
-        formData.flying +
-        formData.shooting +
-        formData.stealth +
-        formData.stamina +
-        formData.driving +
-        (formData.lungCapacity || 0)) /
+      (Number(formData.strength ?? 0) +
+        Number(formData.flying ?? 0) +
+        Number(formData.shooting ?? 0) +
+        Number(formData.stealth ?? 0) +
+        Number(formData.stamina ?? 0) +
+        Number(formData.driving ?? 0) +
+        Number(formData.lungCapacity || 0)) /
       7
     ).toFixed(1),
     
@@ -71,43 +128,43 @@ export const getCommunityAverages = () => {
 
   // Filter last 30 days only
   const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-  const recent = pool.filter(entry => entry.timestamp > thirtyDaysAgo);
+  const recent = (pool as CommunityPoolEntry[]).filter((entry: CommunityPoolEntry) => entry.timestamp > thirtyDaysAgo);
 
   if (recent.length === 0) {
     return null;
   }
 
-  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
-  const avg = (arr) => arr.length ? sum(arr) / arr.length : 0;
+  const sum = (arr: number[]) => arr.reduce((a: number, b: number) => a + b, 0);
+  const avg = (arr: number[]) => arr.length ? sum(arr) / arr.length : 0;
 
   return {
     sampleSize: recent.length,
-    averageRank: avg(recent.map(e => e.rank)).toFixed(0),
-    averageScore: avg(recent.map(e => e.score)).toFixed(1),
-    averageIncome: avg(recent.map(e => e.incomePerHour)).toFixed(0),
-    averageTimePlayed: avg(recent.map(e => e.timePlayed)).toFixed(0),
-    averageHeistReady: avg(recent.map(e => e.heistReadyPercent)).toFixed(1),
-    
+    averageRank: avg(recent.map((e: CommunityPoolEntry) => e.rank)).toFixed(0),
+    averageScore: avg(recent.map((e: CommunityPoolEntry) => e.score)).toFixed(1),
+    averageIncome: avg(recent.map((e: CommunityPoolEntry) => e.incomePerHour)).toFixed(0),
+    averageTimePlayed: avg(recent.map((e: CommunityPoolEntry) => e.timePlayed)).toFixed(0),
+    averageHeistReady: avg(recent.map((e: CommunityPoolEntry) => e.heistReadyPercent)).toFixed(1),
+
     // Asset ownership percentages
     assetOwnership: {
-      kosatka: (sum(recent.map(e => e.assets?.kosatka ? 1 : 0)) / recent.length * 100).toFixed(0),
-      sparrow: (sum(recent.map(e => e.assets?.sparrow ? 1 : 0)) / recent.length * 100).toFixed(0),
-      agency: (sum(recent.map(e => e.assets?.agency ? 1 : 0)) / recent.length * 100).toFixed(0),
-      acidLab: (sum(recent.map(e => e.assets?.acidLab ? 1 : 0)) / recent.length * 100).toFixed(0),
-      nightclub: (sum(recent.map(e => e.assets?.nightclub ? 1 : 0)) / recent.length * 100).toFixed(0),
+      kosatka: (sum(recent.map((e: CommunityPoolEntry) => e.assets?.kosatka ? 1 : 0)) / recent.length * 100).toFixed(0),
+      sparrow: (sum(recent.map((e: CommunityPoolEntry) => e.assets?.sparrow ? 1 : 0)) / recent.length * 100).toFixed(0),
+      agency: (sum(recent.map((e: CommunityPoolEntry) => e.assets?.agency ? 1 : 0)) / recent.length * 100).toFixed(0),
+      acidLab: (sum(recent.map((e: CommunityPoolEntry) => e.assets?.acidLab ? 1 : 0)) / recent.length * 100).toFixed(0),
+      nightclub: (sum(recent.map((e: CommunityPoolEntry) => e.assets?.nightclub ? 1 : 0)) / recent.length * 100).toFixed(0),
     },
-    
+
     // GTA+ adoption rate
-    gtaPlusRate: (sum(recent.map(e => e.hasGTAPlus ? 1 : 0)) / recent.length * 100).toFixed(0),
-    
+    gtaPlusRate: (sum(recent.map((e: CommunityPoolEntry) => e.hasGTAPlus ? 1 : 0)) / recent.length * 100).toFixed(0),
+
     // Tier distribution
     tierDistribution: {
-      S: (recent.filter(e => e.tier === 'S').length / recent.length * 100).toFixed(0),
-      'A+': (recent.filter(e => e.tier === 'A+').length / recent.length * 100).toFixed(0),
-      A: (recent.filter(e => e.tier === 'A').length / recent.length * 100).toFixed(0),
-      B: (recent.filter(e => e.tier === 'B').length / recent.length * 100).toFixed(0),
-      C: (recent.filter(e => e.tier === 'C').length / recent.length * 100).toFixed(0),
-      D: (recent.filter(e => e.tier === 'D').length / recent.length * 100).toFixed(0),
+      S: (recent.filter((e: CommunityPoolEntry) => e.tier === 'S').length / recent.length * 100).toFixed(0),
+      'A+': (recent.filter((e: CommunityPoolEntry) => e.tier === 'A+').length / recent.length * 100).toFixed(0),
+      A: (recent.filter((e: CommunityPoolEntry) => e.tier === 'A').length / recent.length * 100).toFixed(0),
+      B: (recent.filter((e: CommunityPoolEntry) => e.tier === 'B').length / recent.length * 100).toFixed(0),
+      C: (recent.filter((e: CommunityPoolEntry) => e.tier === 'C').length / recent.length * 100).toFixed(0),
+      D: (recent.filter((e: CommunityPoolEntry) => e.tier === 'D').length / recent.length * 100).toFixed(0),
     },
   };
 };
@@ -130,13 +187,13 @@ export const compareToCommunity = (formData: AssessmentFormData, assessmentResul
   };
 };
 
-const calculatePercentile = (score, _communityAvg) => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
-  const recent = pool.filter(e => e.timestamp > Date.now() - 30 * 24 * 60 * 60 * 1000);
-  
+const calculatePercentile = (score: number, _communityAvg: ReturnType<typeof getCommunityAverages>) => {
+  const pool: CommunityPoolEntry[] = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+  const recent = pool.filter((e: CommunityPoolEntry) => e.timestamp > Date.now() - 30 * 24 * 60 * 60 * 1000);
+
   if (recent.length === 0) return 50;
-  
-  const lowerCount = recent.filter(e => e.score < score).length;
+
+  const lowerCount = recent.filter((e: CommunityPoolEntry) => e.score < score).length;
   return ((lowerCount / recent.length) * 100).toFixed(0);
 };
 
@@ -171,7 +228,7 @@ export const exportCommunityStatsCSV = () => {
   ];
 
   // Convert data to CSV rows
-  const rows = pool.map(entry => {
+  const rows = (pool as CommunityPoolEntry[]).map((entry: CommunityPoolEntry) => {
     const date = new Date(entry.timestamp).toISOString();
     return [
       entry.timestamp,
@@ -198,7 +255,7 @@ export const exportCommunityStatsCSV = () => {
   // Combine headers and rows
   const csvContent = [
     headers.join(','),
-    ...rows.map(row => row.join(',')),
+    ...rows.map((row: (string | number | boolean)[]) => row.join(',')),
   ].join('\n');
 
   return csvContent;
@@ -206,22 +263,22 @@ export const exportCommunityStatsCSV = () => {
 
 // Get progress over time data for charts
 export const getProgressOverTime = () => {
-  const pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
-  
+  const pool: CommunityPoolEntry[] = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+
   if (pool.length === 0) {
     return null;
   }
 
   // Sort by timestamp
-  const sorted = [...pool].sort((a, b) => a.timestamp - b.timestamp);
+  const sorted = [...pool].sort((a: CommunityPoolEntry, b: CommunityPoolEntry) => a.timestamp - b.timestamp);
 
   return {
-    timestamps: sorted.map(e => e.timestamp),
-    dates: sorted.map(e => new Date(e.timestamp).toLocaleDateString()),
-    scores: sorted.map(e => e.score),
-    incomePerHour: sorted.map(e => e.incomePerHour),
-    rank: sorted.map(e => e.rank),
-    heistReadyPercent: sorted.map(e => e.heistReadyPercent),
+    timestamps: sorted.map((e: CommunityPoolEntry) => e.timestamp),
+    dates: sorted.map((e: CommunityPoolEntry) => new Date(e.timestamp).toLocaleDateString()),
+    scores: sorted.map((e: CommunityPoolEntry) => e.score),
+    incomePerHour: sorted.map((e: CommunityPoolEntry) => e.incomePerHour),
+    rank: sorted.map((e: CommunityPoolEntry) => e.rank),
+    heistReadyPercent: sorted.map((e: CommunityPoolEntry) => e.heistReadyPercent),
   };
 };
 
@@ -234,7 +291,17 @@ export const getProgressOverTime = () => {
  * @param {Object} trapSummary - Summary from getTrapSummary()
  * @param {Object} formData - Player form data
  */
-export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) => {
+interface TrapSummary {
+  count: number;
+  criticalCount: number;
+  highCount: number;
+  mediumCount: number;
+  lowCount: number;
+  totalLostPerHour?: number;
+  [key: string]: unknown;
+}
+
+export const submitTrapStats = (trapSummary: TrapSummary | null, formData: AssessmentFormData) => {
   if (!trapSummary || trapSummary.count === 0) return;
   
   try {
@@ -301,28 +368,28 @@ export const getTrapOccurrenceRates = () => {
     
     // Filter last 30 days
     const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-    const recentTraps = trapPool.filter(entry => entry.timestamp > thirtyDaysAgo);
-    const recentPlayers = communityPool.filter(entry => entry.timestamp > thirtyDaysAgo);
-    
+    const recentTraps = (trapPool as TrapPoolEntry[]).filter((entry: TrapPoolEntry) => entry.timestamp > thirtyDaysAgo);
+    const recentPlayers = (communityPool as CommunityPoolEntry[]).filter((entry: CommunityPoolEntry) => entry.timestamp > thirtyDaysAgo);
+
     if (recentTraps.length === 0) {
       return null;
     }
-    
+
     // Count players who own each asset type
-    const nightclubOwners = recentPlayers.filter(p => p.assets?.nightclub).length;
-    const bunkerOwners = recentPlayers.filter(p => p.assets?.bunker).length;
-    const kosatkaOwners = recentPlayers.filter(p => p.assets?.kosatka).length;
-    const acidLabOwners = recentPlayers.filter(p => p.assets?.acidLab).length;
-    
+    const nightclubOwners = recentPlayers.filter((p: CommunityPoolEntry) => p.assets?.nightclub).length;
+    const bunkerOwners = recentPlayers.filter((p: CommunityPoolEntry) => p.assets?.bunker).length;
+    const kosatkaOwners = recentPlayers.filter((p: CommunityPoolEntry) => p.assets?.kosatka).length;
+    const acidLabOwners = recentPlayers.filter((p: CommunityPoolEntry) => p.assets?.acidLab).length;
+
     // Count trap occurrences (critical/high only for significance)
-    const nightclubTraps = recentTraps.filter(t => t.criticalCount > 0 && t.assets?.nightclub).length;
-    const bunkerTraps = recentTraps.filter(t => t.highCount > 0 && t.assets?.bunker).length;
-    const kosatkaTraps = recentTraps.filter(t => t.assets?.kosatka && t.totalTraps > 0).length;
-    const acidLabTraps = recentTraps.filter(t => t.assets?.acidLab && t.mediumCount > 0).length;
-    
+    const nightclubTraps = recentTraps.filter((t: TrapPoolEntry) => t.criticalCount > 0 && t.assets?.nightclub).length;
+    const bunkerTraps = recentTraps.filter((t: TrapPoolEntry) => t.highCount > 0 && t.assets?.bunker).length;
+    const kosatkaTraps = recentTraps.filter((t: TrapPoolEntry) => t.assets?.kosatka && t.totalTraps > 0).length;
+    const acidLabTraps = recentTraps.filter((t: TrapPoolEntry) => t.assets?.acidLab && t.mediumCount > 0).length;
+
     return {
       sampleSize: recentTraps.length,
-      nightclubTrap: nightclubOwners > 0 
+      nightclubTrap: nightclubOwners > 0
         ? (nightclubTraps / nightclubOwners * 100).toFixed(0)
         : '67', // Default estimate
       unupgradedBunker: bunkerOwners > 0
@@ -335,10 +402,10 @@ export const getTrapOccurrenceRates = () => {
         ? (acidLabTraps / acidLabOwners * 100).toFixed(0)
         : '38',
       cayoBurnout: kosatkaOwners > 0
-        ? ((recentTraps.filter(t => t.lowCount > 0).length / kosatkaOwners) * 100).toFixed(0)
+        ? ((recentTraps.filter((t: TrapPoolEntry) => t.lowCount > 0).length / kosatkaOwners) * 100).toFixed(0)
         : '52',
-      averageTrapsPerPlayer: (recentTraps.reduce((sum, t) => sum + t.totalTraps, 0) / recentTraps.length).toFixed(1),
-      averageLostIncome: (recentTraps.reduce((sum, t) => sum + (t.totalLostPerHour || 0), 0) / recentTraps.length).toFixed(0),
+      averageTrapsPerPlayer: (recentTraps.reduce((sum: number, t: TrapPoolEntry) => sum + t.totalTraps, 0) / recentTraps.length).toFixed(1),
+      averageLostIncome: (recentTraps.reduce((sum: number, t: TrapPoolEntry) => sum + (t.totalLostPerHour || 0), 0) / recentTraps.length).toFixed(0),
       isEstimated: false,
     };
   } catch (e) {
@@ -354,15 +421,20 @@ export const getTrapOccurrenceRates = () => {
  * @param {Array} currentTraps - Currently detected traps
  * @returns {Object|null} Trap avoidance statistics
  */
-export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps: any) => {
+export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps: TrapItem[]) => {
   const occurrenceRates = getTrapOccurrenceRates();
   
   if (!occurrenceRates) {
     return null;
   }
   
-  const avoided = [];
-  const fellFor = [];
+  interface AvoidedItem {
+    trap: string;
+    communityRate: string;
+    potentialLoss: number;
+  }
+  const avoided: AvoidedItem[] = [];
+  const fellFor: FellForItem[] = [];
   
   // Check which common traps player AVOIDED
   // Calculate feeders from nightclubSources (new format) or use legacy number
@@ -402,7 +474,7 @@ export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps
   }
   
   // Check which traps they FELL FOR
-  currentTraps.forEach(trap => {
+  currentTraps.forEach((trap: TrapItem) => {
     if (trap.severity === 'CRITICAL' || trap.severity === 'critical') {
       fellFor.push({
         trapId: trap.id,

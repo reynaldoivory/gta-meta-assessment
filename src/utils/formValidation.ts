@@ -61,8 +61,8 @@ export const validateField = (field: string, value: any): string | null => {
  * @param {Object} formData - Form data object
  * @returns {Object} Errors object with field names as keys
  */
-export const validateForm = (formData) => {
-  const errors = {};
+export const validateForm = (formData: Record<string, unknown>) => {
+  const errors: Record<string, string> = {};
   const fieldsToValidate = [
     'rank', 'liquidCash', 'totalIncomeCollected', 'totalRPCollected', 'timePlayed', 'timePlayedDays', 'timePlayedHours',
     'nightclubTechs', 'nightclubFeeders', 'securityContracts'

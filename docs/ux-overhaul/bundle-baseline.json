@@ -1,0 +1,14 @@
+{
+  "capturedAt": "2026-07-03",
+  "commit": "e9ccf71",
+  "note": "Raw bytes of dist/assets after `npm run build` at the UX-overhaul start. The growth guard applies to the main index-*.js chunk only: ceiling = baseline raw * 1.10. Fonts and other static assets are outside this guard.",
+  "mainChunk": "index.js",
+  "mainChunkCeilingRaw": 591416,
+  "chunks": {
+    "index.js": { "raw": 537651, "gzip": 161940 },
+    "ProgressChart.js": { "raw": 166939, "gzip": 58236 },
+    "ROICalculator.js": { "raw": 5039, "gzip": 1729 },
+    "SocialCardGenerator.js": { "raw": 3035, "gzip": 1425 },
+    "index.css": { "raw": 75421, "gzip": 12408 }
+  }
+}

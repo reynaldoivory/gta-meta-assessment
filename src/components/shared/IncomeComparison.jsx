@@ -2,23 +2,11 @@
 import PropTypes from 'prop-types';
 import { TrendingUp, AlertTriangle } from 'lucide-react';
 import { WEEKLY_EVENTS } from '../../config/weeklyEvents';
-
-const computeAutoShopRate = () => {
-  const baseContractPayout = 300000;
-  const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
-  const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
-  const isActive = autoShopBonus?.isActive === true;
-  const multiplier = isActive ? (autoShopBonus.multiplier || 2) : 1;
-  return {
-    rate: baseContractPayout * contractsPerHour * multiplier,
-    isActive,
-    multiplier,
-  };
-};
+import { computeAutoShopRate, CAYO_RATE } from '../../utils/calculations/incomeComparison';
 
 export const IncomeComparison = ({ hasAutoShop }) => {
   const { rate: autoShopRate, isActive: isAutoShopEvent, multiplier: autoShopMultiplier } = computeAutoShopRate();
-  const cayoRate = 466000;
+  const cayoRate = CAYO_RATE;
 
   return (
     <div className="bg-slate-900/60 border border-blue-500/30 rounded-2xl p-6 mb-6">

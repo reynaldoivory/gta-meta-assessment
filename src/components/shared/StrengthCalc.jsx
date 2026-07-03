@@ -1,12 +1,11 @@
 // src/components/shared/StrengthCalc.jsx
 import PropTypes from 'prop-types';
+import { computeStrengthTraining } from '../../utils/calculations/strength';
 
 export const StrengthCalc = ({ currentPct, hasMansion }) => {
   if (currentPct >= 60) return null;
 
-  const impactsNeeded = Math.ceil((60 - currentPct) * 20);
-  const punchesPerMin = 30;
-  const timeEst = Math.ceil(impactsNeeded / punchesPerMin);
+  const { impactsNeeded, timeEst } = computeStrengthTraining(currentPct);
 
   return (
     <div className="bg-red-900/20 border border-red-500/50 rounded-xl p-5 mb-6">

@@ -2,28 +2,7 @@
 import { useState } from 'react';
 import PropTypes from 'prop-types';
 import { Target, TrendingUp } from 'lucide-react';
-
-const commonGoals = [
-  { label: 'Kosatka', amount: 2200000 },
-  { label: 'Sparrow', amount: 1800000 },
-  { label: 'Agency', amount: 2000000 },
-  { label: 'Acid Lab', amount: 750000 },
-  { label: 'Nightclub', amount: 1500000 },
-  { label: 'Oppressor Mk II', amount: 8000000 },
-  { label: 'Raiju', amount: 6800000 },
-];
-
-const formatHoursRequired = (hours) => {
-  if (hours < 1) return `${(hours * 60).toFixed(0)} minutes`;
-  if (hours < 24) return `${hours.toFixed(1)} hours`;
-  return `${(hours / 24).toFixed(1)} days`;
-};
-
-const formatDaysRequired = (days) => {
-  if (days < 7) return `${days.toFixed(1)} days`;
-  if (days < 30) return `${(days / 7).toFixed(1)} weeks`;
-  return `${(days / 30).toFixed(1)} months`;
-};
+import { commonGoals, formatHoursRequired, formatDaysRequired, computeRoi } from '../../utils/calculations/roi';
 
 const GoalSelector = ({ targetItem, onSelectGoal }) => (
   <div>
@@ -163,15 +142,13 @@ const ROICalculator = ({ formData, results }) => {
 
     const goal = Number(targetAmount);
     const currentCash = Number(formData.liquidCash) || 0;
-    const needed = Math.max(0, goal - currentCash);
     const incomePerHour = results.incomePerHour || 1;
 
     if (incomePerHour <= 0) {
       return { hours: Infinity, days: Infinity, message: 'No income source active' };
     }
 
-    const hours = needed / incomePerHour;
-    const days = hours / 24;
+    const { needed, hours, days } = computeRoi({ goal, currentCash, incomePerHour });
 
     return { hours, days, needed };
   };

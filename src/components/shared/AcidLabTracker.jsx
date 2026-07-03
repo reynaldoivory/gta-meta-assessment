@@ -2,8 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 
 import PropTypes from 'prop-types';
 import { STORAGE_KEYS, getJSON, setJSON } from '../../utils/storage/appStorage';
-
-const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
+import { getMaxTime, computeAcidLabStatus } from '../../utils/trackers/acidLab';
 
 const getBorderClasses = (isReady, isNearFull) => {
   if (isReady) return 'border-red-500 ring-2 ring-red-500/50';
@@ -52,16 +51,10 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     return () => clearInterval(timer);
   }, [hasAcidLab, lastSold, acidLabUpgraded]);
 
-  const trackerData = useMemo(() => {
-    const maxCapacity = acidLabUpgraded ? 335000 : 237500;
-    const timeToFull = getMaxTime(acidLabUpgraded);
-    const currentValue = Math.min(maxCapacity, (productionTime / timeToFull) * maxCapacity);
-    const percentFull = (productionTime / timeToFull) * 100;
-    const isReady = productionTime >= timeToFull;
-    const isNearFull = productionTime >= timeToFull * 0.75;
-    
-    return { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull };
-  }, [acidLabUpgraded, productionTime]);
+  const trackerData = useMemo(
+    () => computeAcidLabStatus(acidLabUpgraded, productionTime),
+    [acidLabUpgraded, productionTime]
+  );
 
   if (!hasAcidLab) return null;
 

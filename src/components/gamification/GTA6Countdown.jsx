@@ -1,27 +1,16 @@
 // src/components/GTA6Countdown.jsx
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Calendar, TrendingUp, Zap, AlertCircle } from 'lucide-react';
+import { GTA6_RELEASE_ISO, calculateTimeLeft as computeTimeLeft } from '../../utils/trackers/gta6Countdown';
 
 const GTA6Countdown = () => {
   // OFFICIAL: November 19, 2026 release date (memoized to prevent recreating on every render)
-  const releaseDate = useMemo(() => new Date('2026-11-19T00:00:00'), []);
-  
-  const calculateTimeLeft = useCallback(() => {
-    const now = new Date();
-    const difference = releaseDate - now;
+  const releaseDate = useMemo(() => new Date(GTA6_RELEASE_ISO), []);
 
-    if (difference <= 0) {
-      return { released: true };
-    }
-
-    return {
-      released: false,
-      days: Math.floor(difference / (1000 * 60 * 60 * 24)),
-      hours: Math.floor((difference / (1000 * 60 * 60)) % 24),
-      minutes: Math.floor((difference / 1000 / 60) % 60),
-      seconds: Math.floor((difference / 1000) % 60),
-    };
-  }, [releaseDate]);
+  const calculateTimeLeft = useCallback(
+    () => computeTimeLeft(releaseDate, new Date()),
+    [releaseDate]
+  );
   
   const [timeLeft, setTimeLeft] = useState(calculateTimeLeft);
 

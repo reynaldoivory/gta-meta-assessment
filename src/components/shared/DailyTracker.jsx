@@ -2,6 +2,7 @@
 import PropTypes from 'prop-types';
 import { useState, useEffect, useMemo, useRef } from 'react';
 import { STORAGE_KEYS, getJSON, setJSON } from '../../utils/storage/appStorage';
+import { getNextResetTime, shouldResetTasks } from '../../utils/trackers/dailyReset';
 
 // Daily tasks configuration
 const CORE_DAILIES = [
@@ -37,34 +38,6 @@ const CORE_DAILIES = [
 ];
 
 // Get next reset time (6:00 AM UTC)
-const getNextResetTime = () => {
-  const now = new Date();
-  // Create a date object for today at 6:00 AM UTC
-  const resetTime = new Date(Date.UTC(
-    now.getUTCFullYear(),
-    now.getUTCMonth(),
-    now.getUTCDate(),
-    6, 0, 0, 0
-  ));
-  
-  // If it's past 6 AM UTC today, reset is tomorrow
-  if (now.getTime() >= resetTime.getTime()) {
-    resetTime.setUTCDate(resetTime.getUTCDate() + 1);
-  }
-  
-  return resetTime.getTime();
-};
-
-
-const getNowTimestamp = () => Date.now();
-
-// Check if tasks should be reset (past 6 AM UTC)
-const shouldResetTasks = (lastResetTime) => {
-  if (!lastResetTime) return true;
-  const now = getNowTimestamp();
-  const nextReset = getNextResetTime();
-  return now >= nextReset;
-};
 
 const loadSavedTasks = () => {
   const parsed = getJSON(STORAGE_KEYS.DAILY_TRACKER, null);

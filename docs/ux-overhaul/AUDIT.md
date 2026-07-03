@@ -115,7 +115,9 @@ Router: `switch(step)` in `GTAAssessment.jsx` over AssessmentContext string stat
 | `gamification/GTA6Countdown.jsx` | 149 | countdown date math | `utils/trackers/gta6Countdown.ts` |
 | `views/AssessmentForm.jsx` | 467 | misc inline computations | fold into existing utils |
 
-Rule: timers/`setInterval` stay in components; date math and $ math move out. All extractions behavior-preserving (characterization guard).
+Rule: timers/`setInterval` stay in components; date math and $ math move out. All extractions behavior-preserving.
+
+**Census correction (verified during R.2):** the list above over-counted. Genuinely extracted (6 new modules): `roi.ts`, `strength.ts`, `incomeComparison.ts` (calculations/), `gta6Countdown.ts`, `acidLab.ts`, `dailyReset.ts` (trackers/). Already clean before R.2 (delegate to a hook/util, no inline math): `EmpireProgressPanel` (uses `useEmpireProgressData`), `CommunityComparison` (uses `communityStats` util). No assessment math to extract (display formatting or form-input handling only, left as-is): `HeistReadiness`, `EfficiencyBenchmarks`, `AssessmentForm`. Remaining `Math.*` in components (CommunityTrapStats bar widths, StatBar fill %, LoadingSpinner/Confetti animation, AchievementsGallery grid) is cosmetic, not domain math.
 
 ### 9b. Direct localStorage call sites (Phase R.1; all move behind `utils/storage/appStorage.ts`)
 

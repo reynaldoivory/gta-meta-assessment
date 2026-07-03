@@ -9,8 +9,8 @@ export interface AppShellNavItem {
 }
 
 export interface AppShellProps {
-  title: string;
-  subtitle?: string;
+  title: ReactNode;
+  subtitle?: ReactNode;
   /** Optional top nav (Planning Board / Report / Garage). */
   nav?: AppShellNavItem[];
   /** Optional back affordance rendered before the title. */

@@ -35,20 +35,20 @@ const WorkbookTotals = ({ selections }) => {
   const totals = calculateFinancialWorkbookTotals(selections);
 
   return (
-    <div className="bg-slate-900/60 border border-emerald-500/40 rounded-lg p-4">
-      <div className="flex items-center gap-2 mb-3 text-emerald-400 font-bold">
+    <div className="bg-bg-surface/60 border border-hud-blue/40 rounded-lg p-4">
+      <div className="flex items-center gap-2 mb-3 text-hud-blue font-bold">
         <Calculator className="w-4 h-4" /> Financial Workbook Totals
       </div>
       <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
-        <div className="bg-black/30 rounded p-3">Businesses: <span className="font-mono text-white">{formatMoney(totals.businesses)}</span></div>
-        <div className="bg-black/30 rounded p-3">Vehicles: <span className="font-mono text-white">{formatMoney(totals.vehicles)}</span></div>
-        <div className="bg-black/30 rounded p-3">Upgrades: <span className="font-mono text-white">{formatMoney(totals.upgrades)}</span></div>
-        <div className="bg-black/30 rounded p-3">Other: <span className="font-mono text-white">{formatMoney(totals.other)}</span></div>
+        <div className="bg-bg-base/50 rounded p-3">Businesses: <span className="font-mono text-text-primary">{formatMoney(totals.businesses)}</span></div>
+        <div className="bg-bg-base/50 rounded p-3">Vehicles: <span className="font-mono text-text-primary">{formatMoney(totals.vehicles)}</span></div>
+        <div className="bg-bg-base/50 rounded p-3">Upgrades: <span className="font-mono text-text-primary">{formatMoney(totals.upgrades)}</span></div>
+        <div className="bg-bg-base/50 rounded p-3">Other: <span className="font-mono text-text-primary">{formatMoney(totals.other)}</span></div>
       </div>
-      <div className="mt-3 pt-3 border-t border-slate-700 text-lg font-bold text-emerald-300">
+      <div className="mt-3 pt-3 border-t border-border text-lg font-bold text-hud-blue">
         Grand Total: <span className="font-mono">{formatMoney(totals.grandTotal)}</span>
       </div>
-      <div className="text-xs text-slate-400 mt-1">Selected items: {totals.selectedCount}</div>
+      <div className="text-xs text-text-muted mt-1">Selected items: {totals.selectedCount}</div>
     </div>
   );
 };
@@ -61,14 +61,14 @@ const WorkbookSection = ({ section, formData, setFormData, isOpen, onToggle, sel
   const selections = getSelectionState(formData);
 
   return (
-    <div className="bg-gta-panel border border-gta-green/30 rounded-lg p-4 space-y-3">
+    <div className="bg-bg-surface border border-hud-blue/30 rounded-lg p-4 space-y-3">
       <button
         type="button"
         onClick={() => onToggle(section.id)}
         className="w-full text-left"
       >
-        <h3 className="text-sm font-bold uppercase text-gta-green">{section.title}</h3>
-        <p className="text-xs text-slate-400 mt-1">
+        <h3 className="text-sm font-bold uppercase text-hud-blue">{section.title}</h3>
+        <p className="text-xs text-text-muted mt-1">
           {selectedCount} selected{section.requirement ? ` • ${section.requirement}` : ''}
         </p>
       </button>
@@ -77,7 +77,7 @@ const WorkbookSection = ({ section, formData, setFormData, isOpen, onToggle, sel
         <div className="space-y-2">
           {section.items.map((entry) => {
             const checked = Boolean(selections[entry.id]);
-            const warningClass = entry.warning ? 'text-red-300 border-red-700/50 bg-red-950/10' : 'text-slate-200 border-slate-700';
+            const warningClass = entry.warning ? 'text-accent-pink-text border-hud-pink/50 bg-hud-pink/10' : 'text-text-secondary border-border';
 
             return (
               <label key={entry.id} className={`flex items-start gap-3 border rounded p-2 ${warningClass}`}>
@@ -85,16 +85,16 @@ const WorkbookSection = ({ section, formData, setFormData, isOpen, onToggle, sel
                   type="checkbox"
                   checked={checked}
                   onChange={() => toggleItem(entry.id, formData, setFormData)}
-                  className="mt-1 w-4 h-4 rounded bg-slate-800 border-gta-green checked:bg-gta-green"
+                  className="mt-1 w-4 h-4 rounded bg-bg-raised border-hud-blue checked:bg-hud-blue"
                 />
                 <div className="flex-1">
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <span className="text-sm">{entry.label}</span>
                     {formatPrice(entry) && (
-                      <span className="text-xs font-mono text-gta-green">{formatPrice(entry)}</span>
+                      <span className="text-xs font-mono text-hud-blue">{formatPrice(entry)}</span>
                     )}
                   </div>
-                  {entry.note && <p className="text-xs text-slate-400 mt-1">{entry.note}</p>}
+                  {entry.note && <p className="text-xs text-text-muted mt-1">{entry.note}</p>}
                 </div>
               </label>
             );
@@ -142,20 +142,20 @@ export const FinancialWorkbookPanel = ({ formData, setFormData }) => {
 
   return (
     <section className="space-y-4">
-      <div className="bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-emerald-500/50 rounded-lg p-6">
-        <div className="flex items-start justify-between gap-4">
+      <div className="bg-gradient-to-br from-bg-surface to-bg-base border-2 border-hud-blue/50 rounded-lg p-6">
+        <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <h2 className="text-xl font-bold text-emerald-400 uppercase font-heading flex items-center gap-2">
+            <h2 className="text-xl font-bold text-hud-blue uppercase font-display flex items-center gap-2">
               <BookOpen className="w-5 h-5" /> Financial Workbook
             </h2>
-            <p className="text-xs text-slate-400 mt-1">
+            <p className="text-xs text-text-muted mt-1">
               Select investments, locations, and upgrades to build your GTA empire budget in one place.
             </p>
           </div>
           <button
             type="button"
             onClick={() => clearWorkbook(setFormData)}
-            className="px-3 py-2 rounded text-xs border border-slate-600 text-slate-300 hover:bg-slate-800 flex items-center gap-1"
+            className="px-3 py-2 rounded text-xs border border-border text-text-secondary hover:bg-bg-raised flex items-center gap-1"
           >
             <RotateCcw className="w-3 h-3" /> Reset Workbook
           </button>

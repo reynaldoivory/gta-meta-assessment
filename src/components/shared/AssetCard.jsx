@@ -9,29 +9,29 @@ const AssetCard = ({ label, emoji, isOwned, onToggle, children, cost }) => {
         type="button"
         onClick={onToggle}
         aria-label={`Select ${label}`}
-        className="w-full rounded-xl border transition-all duration-300 bg-slate-900/40 border-slate-800 opacity-80 hover:opacity-100 cursor-pointer text-left"
+        className="w-full rounded-xl border transition-all duration-300 bg-bg-surface/60 border-border-subtle opacity-80 hover:opacity-100 cursor-pointer text-left"
       >
         <div className="p-3 md:p-4 flex items-center justify-between select-none">
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-colors bg-slate-800 text-slate-600">
+            <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-colors bg-bg-raised text-text-muted">
               {emoji}
             </div>
             <div>
-              <div className="font-bold transition-colors text-slate-400">{label}</div>
+              <div className="font-bold transition-colors text-text-secondary">{label}</div>
               {cost && (
-                <div className="text-xs text-slate-500 font-mono">Est. Cost: {cost}</div>
+                <div className="text-xs text-text-muted font-mono">Est. Cost: {cost}</div>
               )}
-              <div className="text-[11px] text-slate-500 mt-1">Click anywhere on this card to select and configure.</div>
+              <div className="text-2xs text-text-muted mt-1">Click anywhere on this card to select and configure.</div>
             </div>
           </div>
-          <div className="w-6 h-6 rounded border flex items-center justify-center transition-all border-slate-600 hover:border-slate-500" />
+          <div className="w-6 h-6 rounded border flex items-center justify-center transition-all border-border hover:border-border-strong" />
         </div>
       </button>
     );
   }
 
   return (
-    <div className="rounded-xl border transition-all duration-300 bg-slate-900/80 border-blue-500/30 shadow-lg shadow-blue-900/10">
+    <div className="rounded-xl border transition-all duration-300 bg-bg-surface border-hud-blue/30 shadow-lg shadow-hud-blue/10">
       <button
         type="button"
         onClick={onToggle}
@@ -39,22 +39,22 @@ const AssetCard = ({ label, emoji, isOwned, onToggle, children, cost }) => {
         className="w-full p-3 md:p-4 flex items-center justify-between cursor-pointer select-none text-left"
       >
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-colors bg-blue-600/20 text-blue-400">
+          <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl transition-colors bg-hud-blue/20 text-hud-blue">
             {emoji}
           </div>
           <div>
-            <div className="font-bold transition-colors text-white">{label}</div>
+            <div className="font-bold transition-colors text-text-primary">{label}</div>
           </div>
         </div>
-        <div className="w-6 h-6 rounded border flex items-center justify-center transition-all bg-blue-500 border-blue-500 text-white">
+        <div className="w-6 h-6 rounded border flex items-center justify-center transition-all bg-hud-blue border-hud-blue text-bg-base">
           <CheckCircle2 size={16} />
         </div>
       </button>
-      
+
       {/* Nested Options - Auto-expand when owned */}
       {children && (
-        <div className="px-4 pb-4 pt-0 border-t border-slate-800/50">
-          <div className="mt-4 space-y-3 pl-2 border-l-2 border-slate-800 ml-4">
+        <div className="px-4 pb-4 pt-0 border-t border-border-subtle">
+          <div className="mt-4 space-y-3 pl-2 border-l-2 border-border-subtle ml-4">
             {children}
           </div>
         </div>

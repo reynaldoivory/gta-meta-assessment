@@ -6,6 +6,16 @@ import { applyAssessmentGamification } from '../utils/gamificationEngine';
 import { getProgressHistory } from '../utils/progressTracker';
 import { checkStreak } from '../utils/streakTracker';
 import { STORAGE_KEYS, getJSON, setJSON, remove } from '../utils/storage/appStorage';
+import { TRAP_SEVERITY } from '../utils/trapDetector';
+
+export interface CascadeTrap {
+  id: string;
+  severity: string;
+  title: string;
+  problem: string;
+  solution: string;
+  isCascadeTrap: true;
+}
 
 export interface AssessmentContextValue {
   formData: AssessmentFormData;
@@ -27,7 +37,7 @@ export interface AssessmentContextValue {
   whatIfText: string;
   setWhatIfText: (s: string) => void;
   isCalculating: boolean;
-  cascadeTraps: string[];
+  cascadeTraps: CascadeTrap[];
   criticalTraps: string[];
   hasCriticalTrap: boolean;
 }
@@ -112,8 +122,17 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   
   // 2. Calculated Logic (Traps)
   const cascadeTraps = useMemo(() => {
-    const traps: string[] = [];
-    if (formData.hasOppressor && !formData.hasTerrorbyte) traps.push('Missiles require Terrorbyte');
+    const traps: CascadeTrap[] = [];
+    if (formData.hasOppressor && !formData.hasTerrorbyte) {
+      traps.push({
+        id: 'oppressor-missiles-need-terrorbyte',
+        severity: TRAP_SEVERITY.HIGH,
+        title: 'Missiles require Terrorbyte',
+        problem: 'The Oppressor Mk II\'s homing missiles are locked without a Terrorbyte.',
+        solution: 'Buy a Terrorbyte (Nightclub required) to unlock missile use, or acknowledge and continue without them.',
+        isCascadeTrap: true,
+      });
+    }
     // Add other logic here
     return traps;
   }, [formData]);

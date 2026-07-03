@@ -3,17 +3,17 @@ import { Check } from 'lucide-react';
 
 const getContainerClasses = (isOwned, compact, disabled) => {
   const ownershipClasses = isOwned
-    ? 'border-gta-green bg-gradient-to-r from-gta-green/10 to-transparent'
-    : 'border-slate-700';
+    ? 'border-hud-blue bg-gradient-to-r from-hud-blue/10 to-transparent'
+    : 'border-border';
   const spacingClasses = compact ? 'p-3' : 'p-4';
   const interactionClasses = disabled
     ? 'opacity-50 cursor-not-allowed'
-    : 'cursor-pointer hover:border-gta-green';
+    : 'cursor-pointer hover:border-hud-blue';
 
-  return `bg-slate-800 border-2 ${ownershipClasses} rounded-lg transition-all ${spacingClasses} ${interactionClasses}`;
+  return `bg-bg-surface border-2 ${ownershipClasses} rounded-lg transition-all ${spacingClasses} ${interactionClasses}`;
 };
 
-const getMetaTextClass = (compact) => (compact ? 'text-xs text-gta-gray' : 'text-sm text-gta-gray');
+const getMetaTextClass = (compact) => (compact ? 'text-xs text-text-muted' : 'text-sm text-text-muted');
 
 const renderMeta = (cost, details, compact) => {
   const textClass = getMetaTextClass(compact);
@@ -48,12 +48,12 @@ export const AssetToggleCard = ({
           checked={isOwned}
           onChange={onChange}
           disabled={disabled}
-          className="w-5 h-5 rounded mt-1 bg-slate-700 border-gta-green checked:bg-gta-green focus:ring-gta-green"
+          className="w-5 h-5 rounded mt-1 bg-bg-raised border-hud-blue checked:bg-hud-blue focus:ring-hud-blue"
         />
         <div className="flex-1">
           <div className={titleClass}>
-            <span className="text-lg">{emoji}</span> {label}
-            {isOwned ? <Check className="w-4 h-4 text-gta-green ml-auto" /> : null}
+            <span className="text-lg">{emoji}</span> <span className="text-text-primary">{label}</span>
+            {isOwned ? <Check className="w-4 h-4 text-hud-blue ml-auto" /> : null}
           </div>
           {renderMeta(cost, details, compact)}
         </div>

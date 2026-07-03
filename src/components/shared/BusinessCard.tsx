@@ -59,14 +59,14 @@ const BusinessLocationSelect = ({
   onChange: (value: string) => void;
 }) => (
   <div className="space-y-1">
-    <label htmlFor={`${business.id}-location`} className="text-xs font-semibold uppercase text-slate-400">
+    <label htmlFor={`${business.id}-location`} className="text-xs font-semibold uppercase text-text-muted">
       Location
     </label>
     <select
       id={`${business.id}-location`}
       value={locationId}
       onChange={(event) => onChange(event.target.value)}
-      className="w-full rounded bg-slate-800 border border-slate-700 px-3 py-2 text-sm text-slate-100"
+      className="w-full rounded bg-bg-raised border border-border px-3 py-2 text-sm text-text-primary"
     >
       {locations.map((entry) => (
         <option key={entry.id} value={entry.id}>
@@ -87,22 +87,22 @@ const BusinessUpgradeList = ({
   onToggle: (upgradeId: string) => void;
 }) => {
   if (upgrades.length === 0) {
-    return <p className="text-xs text-slate-500">No upgrades available.</p>;
+    return <p className="text-xs text-text-muted">No upgrades available.</p>;
   }
 
   return (
     <div className="space-y-2">
-      <div className="text-xs font-semibold uppercase text-slate-400">Upgrades</div>
+      <div className="text-xs font-semibold uppercase text-text-muted">Upgrades</div>
       {upgrades.map((upgrade) => (
-        <label key={upgrade.id} className="flex items-center gap-3 text-sm text-slate-200">
+        <label key={upgrade.id} className="flex items-center gap-3 text-sm text-text-secondary">
           <input
             type="checkbox"
             checked={selectedUpgrades.includes(upgrade.id)}
             onChange={() => onToggle(upgrade.id)}
-            className="w-4 h-4 rounded bg-slate-800 border-slate-600"
+            className="w-4 h-4 rounded bg-bg-raised border-border"
           />
           <span>{upgrade.name}</span>
-          <span className="ml-auto text-xs font-mono text-slate-400">{formatMoney(upgrade.cost)}</span>
+          <span className="ml-auto text-xs font-mono text-text-muted">{formatMoney(upgrade.cost)}</span>
         </label>
       ))}
     </div>
@@ -148,7 +148,7 @@ export const BusinessCard = ({ business }: BusinessCardProps) => {
     >
       <div className="space-y-4">
         {business.description && (
-          <p className="text-xs text-slate-400">{business.description}</p>
+          <p className="text-xs text-text-muted">{business.description}</p>
         )}
         <BusinessLocationSelect
           business={business}
@@ -163,7 +163,7 @@ export const BusinessCard = ({ business }: BusinessCardProps) => {
           onToggle={handleUpgradeToggle}
         />
 
-        <div className="flex items-center justify-between border-t border-slate-800 pt-3 text-xs text-slate-400">
+        <div className="flex items-center justify-between border-t border-border-subtle pt-3 text-xs text-text-muted">
           <span>Base profit: {formatMoney(business.baseProfit)}</span>
           <span>Base time: {business.baseTime} min</span>
         </div>

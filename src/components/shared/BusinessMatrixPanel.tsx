@@ -29,14 +29,14 @@ const TrapAlerts = ({ cascadeTraps, criticalTraps, hasCriticalTrap }: BusinessMa
     )}
 
     {hasCriticalTrap && !cascadeTraps.length && (
-      <div className="p-4 bg-gta-red/10 border-2 border-gta-red rounded-lg">
+      <div className="p-4 bg-hud-pink/10 border-2 border-hud-pink rounded-lg">
         <div className="flex items-start gap-3">
-          <AlertCircle className="w-6 h-6 text-gta-red flex-shrink-0" />
+          <AlertCircle className="w-6 h-6 text-hud-pink flex-shrink-0" />
           <div>
-            <h4 className="font-bold text-gta-red mb-1">
+            <h4 className="font-bold text-accent-pink-text mb-1">
               Critical Issue{criticalTraps.length === 1 ? '' : 's'}
             </h4>
-            <ul className="text-sm text-slate-300 space-y-1">
+            <ul className="text-sm text-text-secondary space-y-1">
               {criticalTraps.map((trap) => (
                 <li key={trap.id}>- {trap.title}</li>
               ))}
@@ -93,15 +93,15 @@ const CategorySection = ({
   const renderedBusinesses = getRenderedBusinesses(businesses, ownedIds, hasOwned, showAll);
 
   return (
-    <section className="bg-gta-panel border border-gta-green/30 rounded-lg">
+    <section className="bg-bg-surface border border-hud-blue/30 rounded-lg">
       <div className="flex items-center justify-between px-5 py-4">
         <button
           type="button"
           onClick={() => onToggleSection(categoryId)}
           className="text-left"
         >
-          <div className="text-sm uppercase text-slate-400">{categoryName}</div>
-          <div className="text-xs text-slate-500">
+          <div className="text-sm uppercase text-text-muted">{categoryName}</div>
+          <div className="text-xs text-text-muted">
             Owned: {ownedCount} / {businesses.length}
           </div>
         </button>
@@ -110,7 +110,7 @@ const CategorySection = ({
             <button
               type="button"
               onClick={() => onToggleShowAll(categoryId)}
-              className="text-xs text-gta-green/80 hover:text-gta-green"
+              className="text-xs text-hud-blue/80 hover:text-hud-blue"
             >
               {showAll ? 'Show owned' : 'Show all'}
             </button>
@@ -122,9 +122,9 @@ const CategorySection = ({
             aria-label={isOpen ? 'Collapse section' : 'Expand section'}
           >
             {isOpen ? (
-              <ChevronDown className="w-4 h-4 text-slate-300" />
+              <ChevronDown className="w-4 h-4 text-text-secondary" />
             ) : (
-              <ChevronRight className="w-4 h-4 text-slate-300" />
+              <ChevronRight className="w-4 h-4 text-text-secondary" />
             )}
           </button>
         </div>
@@ -133,9 +133,9 @@ const CategorySection = ({
       {isOpen && (
         <div className="p-5 pt-0 space-y-3">
           {shouldShowOwnedOnly && (
-            <div className="text-xs text-slate-500">Showing owned only.</div>
+            <div className="text-xs text-text-muted">Showing owned only.</div>
           )}
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {renderedBusinesses.map((business) => (
               <BusinessCard key={business.id} business={business} />
             ))}
@@ -214,16 +214,16 @@ export const BusinessMatrixPanel = ({ cascadeTraps, criticalTraps, hasCriticalTr
         hasCriticalTrap={hasCriticalTrap}
       />
 
-      <div className="bg-gradient-to-br from-gta-panel to-slate-900 border-2 border-gta-green/60 rounded-lg p-6">
-        <div className="flex items-start justify-between gap-3">
+      <div className="bg-gradient-to-br from-bg-surface to-bg-base border-2 border-hud-blue/60 rounded-lg p-6">
+        <div className="flex flex-wrap items-start justify-between gap-3">
           <button
             type="button"
             onClick={toggleAllSections}
             className="text-left"
             aria-label={areAllSectionsOpen ? 'Collapse all property sections' : 'Expand all property sections'}
           >
-            <h2 className="text-xl font-bold text-gta-green font-heading uppercase mb-2">Property Matrix</h2>
-            <p className="text-xs text-gta-gray">
+            <h2 className="text-xl font-bold text-hud-blue font-display uppercase mb-2">Property Matrix</h2>
+            <p className="text-xs text-text-muted">
               Expand a section, click any card to select, then configure location and upgrades.
             </p>
           </button>
@@ -231,14 +231,14 @@ export const BusinessMatrixPanel = ({ cascadeTraps, criticalTraps, hasCriticalTr
             <button
               type="button"
               onClick={expandAllSections}
-              className="px-3 py-2 rounded text-xs border border-slate-600 text-slate-300 hover:bg-slate-800"
+              className="px-3 py-2 rounded text-xs border border-border text-text-secondary hover:bg-bg-raised"
             >
               Expand all
             </button>
             <button
               type="button"
               onClick={collapseAllSections}
-              className="px-3 py-2 rounded text-xs border border-slate-600 text-slate-300 hover:bg-slate-800"
+              className="px-3 py-2 rounded text-xs border border-border text-text-secondary hover:bg-bg-raised"
             >
               Collapse all
             </button>

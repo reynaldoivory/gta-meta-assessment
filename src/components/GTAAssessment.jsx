@@ -3,7 +3,6 @@
 import { AssessmentProvider, useAssessment } from '../context/AssessmentContext';
 import AssessmentForm from '../views/AssessmentForm';
 import AssessmentResults from '../views/AssessmentResults';
-import QuickStartGuide from '../views/QuickStartGuide';
 import PriorityActionPlan from '../views/PriorityActionPlan';
 import GarageTab from '../views/GarageTab';
 import DevTools from './shared/DevTools';
@@ -24,8 +23,6 @@ const AssessmentRouter = () => {
       return <AssessmentForm />;
     case 'results':
       return <AssessmentResults />;
-    case 'guide':
-      return <QuickStartGuide />;
     case 'actionPlan':
       return <PriorityActionPlan />;
     case 'garage':
@@ -40,10 +37,6 @@ const GTAAssessment = () => (
   <ErrorBoundary>
     <AssessmentProvider>
       <div className="min-h-screen bg-transparent font-body text-slate-50">
-        {/* Animated background orbs */}
-        <div className="bg-orb-purple" style={{ top: '10%', left: '5%' }} />
-        <div className="bg-orb-cyan" style={{ top: '60%', right: '10%' }} />
-        
         <div className="relative z-10">
           <AssessmentRouter />
           <DevTools />

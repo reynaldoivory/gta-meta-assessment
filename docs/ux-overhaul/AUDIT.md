@@ -134,7 +134,11 @@ Exit condition: `grep -rn "localStorage" src/components/ src/views/` returns 0.
 
 6 profiles x {`computeAssessment`, `buildCompactActionPlan`, `buildSessionPlan`} pinned in `docs/ux-overhaul/characterization/*.json`, clock frozen at 2026-07-05T12:00:00Z (inside the Jul 2-13 event window so weekly-event math is exercised). Now enforced on every `npm test` run. Re-capture legitimately only when `weeklyEvents.ts` DATA changes (verify via git diff first).
 
-## 10. Deltas vs handoff assumptions
+## 10. Post-removal addendum (Phase 0B, same day)
+
+Dead-code commit removed: the 6 dead shared components, `QuickStartGuide.jsx` + its `'guide'` router case + import, `src/App.css` + the two no-op `bg-orb-*` divs in `GTAAssessment.jsx`. Result: tests 57/57, lint 0 errors / **76** warnings (was 78), tsc clean, main chunk **527,712 B** (was 537,651 -- ~10 kB headroom banked; ceiling stays at 591,416 B from the pre-removal baseline).
+
+## 11. Deltas vs handoff assumptions
 
 1. Handoff says "three views"; the router has five cases (actionPlan is a separate step; guide is unreachable).
 2. Handoff bundle figure ~502 kB is stale; fresh baseline 537.7 kB (July content refresh) -- ceiling recalculated from the fresh number.

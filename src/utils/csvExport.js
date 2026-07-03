@@ -1,5 +1,6 @@
 ﻿// src/utils/csvExport.js
 import { escapeCsvCell } from './csvHelpers';
+import { LEGACY_READ_KEYS, getRaw } from './storage/appStorage';
 
 export const downloadCSV = (csv, filename = 'gta_community_stats.csv') => {
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
@@ -16,7 +17,8 @@ export const downloadCSV = (csv, filename = 'gta_community_stats.csv') => {
 export const exportProgressHistoryCSV = () => {
   let history;
   try {
-    const _raw = JSON.parse(localStorage.getItem('gta_progress_history') || '[]');
+    // NOTE: this legacy key is never written by any current writer, so reads always return [] (pre-existing drift; see docs/ux-overhaul/AUDIT.md 9b).
+    const _raw = JSON.parse(getRaw(LEGACY_READ_KEYS.PROGRESS_HISTORY_BROKEN) || '[]');
     history = Array.isArray(_raw) ? _raw : [];
   } catch {
     return null;

@@ -5,6 +5,7 @@
 import { calculateNightclubIncome } from './incomeCalculators.js';
 import { MODEL_CONFIG } from './modelConfig.js';
 import { getNightclubTechnicianCost, INFRASTRUCTURE_COSTS } from './infrastructureAdvisor.js';
+import { STORAGE_KEYS, getRaw, setJSON } from './storage/appStorage';
 
 /**
  * Trap severity levels
@@ -20,8 +21,8 @@ export const TRAP_SEVERITY = {
 // TRAP HISTORY PERSISTENCE SYSTEM
 // ============================================
 
-const TRAP_HISTORY_KEY = 'gta_trap_history';
-const TRAP_FIXES_KEY = 'gta_trap_fixes';
+const TRAP_HISTORY_KEY = STORAGE_KEYS.TRAP_HISTORY;
+const TRAP_FIXES_KEY = STORAGE_KEYS.TRAP_FIXES;
 
 /**
  * Get trap history from localStorage
@@ -29,7 +30,7 @@ const TRAP_FIXES_KEY = 'gta_trap_fixes';
  */
 const getTrapHistory = () => {
   try {
-    return JSON.parse(localStorage.getItem(TRAP_HISTORY_KEY) || '[]');
+    return JSON.parse(getRaw(TRAP_HISTORY_KEY) || '[]');
   } catch (e) {
     console.error('Failed to parse trap history:', e);
     return [];
@@ -44,7 +45,7 @@ const saveTrapHistory = (history) => {
   try {
     // Keep only last 100 entries to prevent storage bloat
     const trimmed = history.slice(-100);
-    localStorage.setItem(TRAP_HISTORY_KEY, JSON.stringify(trimmed));
+    setJSON(TRAP_HISTORY_KEY, trimmed);
   } catch (e) {
     console.error('Failed to save trap history:', e);
   }
@@ -56,7 +57,7 @@ const saveTrapHistory = (history) => {
  */
 const getTrapFixes = () => {
   try {
-    return JSON.parse(localStorage.getItem(TRAP_FIXES_KEY) || '[]');
+    return JSON.parse(getRaw(TRAP_FIXES_KEY) || '[]');
   } catch (e) {
     console.warn('Failed to parse trap fixes from localStorage:', e);
     return [];
@@ -70,7 +71,7 @@ const saveTrapFixes = (fixes) => {
   try {
     // Keep only last 50 fixes
     const trimmed = fixes.slice(-50);
-    localStorage.setItem(TRAP_FIXES_KEY, JSON.stringify(trimmed));
+    setJSON(TRAP_FIXES_KEY, trimmed);
   } catch (e) {
     console.error('Failed to save trap fixes:', e);
   }

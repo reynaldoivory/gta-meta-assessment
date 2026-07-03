@@ -1,7 +1,9 @@
 // src/utils/progressTracker.js
 // Tracks assessment history for progress charts
 
-const PROGRESS_STORAGE_KEY = 'gtaAssessmentProgress_v1';
+import { STORAGE_KEYS, getRaw, setJSON, remove } from './storage/appStorage';
+
+const PROGRESS_STORAGE_KEY = STORAGE_KEYS.PROGRESS_HISTORY;
 const MAX_HISTORY_ENTRIES = 50; // Keep last 50 assessments
 
 /**
@@ -30,7 +32,7 @@ export const saveProgressSnapshot = (formData, results) => {
     // Keep only last N entries
     const trimmedHistory = history.slice(-MAX_HISTORY_ENTRIES);
 
-    localStorage.setItem(PROGRESS_STORAGE_KEY, JSON.stringify(trimmedHistory));
+    setJSON(PROGRESS_STORAGE_KEY, trimmedHistory);
     return true;
   } catch (error) {
     console.error('Failed to save progress snapshot:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
@@ -44,7 +46,7 @@ export const saveProgressSnapshot = (formData, results) => {
  */
 export const getProgressHistory = () => {
   try {
-    const stored = localStorage.getItem(PROGRESS_STORAGE_KEY);
+    const stored = getRaw(PROGRESS_STORAGE_KEY);
     if (!stored) return [];
 
     const history = JSON.parse(stored);
@@ -91,7 +93,7 @@ export const getProgressOverTime = () => {
  */
 export const clearProgressHistory = () => {
   try {
-    localStorage.removeItem(PROGRESS_STORAGE_KEY);
+    remove(PROGRESS_STORAGE_KEY);
     return true;
   } catch (error) {
     console.error('Failed to clear progress history:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));

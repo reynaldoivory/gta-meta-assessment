@@ -5,6 +5,7 @@ import { computeAssessment } from '../utils/computeAssessment';
 import { applyAssessmentGamification } from '../utils/gamificationEngine';
 import { getProgressHistory } from '../utils/progressTracker';
 import { checkStreak } from '../utils/streakTracker';
+import { STORAGE_KEYS, getJSON, setJSON, remove } from '../utils/storage/appStorage';
 
 export interface AssessmentContextValue {
   formData: AssessmentFormData;
@@ -82,25 +83,22 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   // 1. State Initialization
   const [formData, setFormData] = useState<AssessmentFormData>(() => {
     const defaults = createInitialFormData();
-    try {
-      const saved = localStorage.getItem('gta_assessment_data');
-      if (!saved) return defaults;
-      const parsed = JSON.parse(saved);
-      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return defaults;
+    // Key-allowlisted, type-checked merge (prototype-pollution guard). Runs
+    // inside the storage service's try/catch; returning null falls back to defaults.
+    return getJSON<AssessmentFormData>(STORAGE_KEYS.ASSESSMENT_DATA, defaults, (parsed) => {
+      if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) return null;
+      const source = parsed as Record<string, unknown>;
       const allowed = Object.keys(defaults) as (keyof AssessmentFormData)[];
       const safe: Partial<AssessmentFormData> = {};
       for (const key of allowed) {
-        if (!Object.prototype.hasOwnProperty.call(parsed, key)) continue;
+        if (!Object.prototype.hasOwnProperty.call(source, key)) continue;
         const defaultVal = defaults[key];
-        const parsedVal = parsed[key];
+        const parsedVal = source[key];
         (safe as Record<string, unknown>)[key as string] =
           typeof parsedVal === typeof defaultVal ? parsedVal : defaultVal;
       }
       return { ...defaults, ...safe } as AssessmentFormData;
-    } catch (e) {
-      console.warn("Failed to load saved data", e);
-      return defaults;
-    }
+    });
   });
   
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -137,16 +135,13 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const manualSave = () => {
-    try {
-      localStorage.setItem('gta_assessment_data', JSON.stringify(formData));
+    if (setJSON(STORAGE_KEYS.ASSESSMENT_DATA, formData)) {
       setLastSaved(new Date());
-    } catch (e) {
-      console.error("Save failed", import.meta.env.DEV ? e : (e instanceof Error ? e.message : 'unknown error'));
     }
   };
 
   const clearSavedData = () => {
-    localStorage.removeItem('gta_assessment_data');
+    remove(STORAGE_KEYS.ASSESSMENT_DATA);
     setFormData(createInitialFormData());
     setResults(null);
     setLastSaved(null);

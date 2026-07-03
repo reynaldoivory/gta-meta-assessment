@@ -1,8 +1,10 @@
 // src/utils/streakTracker.js
 // Tracks daily assessment completion streaks
 
-const STREAK_STORAGE_KEY = 'gtaAssessmentStreak_v1';
-const LAST_ASSESSMENT_KEY = 'gtaAssessmentLastDate_v1';
+import { STORAGE_KEYS, getRaw, setRaw, remove } from './storage/appStorage';
+
+const STREAK_STORAGE_KEY = STORAGE_KEYS.STREAK_COUNT;
+const LAST_ASSESSMENT_KEY = STORAGE_KEYS.STREAK_LAST_DATE;
 
 /**
  * Get today's date as YYYY-MM-DD string
@@ -19,8 +21,8 @@ const getTodayString = () => {
 export const checkStreak = () => {
   try {
     const today = getTodayString();
-    const stored = localStorage.getItem(STREAK_STORAGE_KEY);
-    const lastDate = localStorage.getItem(LAST_ASSESSMENT_KEY);
+    const stored = getRaw(STREAK_STORAGE_KEY);
+    const lastDate = getRaw(LAST_ASSESSMENT_KEY);
 
     // First time user
     if (!stored || !lastDate) {
@@ -45,8 +47,8 @@ export const checkStreak = () => {
       if (lastDate === yesterdayString) {
         // Consecutive day - increment streak
         const newStreak = streak + 1;
-        localStorage.setItem(STREAK_STORAGE_KEY, newStreak.toString());
-        localStorage.setItem(LAST_ASSESSMENT_KEY, today);
+        setRaw(STREAK_STORAGE_KEY, newStreak.toString());
+        setRaw(LAST_ASSESSMENT_KEY, today);
 
         // Calculate bonus based on streak milestones
         const bonus = calculateStreakBonus(newStreak);
@@ -59,8 +61,8 @@ export const checkStreak = () => {
         };
       } else if (lastDate < yesterdayString) {
         // Streak broken - reset
-        localStorage.setItem(STREAK_STORAGE_KEY, '1');
-        localStorage.setItem(LAST_ASSESSMENT_KEY, today);
+        setRaw(STREAK_STORAGE_KEY, '1');
+        setRaw(LAST_ASSESSMENT_KEY, today);
 
         return {
           streak: 1,
@@ -94,13 +96,13 @@ export const checkStreak = () => {
 export const recordAssessment = () => {
   try {
     const today = getTodayString();
-    const stored = localStorage.getItem(STREAK_STORAGE_KEY);
-    const lastDate = localStorage.getItem(LAST_ASSESSMENT_KEY);
+    const stored = getRaw(STREAK_STORAGE_KEY);
+    const lastDate = getRaw(LAST_ASSESSMENT_KEY);
 
     if (!stored || !lastDate) {
       // First assessment
-      localStorage.setItem(STREAK_STORAGE_KEY, '1');
-      localStorage.setItem(LAST_ASSESSMENT_KEY, today);
+      setRaw(STREAK_STORAGE_KEY, '1');
+      setRaw(LAST_ASSESSMENT_KEY, today);
       return { streak: 1, isNewStreak: true };
     }
 
@@ -125,8 +127,8 @@ export const recordAssessment = () => {
       newStreak = 1;
     }
 
-    localStorage.setItem(STREAK_STORAGE_KEY, newStreak.toString());
-    localStorage.setItem(LAST_ASSESSMENT_KEY, today);
+    setRaw(STREAK_STORAGE_KEY, newStreak.toString());
+    setRaw(LAST_ASSESSMENT_KEY, today);
 
     return { streak: newStreak, isNewStreak: newStreak > currentStreak };
   } catch (error) {
@@ -175,8 +177,8 @@ export const getStreakMilestones = (currentStreak = 0) => {
  */
 export const resetStreak = () => {
   try {
-    localStorage.removeItem(STREAK_STORAGE_KEY);
-    localStorage.removeItem(LAST_ASSESSMENT_KEY);
+    remove(STREAK_STORAGE_KEY);
+    remove(LAST_ASSESSMENT_KEY);
     return true;
   } catch (error) {
     console.error('Failed to reset streak:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));

@@ -1,9 +1,10 @@
 // src/utils/communityStats.js
 import type { AssessmentFormData, AssessmentResult } from '../types/domain.types';
 import { escapeCsvCell } from './csvHelpers';
+import { STORAGE_KEYS, getRaw, setJSON } from './storage/appStorage';
 
-const COMMUNITY_STATS_KEY = 'gta_community_stats_pool';
-const TRAP_STATS_KEY = 'gta_community_trap_stats';
+const COMMUNITY_STATS_KEY = STORAGE_KEYS.COMMUNITY_STATS_POOL;
+const TRAP_STATS_KEY = STORAGE_KEYS.COMMUNITY_TRAP_STATS;
 const STATS_VERSION = 'v1';
 
 // Anonymize and aggregate data
@@ -11,7 +12,7 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
   // Get existing pool
   let pool: any[];
   try {
-    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
   } catch {
     pool = [];
   }
@@ -63,7 +64,7 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
     pool.shift();
   }
 
-  localStorage.setItem(COMMUNITY_STATS_KEY, JSON.stringify(pool));
+  setJSON(COMMUNITY_STATS_KEY, pool);
   return anonymousData;
 };
 
@@ -71,7 +72,7 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
 export const getCommunityAverages = () => {
   let pool: any[];
   try {
-    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
   } catch {
     return null;
   }
@@ -144,7 +145,7 @@ export const compareToCommunity = (formData: AssessmentFormData, assessmentResul
 const calculatePercentile = (score, _communityAvg) => {
   let pool: any[];
   try {
-    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
   } catch {
     return 50;
   }
@@ -160,7 +161,7 @@ const calculatePercentile = (score, _communityAvg) => {
 export const exportCommunityStatsCSV = () => {
   let pool: any[];
   try {
-    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
   } catch {
     return null;
   }
@@ -229,7 +230,7 @@ export const exportCommunityStatsCSV = () => {
 export const getProgressOverTime = () => {
   let pool: any[];
   try {
-    pool = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
   } catch {
     return null;
   }
@@ -264,7 +265,7 @@ export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) 
   if (!trapSummary || trapSummary.count === 0) return;
   
   try {
-    const _rawTrap = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
+    const _rawTrap = JSON.parse(getRaw(TRAP_STATS_KEY) || '[]');
     const trapPool: any[] = Array.isArray(_rawTrap) ? _rawTrap : [];
 
     const trapSnapshot = {
@@ -294,7 +295,7 @@ export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) 
       trapPool.shift();
     }
     
-    localStorage.setItem(TRAP_STATS_KEY, JSON.stringify(trapPool));
+    setJSON(TRAP_STATS_KEY, trapPool);
   } catch (e) {
     console.error('Failed to submit trap stats:', e);
   }
@@ -307,8 +308,8 @@ export const submitTrapStats = (trapSummary: any, formData: AssessmentFormData) 
  */
 export const getTrapOccurrenceRates = () => {
   try {
-    const _rawTrapOcc = JSON.parse(localStorage.getItem(TRAP_STATS_KEY) || '[]');
-    const _rawCommunityOcc = JSON.parse(localStorage.getItem(COMMUNITY_STATS_KEY) || '[]');
+    const _rawTrapOcc = JSON.parse(getRaw(TRAP_STATS_KEY) || '[]');
+    const _rawCommunityOcc = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
     const trapPool: any[] = Array.isArray(_rawTrapOcc) ? _rawTrapOcc : [];
     const communityPool: any[] = Array.isArray(_rawCommunityOcc) ? _rawCommunityOcc : [];
     

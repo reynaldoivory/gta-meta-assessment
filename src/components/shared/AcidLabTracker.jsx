@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 
 import PropTypes from 'prop-types';
+import { STORAGE_KEYS, getJSON, setJSON } from '../../utils/storage/appStorage';
 
 const getMaxTime = (acidLabUpgraded) => (acidLabUpgraded ? 4 : 6);
 
@@ -26,14 +27,8 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
   const [productionTime, setProductionTime] = useState(0);
   const [lastSold, setLastSold] = useState(() => {
     if (!hasAcidLab) return null;
-    try {
-      const saved = localStorage.getItem('acidLabTracker');
-      if (!saved) return null;
-      const parsed = JSON.parse(saved);
-      return parsed.lastSold ? new Date(parsed.lastSold) : null;
-    } catch {
-      return null;
-    }
+    const saved = getJSON(STORAGE_KEYS.ACID_LAB_TRACKER, null);
+    return saved && saved.lastSold ? new Date(saved.lastSold) : null;
   });
   const [suppliesNeeded, setSuppliesNeeded] = useState(false);
 
@@ -74,7 +69,7 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     const now = new Date();
     setLastSold(now);
     setProductionTime(0);
-    localStorage.setItem('acidLabTracker', JSON.stringify({ lastSold: now.toISOString() }));
+    setJSON(STORAGE_KEYS.ACID_LAB_TRACKER, { lastSold: now.toISOString() });
   };
 
   const { maxCapacity, timeToFull, currentValue, percentFull, isReady, isNearFull } = trackerData;

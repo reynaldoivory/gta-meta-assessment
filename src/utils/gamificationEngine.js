@@ -3,20 +3,21 @@
 
 import { getUnlockedAchievements } from './achievements.js';
 import { WEEKLY_EVENTS, isEventActive } from '../config/weeklyEvents.js';
+import { STORAGE_KEYS, getRaw, setRaw, setJSON } from './storage/appStorage';
 
-export const GAMIFICATION_STORAGE_KEY = 'gtaAssessmentGamification_v1';
-export const SOUND_PREF_KEY = 'gtaSoundEnabled';
+export const GAMIFICATION_STORAGE_KEY = STORAGE_KEYS.GAMIFICATION;
+export const SOUND_PREF_KEY = STORAGE_KEYS.SOUND_PREF;
 
 // ── Sound preference helpers ──────────────────────────────────────────────────
 export const isSoundEnabled = () => {
   try {
-    const val = localStorage.getItem(SOUND_PREF_KEY);
+    const val = getRaw(SOUND_PREF_KEY);
     return val === null ? true : val === 'true';
   } catch { return true; }
 };
 
 export const setSoundEnabled = (enabled) => {
-  try { localStorage.setItem(SOUND_PREF_KEY, String(enabled)); } catch { /* noop */ }
+  try { setRaw(SOUND_PREF_KEY, String(enabled)); } catch { /* noop */ }
 };
 
 // ── Milestone definitions (fire extra celebrations at these levels) ───────────
@@ -227,7 +228,7 @@ const GAMIFICATION_ALLOWED_KEYS = new Set([
 
 export const loadGamificationState = () => {
   try {
-    const stored = localStorage.getItem(GAMIFICATION_STORAGE_KEY);
+    const stored = getRaw(GAMIFICATION_STORAGE_KEY);
     if (!stored) return getDefaultGamificationState();
     const parsed = JSON.parse(stored);
     if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
@@ -248,7 +249,7 @@ export const loadGamificationState = () => {
 
 const saveGamificationState = (state) => {
   try {
-    localStorage.setItem(GAMIFICATION_STORAGE_KEY, JSON.stringify(state));
+    setJSON(GAMIFICATION_STORAGE_KEY, state);
   } catch (error) {
     console.error('Failed to save gamification state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
   }

@@ -1,6 +1,7 @@
 
 import PropTypes from 'prop-types';
 import { useState, useEffect, useMemo, useRef } from 'react';
+import { STORAGE_KEYS, getJSON, setJSON } from '../../utils/storage/appStorage';
 
 // Daily tasks configuration
 const CORE_DAILIES = [
@@ -66,29 +67,24 @@ const shouldResetTasks = (lastResetTime) => {
 };
 
 const loadSavedTasks = () => {
-  const saved = localStorage.getItem('dailyTracker');
-  if (!saved) {
+  const parsed = getJSON(STORAGE_KEYS.DAILY_TRACKER, null);
+  if (!parsed || typeof parsed !== 'object') {
     return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
   }
-  try {
-    const parsed = JSON.parse(saved);
-    if (shouldResetTasks(parsed.lastResetTime)) {
-      const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
-      const resetTime = Date.now();
-      localStorage.setItem('dailyTracker', JSON.stringify({ tasks: resetTasks, lastResetTime: resetTime }));
-      return { tasks: resetTasks, resetTime, syncMode: 'reset' };
-    }
-    const loadedTasks = Array.isArray(parsed.tasks)
-      ? parsed.tasks.filter(t => t && typeof t === 'object' && typeof t.id === 'string')
-      : CORE_DAILIES;
-    return {
-      tasks: loadedTasks.length > 0 ? loadedTasks : CORE_DAILIES,
-      resetTime: parsed.lastResetTime,
-      syncMode: 'load',
-    };
-  } catch {
-    return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
+  if (shouldResetTasks(parsed.lastResetTime)) {
+    const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
+    const resetTime = Date.now();
+    setJSON(STORAGE_KEYS.DAILY_TRACKER, { tasks: resetTasks, lastResetTime: resetTime });
+    return { tasks: resetTasks, resetTime, syncMode: 'reset' };
   }
+  const loadedTasks = Array.isArray(parsed.tasks)
+    ? parsed.tasks.filter(t => t && typeof t === 'object' && typeof t.id === 'string')
+    : CORE_DAILIES;
+  return {
+    tasks: loadedTasks.length > 0 ? loadedTasks : CORE_DAILIES,
+    resetTime: parsed.lastResetTime,
+    syncMode: 'load',
+  };
 };
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   const [tasks, setTasks] = useState(CORE_DAILIES);
@@ -140,11 +136,11 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
       task.id === id ? { ...task, isCompleted: !task.isCompleted } : task
     );
     setTasks(updatedTasks);
-    // Save to localStorage
-    localStorage.setItem('dailyTracker', JSON.stringify({
+    // Save via central storage service
+    setJSON(STORAGE_KEYS.DAILY_TRACKER, {
       tasks: updatedTasks,
       lastResetTime: lastResetTime,
-    }));
+    });
     // Sync with form data
     if (setFormData) {
       const stashCompleted = updatedTasks.find(t => t.id === 'stash_house')?.isCompleted || false;

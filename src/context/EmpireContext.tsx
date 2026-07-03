@@ -1,8 +1,9 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
 import type { EmpireState, OwnedBusiness } from '../types/enterprise.types';
+import { STORAGE_KEYS, getJSON, setJSON } from '../utils/storage/appStorage';
 
-const STORAGE_KEY = 'gtaEmpireState_v1';
+const STORAGE_KEY = STORAGE_KEYS.EMPIRE_STATE;
 
 type EmpireContextValue = {
   state: EmpireState;
@@ -19,30 +20,18 @@ const getDefaultState = (): EmpireState => ({
   ownedVehicles: [],
 });
 
-const loadState = (): EmpireState => {
-  if (typeof localStorage === 'undefined') {
-    return getDefaultState();
-  }
-
-  try {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (!stored) return getDefaultState();
-    const parsed = JSON.parse(stored) as EmpireState;
-    if (!parsed || !Array.isArray(parsed.ownedBusinesses)) {
-      return getDefaultState();
-    }
+const loadState = (): EmpireState =>
+  getJSON<EmpireState>(STORAGE_KEY, getDefaultState(), (parsed) => {
+    const state = parsed as EmpireState | null;
+    if (!state || !Array.isArray(state.ownedBusinesses)) return null;
     return {
-      ownedBusinesses: parsed.ownedBusinesses.filter(
+      ownedBusinesses: state.ownedBusinesses.filter(
         (item: unknown): item is OwnedBusiness =>
           typeof item === 'object' && item !== null && typeof (item as Record<string, unknown>).businessId === 'string'
       ),
-      ownedVehicles: Array.isArray(parsed.ownedVehicles) ? parsed.ownedVehicles : [],
+      ownedVehicles: Array.isArray(state.ownedVehicles) ? state.ownedVehicles : [],
     };
-  } catch (error) {
-    console.error('Failed to load empire state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
-    return getDefaultState();
-  }
-};
+  });
 
 const toggleUpgradeId = (upgradeIds: string[], upgradeId: string): string[] => {
   if (upgradeIds.includes(upgradeId)) {
@@ -70,11 +59,7 @@ export const EmpireProvider = ({ children }: { children: ReactNode }) => {
   const [state, setState] = useState<EmpireState>(() => loadState());
 
   useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-    } catch (error) {
-      console.error('Failed to save empire state:', import.meta.env.DEV ? error : (error instanceof Error ? error.message : 'unknown error'));
-    }
+    setJSON(STORAGE_KEY, state);
   }, [state]);
 
   const setBusinessOwned = (businessId: string, owned: boolean, locationId?: string) => {

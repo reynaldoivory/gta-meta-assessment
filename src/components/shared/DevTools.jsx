@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useAssessment } from '../../context/AssessmentContext';
 import { X, Code, Database } from 'lucide-react';
+import { STORAGE_KEYS, LEGACY_READ_KEYS, getRaw, getJSON, clearAll } from '../../utils/storage/appStorage';
 
 const DevTools = () => {
   const { formData, results } = useAssessment();
@@ -87,24 +88,24 @@ const DevTools = () => {
                 <div>
                   <div className="text-slate-500 mb-1">Draft:</div>
                   <div className="text-slate-300">
-                    {localStorage.getItem('gtaAssessmentDraft_v5') ? '✓ Saved' : '✗ None'}
+                    {getRaw(LEGACY_READ_KEYS.DRAFT_V5_BROKEN) ? '✓ Saved' : '✗ None'}
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500 mb-1">Community Stats:</div>
                   <div className="text-slate-300">
-                    {(() => { try { return JSON.parse(localStorage.getItem('gta_community_stats_pool') || '[]').length; } catch { return 0; } })()} entries
+                    {getJSON(STORAGE_KEYS.COMMUNITY_STATS_POOL, []).length} entries
                   </div>
                 </div>
                 <div>
                   <div className="text-slate-500 mb-1">Progress History:</div>
                   <div className="text-slate-300">
-                    {(() => { try { return JSON.parse(localStorage.getItem('gta_progress_history') || '[]').length; } catch { return 0; } })()} snapshots
+                    {getJSON(LEGACY_READ_KEYS.PROGRESS_HISTORY_BROKEN, []).length} snapshots
                   </div>
                 </div>
                 <button
                   onClick={() => {
-                    localStorage.clear();
+                    clearAll();
                     globalThis.location.reload();
                   }}
                   className="mt-4 w-full px-3 py-2 bg-red-600 hover:bg-red-500 text-white rounded text-xs"

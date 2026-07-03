@@ -9,6 +9,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — 2026-07-03 · July 2026 content + hygiene refresh
+- Weekly events refreshed Apr 16-23 -> **Jul 2-13 2026 Independence Day Special** (free Lago Zancudo
+  Bunker, 2X Bunker sells/research, 3X Stunt Races, 5X G's Cache + 2X Smuggler/KnoWay Out as GTA+
+  exclusives, $500K login + $1M heist bonus, Jugular podium, Viseris prize ride, Stromberg GTA+ car).
+  Sources: Rockstar Newswire via powerupgaming/rockstarintel/gtabase recaps, pulled live 2026-07-03
+- Added `src/vite-env.d.ts` (vite/client types) — fixes 3 `import.meta.env` type-check errors
+- Flattened deep nesting in `AssessmentContext` localStorage hydration — fixes the one ESLint error
+
 ### Added — 2026-04-17 · Garage vehicle database (commit d6ca7b5)
 - New Garage tab browses 795-vehicle database (`public/data/vehicles.csv`) with filter/sort/search
 - Detail modal links live to GTA Wiki, GTABase, and gta5-mods.com replace-mod searches

@@ -90,15 +90,11 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
       const allowed = Object.keys(defaults) as (keyof AssessmentFormData)[];
       const safe: Partial<AssessmentFormData> = {};
       for (const key of allowed) {
-        if (Object.prototype.hasOwnProperty.call(parsed, key)) {
-          const defaultVal = defaults[key];
-          const parsedVal = parsed[key];
-          if (typeof parsedVal === typeof defaultVal) {
-            (safe as Record<string, unknown>)[key as string] = parsedVal;
-          } else {
-            (safe as Record<string, unknown>)[key as string] = defaultVal;
-          }
-        }
+        if (!Object.prototype.hasOwnProperty.call(parsed, key)) continue;
+        const defaultVal = defaults[key];
+        const parsedVal = parsed[key];
+        (safe as Record<string, unknown>)[key as string] =
+          typeof parsedVal === typeof defaultVal ? parsedVal : defaultVal;
       }
       return { ...defaults, ...safe } as AssessmentFormData;
     } catch (e) {

@@ -1,6 +1,7 @@
 import { computeStrengthTraining, STRENGTH_TARGET_PCT, PUNCHES_PER_MIN } from '../calculations/strength';
 import { computeRoi, formatHoursRequired, formatDaysRequired, commonGoals } from '../calculations/roi';
 import { computeAutoShopRate, CAYO_RATE } from '../calculations/incomeComparison';
+import { asDollars, asIncome, asHours, asDays } from '../../types/branded';
 
 describe('calculations/strength', () => {
   test('impacts + time for a low stat', () => {
@@ -22,27 +23,31 @@ describe('calculations/strength', () => {
 
 describe('calculations/roi', () => {
   test('needed/hours/days for a reachable goal', () => {
-    expect(computeRoi({ goal: 1_000_000, currentCash: 200_000, incomePerHour: 100_000 }))
-      .toEqual({ needed: 800_000, hours: 8, days: 8 / 24 });
+    const result = computeRoi({ goal: asDollars(1_000_000), currentCash: asDollars(200_000), incomePerHour: asIncome(100_000) });
+    expect(Number(result.needed)).toBe(800_000);
+    expect(Number(result.hours)).toBe(8);
+    expect(Number(result.days)).toBe(8 / 24);
   });
   test('already affordable -> needed clamps to 0', () => {
-    expect(computeRoi({ goal: 100_000, currentCash: 500_000, incomePerHour: 50_000 }))
-      .toEqual({ needed: 0, hours: 0, days: 0 });
+    const result = computeRoi({ goal: asDollars(100_000), currentCash: asDollars(500_000), incomePerHour: asIncome(50_000) });
+    expect(Number(result.needed)).toBe(0);
+    expect(Number(result.hours)).toBe(0);
+    expect(Number(result.days)).toBe(0);
   });
   test('zero income falls back to 1/hr (matches component || 1)', () => {
-    const r = computeRoi({ goal: 100, currentCash: 0, incomePerHour: 0 });
-    expect(r.needed).toBe(100);
-    expect(r.hours).toBe(100);
+    const r = computeRoi({ goal: asDollars(100), currentCash: asDollars(0), incomePerHour: asIncome(0) });
+    expect(Number(r.needed)).toBe(100);
+    expect(Number(r.hours)).toBe(100);
   });
   test('formatHoursRequired thresholds', () => {
-    expect(formatHoursRequired(0.5)).toBe('30 minutes');
-    expect(formatHoursRequired(3.25)).toBe('3.3 hours');
-    expect(formatHoursRequired(48)).toBe('2.0 days');
+    expect(formatHoursRequired(asHours(0.5))).toBe('30 minutes');
+    expect(formatHoursRequired(asHours(3.25))).toBe('3.3 hours');
+    expect(formatHoursRequired(asHours(48))).toBe('2.0 days');
   });
   test('formatDaysRequired thresholds', () => {
-    expect(formatDaysRequired(3)).toBe('3.0 days');
-    expect(formatDaysRequired(14)).toBe('2.0 weeks');
-    expect(formatDaysRequired(60)).toBe('2.0 months');
+    expect(formatDaysRequired(asDays(3))).toBe('3.0 days');
+    expect(formatDaysRequired(asDays(14))).toBe('2.0 weeks');
+    expect(formatDaysRequired(asDays(60))).toBe('2.0 months');
   });
   test('commonGoals preset list is intact', () => {
     expect(commonGoals).toHaveLength(7);
@@ -52,14 +57,14 @@ describe('calculations/roi', () => {
 
 describe('calculations/incomeComparison', () => {
   test('CAYO_RATE constant', () => {
-    expect(CAYO_RATE).toBe(466000);
+    expect(Number(CAYO_RATE)).toBe(466000);
   });
   test('auto shop rate is a positive number with a valid multiplier', () => {
     const { rate, isActive, multiplier } = computeAutoShopRate();
-    expect(rate).toBeGreaterThan(0);
+    expect(Number(rate)).toBeGreaterThan(0);
     expect(typeof isActive).toBe('boolean');
     expect(multiplier).toBeGreaterThanOrEqual(1);
     // base 300000 * (60/25) contracts/hr * multiplier
-    expect(rate).toBe(300000 * (60 / 25) * multiplier);
+    expect(Number(rate)).toBe(300000 * (60 / 25) * multiplier);
   });
 });

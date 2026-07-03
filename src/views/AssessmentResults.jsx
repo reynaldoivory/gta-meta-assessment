@@ -1,5 +1,5 @@
 // src/views/AssessmentResults.jsx
-import React, { Suspense } from 'react';
+import React, { Suspense, useEffect } from 'react';
 import { useAssessmentResults } from '../utils/useAssessmentResults';
 
 // Component imports
@@ -21,7 +21,8 @@ import {
   OptionalBottlenecks,
   GoalAndStrengthSection,
 } from '../components/shared/AssessmentResultsSections';
-import { ArrowLeft, Target } from 'lucide-react';
+import { Target } from 'lucide-react';
+import { AppShell, Button, EmptyState } from '../components/ui';
 
 const ROICalculator = React.lazy(() => import('../components/calculators/ROICalculator'));
 const SocialCardGenerator = React.lazy(() => import('../components/calculators/SocialCardGenerator'));
@@ -37,39 +38,41 @@ const AssessmentResults = () => {
     totalHours, timePartsLabel, shouldShowTimePlayed,
   } = useAssessmentResults();
 
+  // Bounded fix: redirect out of render (was `if (!results) { setStep('form'); return null; }`,
+  // a setState-during-render call). Renders an interim empty state for the one
+  // frame before the effect fires. URL sync is explicitly out of scope here.
+  useEffect(() => {
+    if (!results) setStep('form');
+  }, [results, setStep]);
+
   if (!results) {
-    setStep('form');
-    return null;
+    return (
+      <AppShell title="Empire Report Card">
+        <EmptyState title="No report yet" description="Run the assessment first to see your empire report card." />
+      </AppShell>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-transparent p-4 md:p-6 text-slate-50 font-body">
-      <div className="max-w-5xl mx-auto space-y-6">
-        <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
-
-        {/* Top Navigation */}
-        <div className="card-enterprise flex justify-between items-center animate-pop-in">
-          <button
-            type="button"
-            onClick={() => setStep('form')}
-            className="btn-secondary text-sm py-2 px-4"
-          >
-            <ArrowLeft className="w-4 h-4 inline-block mr-2" />
-            {' '}
-            Edit Data
-          </button>
-          <div className="flex items-center gap-4">
-            <SoundToggle />
-            <div className="flex items-center gap-3">
-              <div className="font-display text-xl font-black heading-gradient-purple">
-                Tier {results.tier}
-              </div>
-              <div className="badge-orange font-mono text-sm">
-                Score {results.score}
-              </div>
+    <AppShell
+      title="Empire Report Card"
+      onBack={{ label: 'Edit Data', action: () => setStep('form') }}
+      actions={(
+        <div className="flex items-center gap-4">
+          <SoundToggle />
+          <div className="flex items-center gap-3">
+            <div className="font-display text-xl font-black text-hud-blue">
+              Tier {results.tier}
+            </div>
+            <div className="font-mono text-sm px-3 py-1 rounded-full bg-hud-pink/15 text-accent-pink-text border border-hud-pink/40">
+              Score {results.score}
             </div>
           </div>
         </div>
+      )}
+    >
+      <div className="space-y-6">
+        <Confetti active={showConfetti} onComplete={() => setShowConfetti(false)} />
 
         {/* Gamification Layer */}
         <GTA6Countdown />
@@ -119,39 +122,41 @@ const AssessmentResults = () => {
         <IncomeComparison hasAutoShop={formData.hasAutoShop} />
 
         {/* ROI Calculator */}
-        <Suspense fallback={<div className="text-sm text-slate-400">Loading calculator...</div>}>
+        <Suspense fallback={<div className="text-sm text-text-muted">Loading calculator...</div>}>
           <ROICalculator formData={formData} results={results} />
         </Suspense>
 
         {/* Social & Action */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          <button
-            type="button"
+          <Button
+            variant="primary"
+            size="lg"
+            icon={Target}
             onClick={() => setStep('actionPlan')}
-            className="p-6 bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl flex items-center justify-center gap-3 text-xl font-bold hover:scale-[1.02] transition-transform shadow-lg shadow-blue-900/20"
+            className="text-xl"
           >
-            <Target className="w-6 h-6" /> View Action Plan
-          </button>
-          <Suspense fallback={<div className="text-sm text-slate-400">Loading social card...</div>}>
+            View Action Plan
+          </Button>
+          <Suspense fallback={<div className="text-sm text-text-muted">Loading social card...</div>}>
             <SocialCardGenerator formData={formData} results={results} />
           </Suspense>
         </div>
 
         {/* Motivational Quote */}
-        <div className="bg-gradient-to-r from-slate-900/60 to-slate-800/60 border border-slate-700 rounded-2xl p-6">
+        <div className="bg-bg-surface/60 border border-border rounded-2xl p-6">
           <div className="text-center">
             <div className="text-2xl mb-3">💬</div>
-            <blockquote className="text-lg italic text-slate-300 mb-2">
+            <blockquote className="text-lg italic text-text-secondary mb-2">
               &ldquo;{quote.text}&rdquo;
             </blockquote>
-            <cite className="text-sm text-slate-500">— {quote.character}</cite>
-            <div className="mt-4 pt-4 border-t border-slate-700">
-              <div className="text-green-400 font-semibold">{motivation}</div>
+            <cite className="text-sm text-text-muted">— {quote.character}</cite>
+            <div className="mt-4 pt-4 border-t border-border">
+              <div className="text-hud-blue font-semibold">{motivation}</div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </AppShell>
   );
 };
 

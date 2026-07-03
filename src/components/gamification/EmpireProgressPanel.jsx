@@ -8,33 +8,33 @@ const renderQuest = (quest) => (
     key={quest.id}
     className={`flex items-start justify-between gap-3 rounded-xl border p-3 transition-colors ${
       quest.completed
-        ? 'border-emerald-500/30 bg-emerald-900/10'
-        : 'border-slate-700/60 bg-slate-900/40'
+        ? 'border-hud-blue/30 bg-hud-blue/10'
+        : 'border-border bg-bg-base/40'
     }`}
   >
     <div>
       <div className="flex items-center gap-1.5">
-        <div className="text-sm font-semibold text-slate-100">{quest.title}</div>
+        <div className="text-sm font-semibold text-text-primary">{quest.title}</div>
         {quest.tag === 'special_op' && (
-          <span className="rounded bg-violet-500/20 px-1.5 py-0.5 text-[9px] font-bold uppercase text-violet-300">Event</span>
+          <span className="rounded bg-hud-pink/20 px-1.5 py-0.5 text-2xs font-bold uppercase text-accent-pink-text">Event</span>
         )}
       </div>
-      <div className="text-xs text-slate-400">{quest.description}</div>
+      <div className="text-xs text-text-muted">{quest.description}</div>
     </div>
-    <div className={`text-xs font-bold ${quest.completed ? 'text-emerald-300' : 'text-cyan-300'}`}>
+    <div className="text-xs font-bold text-hud-blue">
       +{quest.rewardXp} XP
     </div>
   </div>
 );
 
-const QuestColumn = ({ title, icon: Icon, iconColorClass, emptyText, quests, borderClass = 'border-slate-800/80', bgClass = 'bg-slate-950/50', titleClass = 'text-slate-400' }) => (
+const QuestColumn = ({ title, icon: Icon, emptyText, quests, borderClass = 'border-border', bgClass = 'bg-bg-base/50' }) => (
   <div className={`rounded-2xl border ${borderClass} ${bgClass} p-4`}>
-    <div className={`flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] ${titleClass}`}>
-      <Icon className={`h-4 w-4 ${iconColorClass}`} /> {title}
+    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-hud-blue">
+      <Icon className="h-4 w-4" /> {title}
     </div>
     <div className="mt-3 space-y-2">
       {quests.length ? quests.map(renderQuest) : (
-        <div className="text-xs text-slate-500">{emptyText}</div>
+        <div className="text-xs text-text-muted">{emptyText}</div>
       )}
     </div>
   </div>
@@ -43,34 +43,32 @@ const QuestColumn = ({ title, icon: Icon, iconColorClass, emptyText, quests, bor
 QuestColumn.propTypes = {
   title: PropTypes.string.isRequired,
   icon: PropTypes.elementType.isRequired,
-  iconColorClass: PropTypes.string.isRequired,
   emptyText: PropTypes.string.isRequired,
   quests: PropTypes.arrayOf(PropTypes.object).isRequired,
   borderClass: PropTypes.string,
   bgClass: PropTypes.string,
-  titleClass: PropTypes.string,
 };
 
 const RecentAchievements = ({ recentAchievements }) => (
-  <div className="rounded-2xl border border-slate-800/80 bg-slate-950/50 p-4">
-    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-slate-400">
-      <Trophy className="h-4 w-4 text-amber-300" /> Recent Achievements
+  <div className="rounded-2xl border border-border bg-bg-base/50 p-4">
+    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.2em] text-text-muted">
+      <Trophy className="h-4 w-4 text-hud-blue" /> Recent Achievements
     </div>
     <div className="mt-3 space-y-2">
       {recentAchievements.length ? (
         recentAchievements.map((achievement) => (
-          <div key={achievement.id} className="flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-900/10 px-3 py-2">
+          <div key={achievement.id} className="flex items-center justify-between rounded-xl border border-hud-blue/20 bg-hud-blue/10 px-3 py-2">
             <div>
-              <div className="text-sm font-semibold text-slate-100">
+              <div className="text-sm font-semibold text-text-primary">
                 {achievement.icon} {achievement.title}
               </div>
-              <div className="text-xs text-slate-400">{achievement.description}</div>
+              <div className="text-xs text-text-muted">{achievement.description}</div>
             </div>
-            <span className="text-[11px] uppercase text-amber-300">{achievement.tier}</span>
+            <span className="text-xs uppercase text-hud-blue">{achievement.tier}</span>
           </div>
         ))
       ) : (
-        <div className="text-xs text-slate-500">No achievements yet. Your first unlock is closer than you think.</div>
+        <div className="text-xs text-text-muted">No achievements yet. Your first unlock is closer than you think.</div>
       )}
     </div>
   </div>
@@ -91,25 +89,25 @@ RecentAchievements.propTypes = {
 const EmpireHeader = ({ levelInfo, milestoneLabel, lastAward }) => (
   <div className="flex flex-wrap items-center justify-between gap-4">
     <div className="flex items-center gap-3">
-      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-cyan-500/10 text-cyan-300">
+      <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-hud-blue/10 text-hud-blue">
         <Crown className="h-6 w-6" />
       </div>
       <div>
-        <div className="text-xs uppercase tracking-[0.2em] text-cyan-300">Empire Level</div>
-        <div className="font-display text-3xl font-bold text-slate-100">
+        <div className="text-xs uppercase tracking-[0.2em] text-hud-blue">Empire Level</div>
+        <div className="font-display text-3xl font-bold text-text-primary">
           Level {levelInfo.level}
           {milestoneLabel && (
-            <span className="ml-2 text-base font-normal text-amber-300">— {milestoneLabel}</span>
+            <span className="ml-2 text-base font-normal text-hud-blue">— {milestoneLabel}</span>
           )}
         </div>
       </div>
     </div>
     <div className="flex items-center gap-3">
-      <div className="rounded-full border border-slate-700/60 bg-slate-900/60 px-4 py-2 text-xs text-slate-300">
+      <div className="rounded-full border border-border bg-bg-surface/60 px-4 py-2 text-xs text-text-secondary">
         {levelInfo.currentLevelXp} / {levelInfo.nextLevelXp} XP
       </div>
       {lastAward?.xpGained ? (
-        <div className="rounded-full bg-emerald-500/20 px-4 py-2 text-xs font-semibold text-emerald-200">
+        <div className="rounded-full bg-hud-blue/20 px-4 py-2 text-xs font-semibold text-hud-blue">
           +{lastAward.xpGained} XP earned
         </div>
       ) : null}
@@ -131,21 +129,21 @@ EmpireHeader.propTypes = {
 
 const EmpireProgressBar = ({ levelInfo, nextMilestone, lastAward }) => (
   <div className="mt-4">
-    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-800">
+    <div className="h-2 w-full overflow-hidden rounded-full bg-bg-raised">
       <div
-        className="h-full bg-gradient-to-r from-cyan-400 via-blue-500 to-violet-500"
+        className="h-full bg-hud-blue"
         style={{ width: `${Math.min(levelInfo.progress, 100)}%` }}
       />
     </div>
-    <div className="mt-2 flex flex-wrap items-center justify-between text-xs text-slate-400">
+    <div className="mt-2 flex flex-wrap items-center justify-between text-xs text-text-muted">
       <span>
         Next unlock in {Math.max(levelInfo.nextLevelXp - levelInfo.currentLevelXp, 0)} XP
         {Boolean(nextMilestone) && (
-          <span className="ml-2 text-amber-400/70">· Milestone at Lv{nextMilestone}</span>
+          <span className="ml-2 text-hud-blue/70">· Milestone at Lv{nextMilestone}</span>
         )}
       </span>
       {lastAward?.streakMultiplier ? (
-        <span className="flex items-center gap-1 text-emerald-300">
+        <span className="flex items-center gap-1 text-hud-blue">
           <Sparkles className="h-3 w-3" />
           Streak boost x{lastAward.streakMultiplier}
         </span>
@@ -182,7 +180,7 @@ const EmpireProgressPanel = ({ gamification }) => {
   if (!hasGamification) return null;
 
   return (
-    <section className="rounded-3xl border border-cyan-500/20 bg-gradient-to-br from-slate-950 via-slate-900/90 to-cyan-950/40 p-6 shadow-[0_0_60px_rgba(34,211,238,0.08)]">
+    <section className="rounded-3xl border border-hud-blue/20 bg-bg-surface p-6 shadow-glow-blue">
       <EmpireHeader levelInfo={levelInfo} milestoneLabel={milestoneLabel} lastAward={lastAward} />
       <EmpireProgressBar levelInfo={levelInfo} nextMilestone={nextMilestone} lastAward={lastAward} />
 
@@ -190,7 +188,6 @@ const EmpireProgressPanel = ({ gamification }) => {
         <QuestColumn
           title="Daily Ops"
           icon={Target}
-          iconColorClass="text-cyan-300"
           emptyText="No daily ops right now. Complete an assessment to unlock ops."
           quests={dailyQuests}
         />
@@ -198,7 +195,6 @@ const EmpireProgressPanel = ({ gamification }) => {
         <QuestColumn
           title="Weekly Campaign"
           icon={Target}
-          iconColorClass="text-violet-300"
           emptyText="No weekly campaign active. Check back after your next assessment."
           quests={weeklyQuests}
         />
@@ -208,12 +204,10 @@ const EmpireProgressPanel = ({ gamification }) => {
             <QuestColumn
               title="Special Ops"
               icon={Zap}
-              iconColorClass=""
               emptyText=""
               quests={specialOps}
-              borderClass="border-violet-500/30"
-              bgClass="bg-violet-950/20"
-              titleClass="text-violet-300"
+              borderClass="border-hud-pink/30"
+              bgClass="bg-hud-pink/10"
             />
           )}
 

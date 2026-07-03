@@ -9,15 +9,15 @@ import { soundEffects } from '../../utils/soundEffects';
 const ProgressChart = React.lazy(() => import('../gamification/ProgressChart'));
 
 const ComparisonStat = ({ label, value, delta, deltaLabel, avgLabel }) => (
-  <div className="bg-black/30 p-4 rounded-lg">
-    <div className="text-sm text-slate-400 mb-1">{label}</div>
+  <div className="bg-bg-base/40 p-4 rounded-lg">
+    <div className="text-sm text-text-muted mb-1">{label}</div>
     <div className="flex items-baseline gap-2">
-      <div className="text-2xl font-bold text-white">{value}</div>
-      <div className={`text-sm font-bold ${delta > 0 ? 'text-green-400' : 'text-red-400'}`}>
+      <div className="text-2xl font-bold text-text-primary">{value}</div>
+      <div className={`text-sm font-bold ${delta > 0 ? 'text-hud-blue' : 'text-accent-pink-text'}`}>
         {delta > 0 ? '+' : ''}{deltaLabel}
       </div>
     </div>
-    <div className="text-xs text-slate-500 mt-1">vs. avg {avgLabel}</div>
+    <div className="text-xs text-text-muted mt-1">vs. avg {avgLabel}</div>
   </div>
 );
 
@@ -36,12 +36,15 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
 
   if (!communityAvg || !comparison) {
     return (
-      <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
+      // contain-paint contain-layout: isolates this card's paint/layout from
+      // the rest of the results view (perf hygiene for a card that re-renders
+      // whenever the community stats pool changes).
+      <div className="contain-paint contain-layout bg-bg-surface/60 border border-border rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-2">
-          <DollarSign className="w-6 h-6 text-cyan-400" />
-          <h3 className="text-xl font-bold text-white">Community Comparison</h3>
+          <DollarSign className="w-6 h-6 text-hud-blue" />
+          <h3 className="text-xl font-bold text-text-primary">Community Comparison</h3>
         </div>
-        <p className="text-sm text-slate-400">
+        <p className="text-sm text-text-muted">
           Run at least two assessments to see how your empire stacks up against the community average. All stats stay in your browser -- nothing leaves your machine.
         </p>
       </div>
@@ -71,21 +74,24 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
   };
 
   return (
-    <>
-      <div className="bg-gradient-to-r from-blue-900/20 to-cyan-900/20 border border-cyan-500/30 rounded-2xl p-6">
+    // contain-paint contain-layout: this subtree hosts a Chart.js canvas
+    // (ProgressChart) that repaints independently of the rest of the results
+    // view -- containment keeps its layout/paint work from cascading out.
+    <div className="contain-paint contain-layout space-y-6">
+      <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-bold text-white flex items-center gap-2">
-              <DollarSign className="w-6 h-6 text-cyan-400" />
+            <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+              <DollarSign className="w-6 h-6 text-hud-blue" />
               Community Comparison
             </h3>
-            <p className="text-slate-400 text-sm">
+            <p className="text-text-muted text-sm">
               Based on {communityAvg.sampleSize} assessments (last 30 days)
             </p>
           </div>
           <div className="text-right">
-            <div className="text-3xl font-bold text-cyan-400">{comparison.percentile}th</div>
-            <div className="text-xs text-slate-400">percentile</div>
+            <div className="text-3xl font-bold text-hud-blue">{comparison.percentile}th</div>
+            <div className="text-xs text-text-muted">percentile</div>
           </div>
         </div>
 
@@ -113,20 +119,22 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
           />
         </div>
 
-        <div className="flex items-center justify-between pt-4 border-t border-slate-700/50">
-          <div className="text-xs text-slate-500 italic">
+        <div className="flex flex-wrap items-center justify-between gap-3 pt-4 border-t border-border">
+          <div className="text-xs text-text-muted italic">
             ℹ️ Community stats are stored locally in your browser only. No data is sent to any server.
           </div>
           <div className="flex gap-2">
             <button
+              type="button"
               onClick={handleExportProgress}
-              className="px-4 py-2 bg-green-900/40 hover:bg-green-900/70 text-green-100 rounded-lg border border-green-500/40 text-xs transition-all"
+              className="px-4 py-2 bg-hud-blue/10 hover:bg-hud-blue/20 text-hud-blue rounded-lg border border-hud-blue/40 text-xs transition-all"
             >
               📈 Export Progress CSV
             </button>
             <button
+              type="button"
               onClick={handleExport}
-              className="px-4 py-2 bg-cyan-900/40 hover:bg-cyan-900/70 text-cyan-100 rounded-lg border border-cyan-500/40 text-xs transition-all"
+              className="px-4 py-2 bg-hud-blue/10 hover:bg-hud-blue/20 text-hud-blue rounded-lg border border-hud-blue/40 text-xs transition-all"
             >
               📊 Export Community CSV
             </button>
@@ -135,17 +143,17 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
       </div>
 
       {progressData && progressData.timestamps.length > 1 && (
-        <div className="bg-slate-900/60 border border-slate-700/50 rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-white mb-4 flex items-center gap-2">
-            <TrendingUp className="w-6 h-6 text-green-400" />
+        <div className="bg-bg-surface/60 border border-border rounded-2xl p-6">
+          <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+            <TrendingUp className="w-6 h-6 text-hud-blue" />
             Progress Over Time
           </h3>
-          <Suspense fallback={<div className="text-sm text-slate-400">Loading charts...</div>}>
+          <Suspense fallback={<div className="text-sm text-text-muted">Loading charts...</div>}>
             <ProgressChart history={progressHistory} />
           </Suspense>
         </div>
       )}
-    </>
+    </div>
   );
 };
 

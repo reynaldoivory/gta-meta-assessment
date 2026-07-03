@@ -5,11 +5,14 @@ import { Trophy, Filter, Lock, Star, ChevronUp, ChevronDown } from 'lucide-react
 import { ACHIEVEMENTS, getAchievementProgress } from '../../utils/achievements';
 
 const TIER_ORDER = ['bronze', 'silver', 'gold', 'platinum'];
+// Intentional exception to the Arcade HUD two-channel (cyan/pink) rule: tier
+// is a categorical rank (like Olympic medals), not a good/bad status signal,
+// so it keeps 4 distinct hues. See docs/DESIGN_SYSTEM.md.
 const TIER_COLORS = {
   bronze: { border: 'border-amber-700/40', bg: 'bg-amber-900/15', text: 'text-amber-400', badge: 'bg-amber-700/30 text-amber-300' },
   silver: { border: 'border-slate-400/40', bg: 'bg-slate-700/15', text: 'text-slate-300', badge: 'bg-slate-600/30 text-slate-200' },
   gold: { border: 'border-yellow-500/40', bg: 'bg-yellow-900/15', text: 'text-yellow-400', badge: 'bg-yellow-600/30 text-yellow-200' },
-  platinum: { border: 'border-cyan-400/40', bg: 'bg-cyan-900/15', text: 'text-cyan-300', badge: 'bg-cyan-600/30 text-cyan-200' },
+  platinum: { border: 'border-hud-blue/40', bg: 'bg-hud-blue/15', text: 'text-hud-blue', badge: 'bg-hud-blue/30 text-hud-blue' },
 };
 
 const AchievementsGallery = ({ unlockedIds = [], formData, results, history, streak }) => {
@@ -39,21 +42,22 @@ const AchievementsGallery = ({ unlockedIds = [], formData, results, history, str
   const percentComplete = progress.total > 0 ? Math.round((progress.unlocked / progress.total) * 100) : 0;
 
   return (
-    <section className="rounded-3xl border border-amber-500/20 bg-gradient-to-br from-slate-950 via-slate-900/90 to-amber-950/30 p-6 shadow-[0_0_40px_rgba(245,158,11,0.06)]">
+    <section className="rounded-3xl border border-hud-blue/20 bg-bg-surface p-6 shadow-glow-blue">
       {/* Header */}
       <button
+        type="button"
         onClick={() => setExpanded((v) => !v)}
         className="flex w-full items-center justify-between gap-4"
       >
         <div className="flex items-center gap-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-hud-blue/10 text-hud-blue">
             <Trophy className="h-5 w-5" />
           </div>
           <div className="text-left">
-            <div className="text-xs uppercase tracking-[0.2em] text-amber-300">Achievements</div>
-            <div className="font-display text-xl font-bold text-slate-100">
+            <div className="text-xs uppercase tracking-[0.2em] text-hud-blue">Achievements</div>
+            <div className="font-display text-xl font-bold text-text-primary">
               {progress.unlocked}/{progress.total}
-              <span className="ml-2 text-sm font-normal text-slate-400">({percentComplete}%)</span>
+              <span className="ml-2 text-sm font-normal text-text-muted">({percentComplete}%)</span>
             </div>
           </div>
         </div>
@@ -62,20 +66,20 @@ const AchievementsGallery = ({ unlockedIds = [], formData, results, history, str
           {/* Tier summary pills */}
           <div className="hidden gap-1.5 sm:flex">
             {TIER_ORDER.map((tier) => (
-              <span key={tier} className={`rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${TIER_COLORS[tier].badge}`}>
+              <span key={tier} className={`rounded-full px-2 py-0.5 text-2xs font-bold uppercase ${TIER_COLORS[tier].badge}`}>
                 {progress.byTier[tier]}
               </span>
             ))}
           </div>
 
-          {expanded ? <ChevronUp className="h-5 w-5 text-slate-400" /> : <ChevronDown className="h-5 w-5 text-slate-400" />}
+          {expanded ? <ChevronUp className="h-5 w-5 text-text-muted" /> : <ChevronDown className="h-5 w-5 text-text-muted" />}
         </div>
       </button>
 
       {/* Progress bar */}
-      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-slate-800">
+      <div className="mt-3 h-1.5 w-full overflow-hidden rounded-full bg-bg-raised">
         <div
-          className="h-full bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-300 transition-all duration-700"
+          className="h-full bg-hud-blue transition-all duration-700"
           style={{ width: `${percentComplete}%` }}
         />
       </div>
@@ -85,15 +89,16 @@ const AchievementsGallery = ({ unlockedIds = [], formData, results, history, str
         <div className="mt-5">
           {/* Tier filter */}
           <div className="mb-4 flex flex-wrap items-center gap-2">
-            <Filter className="h-4 w-4 text-slate-400" />
+            <Filter className="h-4 w-4 text-text-muted" />
             {['all', ...TIER_ORDER].map((tier) => (
               <button
+                type="button"
                 key={tier}
                 onClick={() => setTierFilter(tier)}
                 className={`rounded-full px-3 py-1 text-xs font-semibold transition-colors ${
                   tierFilter === tier
-                    ? 'bg-amber-500/20 text-amber-200 ring-1 ring-amber-500/40'
-                    : 'bg-slate-800/60 text-slate-400 hover:bg-slate-700/60 hover:text-slate-300'
+                    ? 'bg-hud-blue/20 text-hud-blue ring-1 ring-hud-blue/40'
+                    : 'bg-bg-raised/60 text-text-muted hover:bg-border-subtle hover:text-text-secondary'
                 }`}
               >
                 {tier === 'all' ? 'All' : tier.charAt(0).toUpperCase() + tier.slice(1)}
@@ -112,26 +117,26 @@ const AchievementsGallery = ({ unlockedIds = [], formData, results, history, str
                   className={`relative overflow-hidden rounded-2xl border p-4 transition-all ${
                     isUnlocked
                       ? `${colors.border} ${colors.bg}`
-                      : 'border-slate-800/60 bg-slate-950/60 opacity-60'
+                      : 'border-border bg-bg-base/60 opacity-60'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2">
                       <span className="text-xl">{achievement.icon}</span>
                       <div>
-                        <div className={`text-sm font-bold ${isUnlocked ? 'text-slate-100' : 'text-slate-400'}`}>
+                        <div className={`text-sm font-bold ${isUnlocked ? 'text-text-primary' : 'text-text-muted'}`}>
                           {achievement.title}
                         </div>
-                        <div className="text-xs text-slate-400">{achievement.description}</div>
+                        <div className="text-xs text-text-muted">{achievement.description}</div>
                       </div>
                     </div>
                     {isUnlocked ? (
                       <Star className={`h-4 w-4 flex-shrink-0 ${colors.text}`} />
                     ) : (
-                      <Lock className="h-4 w-4 flex-shrink-0 text-slate-600" />
+                      <Lock className="h-4 w-4 flex-shrink-0 text-text-muted" />
                     )}
                   </div>
-                  <div className={`mt-2 inline-block rounded-full px-2 py-0.5 text-[10px] font-bold uppercase ${colors.badge}`}>
+                  <div className={`mt-2 inline-block rounded-full px-2 py-0.5 text-2xs font-bold uppercase ${colors.badge}`}>
                     {achievement.tier}
                   </div>
                 </div>

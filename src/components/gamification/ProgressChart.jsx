@@ -26,6 +26,14 @@ ChartJS.register(
   Filler
 );
 
+// Arcade HUD chart palette: two cyan shades (Score/Income) + Vice Pink (Rank)
+// so the three series stay distinguishable without leaving the two-channel family.
+const HUD_BLUE = 'rgb(41, 210, 227)';
+const HUD_BLUE_LIGHT = 'rgb(140, 232, 240)';
+const HUD_PINK = 'rgb(255, 0, 127)';
+const AXIS_MUTED = 'rgb(131, 153, 180)';
+const GRID_MUTED = 'rgba(131, 153, 180, 0.12)';
+
 const ProgressChart = ({ history }) => {
   if (!history || history.length < 2) {
     return (
@@ -34,7 +42,7 @@ const ProgressChart = ({ history }) => {
         title="Not enough history yet"
         description="Complete at least 2 assessments to see your progress over time. Come back tomorrow!"
         action={
-          <div className="flex items-center gap-2 text-blue-400 text-sm mt-2">
+          <div className="flex items-center gap-2 text-hud-blue text-sm mt-2">
             <TrendingUp className="w-4 h-4" />
             <span>First assessment completed!</span>
           </div>
@@ -53,8 +61,8 @@ const ProgressChart = ({ history }) => {
       {
         label: 'Score',
         data: history.map(h => h.score),
-        borderColor: 'rgb(59, 130, 246)',
-        backgroundColor: 'rgba(59, 130, 246, 0.1)',
+        borderColor: HUD_BLUE,
+        backgroundColor: 'rgba(41, 210, 227, 0.1)',
         fill: true,
         tension: 0.4,
         yAxisID: 'y',
@@ -62,8 +70,8 @@ const ProgressChart = ({ history }) => {
       {
         label: 'Income ($/hr ÷ 10k)',
         data: history.map(h => h.incomePerHour / 10000),
-        borderColor: 'rgb(34, 197, 94)',
-        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        borderColor: HUD_BLUE_LIGHT,
+        backgroundColor: 'rgba(140, 232, 240, 0.1)',
         fill: true,
         tension: 0.4,
         yAxisID: 'y',
@@ -71,8 +79,8 @@ const ProgressChart = ({ history }) => {
       {
         label: 'Rank',
         data: history.map(h => h.rank),
-        borderColor: 'rgb(168, 85, 247)',
-        backgroundColor: 'rgba(168, 85, 247, 0.1)',
+        borderColor: HUD_PINK,
+        backgroundColor: 'rgba(255, 0, 127, 0.1)',
         fill: true,
         tension: 0.4,
         yAxisID: 'y1',
@@ -91,7 +99,7 @@ const ProgressChart = ({ history }) => {
       legend: {
         position: 'top',
         labels: {
-          color: 'rgb(203, 213, 225)',
+          color: AXIS_MUTED,
           font: {
             size: 11,
             weight: 'bold',
@@ -101,7 +109,7 @@ const ProgressChart = ({ history }) => {
       title: {
         display: true,
         text: 'Progress Over Time',
-        color: 'rgb(241, 245, 249)',
+        color: 'rgb(230, 238, 247)',
         font: {
           size: 16,
           weight: 'bold',
@@ -116,13 +124,13 @@ const ProgressChart = ({ history }) => {
         title: {
           display: true,
           text: 'Score / Income (÷10k)',
-          color: 'rgb(148, 163, 184)',
+          color: AXIS_MUTED,
         },
         ticks: {
-          color: 'rgb(148, 163, 184)',
+          color: AXIS_MUTED,
         },
         grid: {
-          color: 'rgba(148, 163, 184, 0.1)',
+          color: GRID_MUTED,
         },
       },
       y1: {
@@ -132,10 +140,10 @@ const ProgressChart = ({ history }) => {
         title: {
           display: true,
           text: 'Rank',
-          color: 'rgb(148, 163, 184)',
+          color: AXIS_MUTED,
         },
         ticks: {
-          color: 'rgb(148, 163, 184)',
+          color: AXIS_MUTED,
         },
         grid: {
           drawOnChartArea: false,
@@ -143,17 +151,19 @@ const ProgressChart = ({ history }) => {
       },
       x: {
         ticks: {
-          color: 'rgb(148, 163, 184)',
+          color: AXIS_MUTED,
         },
         grid: {
-          color: 'rgba(148, 163, 184, 0.1)',
+          color: GRID_MUTED,
         },
       },
     },
   };
 
   return (
-    <div style={{ height: '300px' }}>
+    // contain-paint contain-layout: isolates the Chart.js canvas's own render
+    // cycle from the rest of the results view.
+    <div className="contain-paint contain-layout" style={{ height: '300px' }}>
       <Line data={data} options={options} />
     </div>
   );

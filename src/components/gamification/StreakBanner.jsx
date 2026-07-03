@@ -24,7 +24,7 @@ const StreakBanner = () => {
     <>
       {showCelebration && (
         <div className="fixed inset-0 pointer-events-none z-50 flex items-center justify-center">
-          <div className="bg-gradient-to-r from-yellow-500 to-orange-500 text-white px-8 py-6 rounded-2xl shadow-2xl animate-bounce">
+          <div className="bg-hud-blue text-text-on-accent px-8 py-6 rounded-2xl shadow-glow-blue animate-bounce">
             <div className="text-6xl mb-2">🔥</div>
             <div className="text-3xl font-bold">
               {streakData.streak} Day Streak!
@@ -34,22 +34,22 @@ const StreakBanner = () => {
         </div>
       )}
 
-      <div className="bg-gradient-to-r from-orange-900/30 to-red-900/30 border border-orange-500/40 rounded-2xl p-4 mb-6">
+      <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-2xl p-4 mb-6">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <div className="text-4xl">🔥</div>
             <div>
-              <div className="text-2xl font-bold text-orange-400">
+              <div className="text-2xl font-bold text-hud-blue">
                 {streakData.streak} Day Streak
               </div>
-              <div className="text-sm text-slate-400">
+              <div className="text-sm text-text-muted">
                 {nextMilestone
                   ? `${nextMilestone.days - streakData.streak} days until ${nextMilestone.title}`
                   : 'Maximum streak achieved!'}
               </div>
             </div>
           </div>
-          
+
           <div className="flex gap-2">
             {milestones.slice(0, 3).map((m) => (
               <div

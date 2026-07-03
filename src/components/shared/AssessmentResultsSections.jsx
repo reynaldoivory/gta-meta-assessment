@@ -23,13 +23,13 @@ TrapSection.propTypes = {
 };
 
 const GtaPlusReminder = () => (
-  <div className="mb-6 p-4 bg-purple-900/30 border border-purple-500/50 rounded-xl flex items-center gap-4">
+  <div className="mb-6 p-4 bg-hud-blue/10 border border-hud-blue/40 rounded-xl flex items-center gap-4">
     <div className="text-3xl">🏎️</div>
     <div className="flex-1">
-      <div className="font-bold text-white mb-1">
+      <div className="font-bold text-text-primary mb-1">
         Don&apos;t Forget: Free {WEEKLY_EVENTS.gtaPlus?.freeCar || 'GTA+ Vehicle'}
       </div>
-      <div className="text-sm text-slate-300">
+      <div className="text-sm text-text-secondary">
         Claim it at {WEEKLY_EVENTS.gtaPlus?.freeCarLocation || 'The Vinewood Car Club'}.
         Worth ${((WEEKLY_EVENTS.gtaPlus?.freeCarValue || 1850000) / 1000000).toFixed(1)}M for free.
         Perfect for early-game transport.
@@ -75,10 +75,10 @@ TrackersSection.propTypes = {
 };
 
 const BottlenecksList = ({ bottlenecks }) => (
-  <div className="bg-slate-900/60 border border-red-900/30 rounded-2xl p-6">
+  <div className="bg-bg-surface border border-hud-pink/30 rounded-2xl p-6">
     <div className="flex items-center gap-3 mb-4">
-      <AlertCircle className="text-red-400 w-6 h-6" />
-      <h3 className="text-xl font-bold text-white">Bottlenecks</h3>
+      <AlertCircle className="text-hud-pink w-6 h-6" />
+      <h3 className="text-xl font-bold text-text-primary">Bottlenecks</h3>
     </div>
     <div className="space-y-3">
       {bottlenecks.map((b) => (
@@ -86,19 +86,19 @@ const BottlenecksList = ({ bottlenecks }) => (
           key={b.id || b.label}
           className={`p-4 rounded-xl ${
             b.critical
-              ? 'bg-red-950/20 border-2 border-red-500/40'
-              : 'bg-orange-950/10 border border-orange-500/20'
+              ? 'bg-hud-pink/10 border-2 border-hud-pink/40'
+              : 'bg-hud-pink/5 border border-hud-pink/20'
           }`}
         >
           <div className="flex items-center gap-2 mb-1">
             {b.critical && (
-              <span className="text-red-400 font-bold text-xs uppercase bg-red-900/30 px-2 py-0.5 rounded">
+              <span className="text-accent-pink-text font-bold text-xs uppercase bg-hud-pink/20 px-2 py-0.5 rounded">
                 CRITICAL
               </span>
             )}
-            <span className="text-slate-200 font-semibold">{b.label}</span>
+            <span className="text-text-secondary font-semibold">{b.label}</span>
           </div>
-          {b.detail && <p className="text-slate-400 text-sm">{b.detail}</p>}
+          {b.detail && <p className="text-text-muted text-sm">{b.detail}</p>}
         </div>
       ))}
     </div>
@@ -122,31 +122,31 @@ OptionalBottlenecks.propTypes = {
 };
 
 const NextGoalCard = ({ nextGoal, incomePerHour }) => (
-  <div className="bg-gradient-to-r from-green-900/50 to-emerald-900/50 border border-green-500 rounded-lg p-4">
-    <h3 className="text-xl font-bold text-green-400 mb-2">
+  <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-lg p-4">
+    <h3 className="text-xl font-bold text-hud-blue mb-2">
       🎯 Next Major Goal: {nextGoal.name}
     </h3>
     {nextGoal.canAffordNow ? (
-      <p className="text-green-300 text-lg">✅ You can afford this now! Go buy it.</p>
+      <p className="text-hud-blue text-lg">✅ You can afford this now! Go buy it.</p>
     ) : (
       <div className="space-y-2">
-        <div className="flex justify-between text-slate-300">
+        <div className="flex justify-between text-text-secondary">
           <span>Cost:</span>
           <span className="font-mono">${nextGoal.cost.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between text-slate-300">
+        <div className="flex justify-between text-text-secondary">
           <span>You have:</span>
-          <span className="font-mono text-yellow-400">${nextGoal.currentCash.toLocaleString()}</span>
+          <span className="font-mono text-hud-blue">${nextGoal.currentCash.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between text-slate-300">
+        <div className="flex justify-between text-text-secondary">
           <span>Still need:</span>
-          <span className="font-mono text-red-400">${nextGoal.needed.toLocaleString()}</span>
+          <span className="font-mono text-accent-pink-text">${nextGoal.needed.toLocaleString()}</span>
         </div>
-        <div className="mt-3 pt-3 border-t border-slate-700">
-          <p className="text-lg text-green-300">
+        <div className="mt-3 pt-3 border-t border-border">
+          <p className="text-lg text-hud-blue">
             ⏱️ <strong>{nextGoal.hoursRemaining} hours</strong> of grinding
           </p>
-          <p className="text-sm text-slate-400 mt-1">
+          <p className="text-sm text-text-muted mt-1">
             Best method: {nextGoal.fastestGrind} @ ${incomePerHour.toLocaleString()}/hr
           </p>
         </div>

@@ -9,7 +9,6 @@ import { TRAP_SEVERITY, getRecentlyFixedTraps } from '../../utils/trapDetector';
 import { severityConfig } from './trapWarningSeverity';
 import { FixedTrapsCelebration, TrapSummary, NoActiveTrapsState } from './TrapWarningsSummary';
 import { TrapCard } from './TrapCard';
-import './TrapWarnings.css';
 
 const trapIsCritical = (trap) => trap.severity === TRAP_SEVERITY.CRITICAL;
 
@@ -51,7 +50,7 @@ const TrapWarnings = ({ traps, showCelebration = true, defaultExpanded = false }
   }
 
   return (
-    <div className="bg-slate-900/60 border border-red-900/30 rounded-2xl p-6">
+    <div className="bg-bg-surface border border-hud-pink/30 rounded-2xl p-6">
       {recentFixes.length > 0 && <FixedTrapsCelebration fixes={recentFixes} />}
 
       <TrapSummary traps={traps} />
@@ -83,13 +82,14 @@ export const TrapBlockingWarning = ({ trap, onAcknowledge }) => {
       <div className="flex items-start gap-3">
         <AlertCircle className={`w-6 h-6 ${config.text} flex-shrink-0`} />
         <div className="flex-1">
-          <h4 className="font-bold text-white">{trap.title}</h4>
-          <p className="text-sm text-slate-300 mt-1">{trap.problem}</p>
-          <p className="text-sm text-slate-400 mt-2">{trap.solution}</p>
+          <h4 className="font-bold text-text-primary">{trap.title}</h4>
+          <p className="text-sm text-text-secondary mt-1">{trap.problem}</p>
+          <p className="text-sm text-text-muted mt-2">{trap.solution}</p>
           {onAcknowledge && (
             <button
+              type="button"
               onClick={onAcknowledge}
-              className="mt-3 px-4 py-2 bg-slate-700 hover:bg-slate-600 text-white text-sm rounded-lg transition-colors"
+              className="mt-3 px-4 py-2 bg-bg-raised hover:bg-border-subtle text-text-primary text-sm rounded-lg transition-colors"
             >
               I understand, continue anyway
             </button>

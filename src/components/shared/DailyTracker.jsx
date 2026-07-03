@@ -140,62 +140,65 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
   }
 
   return (
-    <div className="bg-slate-900/60 border border-emerald-500/30 rounded-xl p-6">
+    // contain-paint contain-layout: isolates this card's per-task re-renders
+    // (toggling a checkbox recomputes session earnings) from the rest of the
+    // results view.
+    <div className="contain-paint contain-layout bg-bg-surface border border-hud-blue/30 rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-emerald-400 flex items-center gap-2">
+        <h3 className="text-xl font-bold text-hud-blue flex items-center gap-2">
           <span className="text-2xl">💰</span> Daily Cash Loop
         </h3>
-        <div className="text-xs text-slate-400">
+        <div className="text-xs text-text-muted">
           Resets in {hours}h {minutes}m
         </div>
       </div>
-      
+
       <div className="space-y-3 mb-4">
         {availableTasks.map((task) => (
-          <div 
-            key={task.id} 
+          <div
+            key={task.id}
             className={`flex items-center p-3 rounded-lg border transition ${
-              task.isCompleted 
-                ? 'bg-emerald-900/30 border-emerald-600/50 opacity-75' 
-                : 'bg-slate-800/50 border-slate-700 hover:border-slate-600'
+              task.isCompleted
+                ? 'bg-hud-blue/10 border-hud-blue/50 opacity-75'
+                : 'bg-bg-raised border-border hover:border-border-strong'
             }`}
           >
             <input
               type="checkbox"
               checked={task.isCompleted}
               onChange={() => toggleTask(task.id)}
-              className="w-5 h-5 accent-emerald-500 cursor-pointer rounded border-slate-600 bg-slate-700"
+              className="w-5 h-5 accent-hud-blue cursor-pointer rounded border-border bg-bg-raised"
             />
             <div className="ml-3 flex-1">
-              <p className={`font-medium ${task.isCompleted ? 'text-slate-400 line-through' : 'text-slate-100'}`}>
+              <p className={`font-medium ${task.isCompleted ? 'text-text-muted line-through' : 'text-text-primary'}`}>
                 {task.label}
               </p>
               {task.rewards.special && (
-                <p className="text-xs text-amber-400 mt-0.5">
+                <p className="text-xs text-hud-pink mt-0.5">
                   {task.rewards.special}
                 </p>
               )}
             </div>
-            <span className="text-sm font-mono text-emerald-300 font-bold">
+            <span className="text-sm font-mono text-hud-blue font-bold">
               ${task.rewards.cashEstimate.toLocaleString()}
             </span>
           </div>
         ))}
       </div>
 
-      <div className="pt-4 border-t border-slate-700 flex justify-between items-center">
-        <span className="text-slate-400 font-medium">Session Total:</span>
-        <span className="text-2xl font-bold text-emerald-400">
+      <div className="pt-4 border-t border-border flex justify-between items-center">
+        <span className="text-text-muted font-medium">Session Total:</span>
+        <span className="text-2xl font-bold text-hud-blue">
           ${currentSessionEarnings.toLocaleString()}
         </span>
       </div>
 
       {/* Quick Tips */}
       <details className="mt-4 text-xs">
-        <summary className="cursor-pointer text-slate-400 hover:text-slate-300">
+        <summary className="cursor-pointer text-text-muted hover:text-text-secondary">
           💡 Quick Tips
         </summary>
-        <ul className="mt-2 space-y-1 text-slate-300 ml-4 list-disc">
+        <ul className="mt-2 space-y-1 text-text-secondary ml-4 list-disc">
           <li><strong>Stash House:</strong> Check phone for notification, raid for free Acid Lab supplies</li>
           <li><strong>G's Cache:</strong> Random location daily, check map for green icon</li>
           <li><strong>Safe Income:</strong> Collect from Nightclub safe ($50k) or Agency safe ($20k)</li>

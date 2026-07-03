@@ -41,6 +41,16 @@ instead of raw `hud-pink` for pink body text -- pure Vice Pink drops to 3.86:1 o
 `bg-raised`, which fails AA at body size (it's fine for large/bold text, icons,
 borders, and filled buttons with dark ink).
 
+**Documented exception -- achievement tiers.** `gamification/AchievementsGallery.jsx`
+keeps a 4-hue `TIER_COLORS` map (bronze/silver/gold/platinum, raw Tailwind
+`amber`/`slate`/`yellow` + `hud-blue` for platinum) instead of collapsing to
+the two-channel rule. Tier is a categorical rank (like an Olympic medal), not
+a good/bad status signal -- forcing it into cyan/pink would erase real
+information (you couldn't tell a gold unlock from a platinum one). This is the
+only place in the app where raw palette classes are intentional, not
+technical debt; the per-view "grep-clean of raw palette" acceptance criterion
+excludes this file for exactly this reason.
+
 **Type:** `font-display` / `font-body` = Outfit (self-hosted variable woff2,
 `public/fonts/Outfit-var.woff2`). `font-mono` = Fira Code (self-hosted,
 `public/fonts/FiraCode-var.woff2`), used for all dollar amounts, stats, and

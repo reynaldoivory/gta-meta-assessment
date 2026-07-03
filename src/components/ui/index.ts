@@ -1,0 +1,25 @@
+// Arcade HUD design-system primitives. Import from here, not from files directly.
+export { Button } from './Button';
+export type { ButtonProps, ButtonVariant, ButtonSize } from './Button';
+export { Card } from './Card';
+export type { CardProps, CardVariant, CardPadding } from './Card';
+export { Badge } from './Badge';
+export type { BadgeProps, BadgeTone, BadgeSize } from './Badge';
+export { Modal } from './Modal';
+export type { ModalProps, ModalSize } from './Modal';
+export { Stat } from './Stat';
+export type { StatProps, StatSize } from './Stat';
+export { SectionHeader } from './SectionHeader';
+export type { SectionHeaderProps } from './SectionHeader';
+export { AppShell } from './AppShell';
+export type { AppShellProps, AppShellNavItem } from './AppShell';
+export { TableWrap, Table, THead, TBody, TR, TH, TD } from './Table';
+export { Field, Input } from './Field';
+export type { FieldProps, InputProps } from './Field';
+export { EmptyState } from './EmptyState';
+export type { EmptyStateProps } from './EmptyState';
+export { Spinner } from './Spinner';
+export type { SpinnerProps } from './Spinner';
+export { LoadingOverlay } from './LoadingOverlay';
+export type { LoadingOverlayProps } from './LoadingOverlay';
+export { useFocusTrap } from './hooks/useFocusTrap';

@@ -5,10 +5,10 @@ import { AIAssistantTools } from '../components/shared/AIAssistantTools';
 import { usePriorityPlan } from '../utils/usePriorityPlan';
 import {
   EmptyResultsState,
-  ActionPlanHeader,
   OptionalNextGoal,
   OptionalSessionConsultant,
 } from '../components/shared/PriorityActionPlanSections';
+import { AppShell } from '../components/ui';
 
 const PriorityActionPlan = () => {
   const [sessionMinutes, setSessionMinutes] = useState(60);
@@ -24,12 +24,8 @@ const PriorityActionPlan = () => {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-4 md:p-6 text-slate-100 font-sans">
-      <div className="max-w-4xl mx-auto space-y-6">
-        
-        {/* Header */}
-        <ActionPlanHeader setStep={setStep} />
-
+    <AppShell title="Priority Action Plan" onBack={{ label: 'Back to Results', action: () => setStep('results') }}>
+      <div className="space-y-6">
         {/* Time to Goal Card */}
         <OptionalNextGoal nextGoal={results.nextGoal} />
 
@@ -56,7 +52,7 @@ const PriorityActionPlan = () => {
           setWhatIfText={setWhatIfText}
         />
       </div>
-    </div>
+    </AppShell>
   );
 };
 

@@ -1,71 +1,47 @@
 import PropTypes from 'prop-types';
-import { ArrowLeft } from 'lucide-react';
 import { SessionCard } from './SessionCard';
+import { AppShell, Button, EmptyState } from '../ui';
 
 export const EmptyResultsState = ({ setStep }) => (
-  <div className="min-h-screen bg-slate-950 p-4 md:p-6">
-    <div className="max-w-4xl mx-auto">
-      <button
-        type="button"
-        onClick={() => setStep('results')}
-        className="mb-4 text-slate-400 hover:text-white"
-      >
-        ← Back to Results
-      </button>
-      <p className="text-slate-400">No results yet. Head back to the Heist Planning Board and run your assessment first.</p>
-    </div>
-  </div>
+  <AppShell title="Priority Action Plan">
+    <EmptyState
+      title="No results yet"
+      description="Head back to the Heist Planning Board and run your assessment first."
+      action={<Button variant="secondary" onClick={() => setStep('results')}>Back to Results</Button>}
+    />
+  </AppShell>
 );
 
 EmptyResultsState.propTypes = {
   setStep: PropTypes.func.isRequired,
 };
 
-export const ActionPlanHeader = ({ setStep }) => (
-  <div className="flex justify-between items-center bg-slate-900/80 p-4 rounded-xl border border-slate-700">
-    <button
-      type="button"
-      onClick={() => setStep('results')}
-      className="flex items-center gap-2 text-slate-400 hover:text-white transition-colors"
-    >
-      <ArrowLeft className="w-4 h-4" /> Back to Results
-    </button>
-    <div className="text-xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-400">
-      Priority Action Plan
-    </div>
-  </div>
-);
-
-ActionPlanHeader.propTypes = {
-  setStep: PropTypes.func.isRequired,
-};
-
 const NextGoalCard = ({ nextGoal }) => (
-  <div className="bg-gradient-to-r from-green-900/50 to-emerald-900/50 border border-green-500 rounded-lg p-4">
-    <h3 className="text-xl font-bold text-green-400 mb-2">
+  <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-lg p-4">
+    <h3 className="text-xl font-bold text-hud-blue mb-2">
       🎯 Next Goal: {nextGoal.name}
     </h3>
     {nextGoal.canAffordNow ? (
-      <p className="text-green-300 text-lg">✅ You can buy this NOW!</p>
+      <p className="text-hud-blue text-lg">✅ You can buy this NOW!</p>
     ) : (
       <div className="space-y-2">
-        <div className="flex justify-between text-slate-300">
+        <div className="flex justify-between text-text-secondary">
           <span>Cost:</span>
           <span className="font-mono">${nextGoal.cost.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between text-yellow-400">
+        <div className="flex justify-between text-hud-blue">
           <span>You have:</span>
           <span className="font-mono">${nextGoal.currentCash.toLocaleString()}</span>
         </div>
-        <div className="flex justify-between text-red-400">
+        <div className="flex justify-between text-accent-pink-text">
           <span>Need:</span>
           <span className="font-mono">${nextGoal.needed.toLocaleString()}</span>
         </div>
-        <div className="mt-3 pt-3 border-t border-slate-700">
-          <p className="text-lg text-green-300">
+        <div className="mt-3 pt-3 border-t border-border">
+          <p className="text-lg text-hud-blue">
             ⏱️ <strong>{nextGoal.hoursRemaining}hrs</strong> of grinding
           </p>
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-text-muted">
             Best method: {nextGoal.fastestGrind}
           </p>
         </div>
@@ -91,13 +67,13 @@ OptionalNextGoal.propTypes = {
 };
 
 const PassiveProgressStatus = ({ passiveProgress }) => (
-  <div className="mt-4 text-xs text-slate-400">
+  <div className="mt-4 text-xs text-text-muted">
     Passive systems maxed:{' '}
-    <span className={passiveProgress?.allMaxed ? 'text-emerald-400 font-semibold' : 'text-yellow-400 font-semibold'}>
+    <span className={passiveProgress?.allMaxed ? 'text-hud-blue font-semibold' : 'text-accent-pink-text font-semibold'}>
       {passiveProgress?.readyCount ?? 0}/{passiveProgress?.total ?? 4}
     </span>
     {!passiveProgress?.allMaxed && (
-      <span className="ml-2 text-slate-500">
+      <span className="ml-2 text-text-muted">
         (linear grinds are de-prioritized until passives are upgraded)
       </span>
     )}
@@ -109,20 +85,20 @@ PassiveProgressStatus.propTypes = {
 };
 
 const SessionConsultantCard = ({ sessionPlan, sessionMinutes, setSessionMinutes }) => (
-  <div className="bg-slate-900/60 border border-emerald-900/30 rounded-2xl p-6">
-    <div className="flex items-center justify-between gap-3 mb-4">
+  <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
+    <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div>
-        <h3 className="text-xl font-bold text-white">Session Consultant</h3>
-        <p className="text-sm text-slate-400">
+        <h3 className="text-xl font-bold text-text-primary">Session Consultant</h3>
+        <p className="text-sm text-text-muted">
           Compound Efficiency: start passive clocks first, then bridge with best executable money, then invest in unlocks.
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-slate-400">I have</span>
+        <span className="text-xs text-text-muted">I have</span>
         <select
           value={sessionMinutes}
           onChange={(e) => setSessionMinutes(Number(e.target.value))}
-          className="bg-slate-900 border border-slate-700 rounded-lg px-3 py-2 text-sm text-white"
+          className="bg-bg-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary"
         >
           <option value={30}>30 minutes</option>
           <option value={60}>60 minutes</option>

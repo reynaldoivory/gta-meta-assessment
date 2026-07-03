@@ -11,7 +11,7 @@ npm run dev          # Vite dev server (localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Preview production build locally
 npm test             # Jest unit tests
-npm run lint         # ESLint (0 errors, ~71 warnings expected)
+npm run lint         # ESLint (0 errors, ~76 warnings expected)
 npm run type-check   # tsc --noEmit
 npm run deploy       # Build + gh-pages push to GitHub Pages
 
@@ -36,26 +36,38 @@ node scripts/generateModStack.mjs [--class Super] [--hsw] [--ids 001,025] ...
 
 ```
 src/
-├── views/                    # Page-level components (5 views)
+├── views/                    # Page-level components (4 views -- QuickStartGuide
+│   │                         # was removed 2026-07-03, it was unreachable dead code)
 │   ├── AssessmentForm.jsx    # "Heist Planning Board" -- main input form
 │   ├── AssessmentResults.jsx # Results display after assessment runs
 │   ├── PriorityActionPlan.jsx # Prioritized action plan view
-│   ├── QuickStartGuide.jsx   # Onboarding guide
 │   └── GarageTab.jsx         # Browse 795-vehicle database (read-only)
 ├── components/
 │   ├── GTAAssessment.jsx     # Root component, view router
-│   ├── shared/               # Reusable UI (40 components)
-│   ├── calculators/          # ROICalculator, SocialCardGenerator
-│   ├── garage/               # DetailModal, FilterPanel, VehicleTable
+│   ├── ui/                   # Design-system primitives (Button, Card, Badge,
+│   │                         # Modal, Stat, SectionHeader, AppShell, Table,
+│   │                         # Field, EmptyState, Spinner/LoadingOverlay,
+│   │                         # hooks/useFocusTrap) -- added 2026-07-03
+│   ├── shared/                # Reusable UI (domain cards, panels, trackers)
+│   ├── calculators/           # ROICalculator, SocialCardGenerator
+│   ├── garage/                # DetailModal, FilterPanel, VehicleTable, VehicleCardList
 │   └── gamification/         # Achievements, streaks, progress
 ├── context/                  # React context providers
 │   ├── AssessmentContext.tsx  # Form state, results, step navigation
 │   ├── EmpireContext.tsx      # Business ownership state
 │   └── ToastContext.tsx       # Notification system
-├── utils/                    # Business logic (48 files)
+├── utils/                    # Business logic
+│   ├── storage/               # appStorage.ts (all localStorage access, STORAGE_KEYS
+│   │                          # registry) + useStoredState.ts -- added 2026-07-03.
+│   │                          # UI components must not call localStorage directly.
+│   ├── calculations/           # Extracted pure math: roi, strength, incomeComparison
+│   │                          # -- added 2026-07-03
+│   └── trackers/               # Extracted pure date/time math: gta6Countdown, acidLab,
+│                              # dailyReset -- added 2026-07-03
 ├── config/                   # weeklyEvents.ts, gatekeeperSchema.ts
 ├── data/                     # Business definitions (verifiedProperty/)
-└── types/                    # domain.types.ts, enterprise.types.ts
+└── types/                    # domain.types.ts, enterprise.types.ts, branded.ts (Dollars/
+                               # Income/Hours/Days nominal types -- added 2026-07-03)
 ```
 
 ## Data Flow
@@ -98,6 +110,7 @@ These files are authoritative. Do not duplicate their values elsewhere.
 | **Vehicle database** | `public/data/vehicles.csv` | 795 vehicles, updated Apr 17 2026. Source: github.com/reynaldoivory/gta-online-database |
 | **Formatting** | `src/utils/formatters.ts` | `formatCurrency`, `formatDollars`, `formatHours`, `formatHoursShort`. Do not redefine inline. |
 | **Domain types** | `src/types/domain.types.ts` | `AssessmentFormData`, `AssessmentResult`. |
+| **Design tokens** | `tailwind.config.js` | "Arcade HUD" system (locked 2026-07-03): `bg.*`/`text.*`/`border.*`/`status.*`/`hud.*` semantic tokens. Full usage docs + contrast matrix in `docs/DESIGN_SYSTEM.md`. |
 
 ## Weekly Events Update Process
 
@@ -111,8 +124,8 @@ Every Thursday when Rockstar announces new bonuses:
 
 ## Security
 
-- **CSP** in `index.html`: `script-src 'self'; connect-src 'none'`. No external scripts or network calls.
-- **localStorage reads**: All wrapped in try/catch with `Array.isArray` / shape validation before use.
+- **CSP** in `index.html`: `script-src 'self'; connect-src 'self'; font-src 'self'`. No external scripts, network calls, or font requests -- fonts are self-hosted under `public/fonts/` (2026-07-03).
+- **localStorage reads**: All access goes through `src/utils/storage/appStorage.ts` (added 2026-07-03), which wraps every read/write in try/catch with `Array.isArray` / shape validation.
 - **Gamification state**: Allowlist-filtered spread (`GAMIFICATION_ALLOWED_KEYS`) prevents prototype pollution.
 - **CSV export**: `escapeCsvCell()` prevents formula injection.
 - **No secrets**: Fully client-side, no API keys, no backend.
@@ -121,20 +134,23 @@ Every Thursday when Rockstar announces new bonuses:
 ## Testing
 
 ```bash
-npm test                       # 16 tests in computeAssessment.test.js
+npm test                       # 139 tests across 15 suites
 npm run test:recommendations   # Recommendation engine smoke test
 ```
 
-Test file: `src/utils/__tests__/computeAssessment.test.js`. Tests beginner/intermediate/veteran/edge profiles against income and score ranges. When changing income values in `modelConfig.js`, check test bounds.
+Core scoring: `src/utils/__tests__/computeAssessment.test.js`. Tests beginner/intermediate/veteran/edge profiles against income and score ranges. When changing income values in `modelConfig.js`, check test bounds.
+
+Also covered (added during the 2026-07-03 UX overhaul + structural refactor): `characterization.test.js` (6 frozen-clock golden fixtures pinning `computeAssessment`/`buildCompactActionPlan`/`buildSessionPlan` output -- the refactor safety net; re-capture via `CHAR_CAPTURE=1 npm test -- characterization` only if the underlying arithmetic is meant to change), `appStorage.test.ts`, `calculations.test.ts`, `trackers.test.ts`, and `src/components/ui/__tests__/*` + `hooks/__tests__/useFocusTrap.test.tsx`.
 
 ## Known Technical Debt
 
-- **50 `any` annotations** across 10 files. Largest cluster: `actionPlanBuilder.ts` (1200 LOC, file-wide eslint disable). Needs proper interface extraction.
+- **~56 `any` annotations**. Largest cluster: `actionPlanBuilder.ts` (1200 LOC, file-wide eslint disable). Needs proper interface extraction.
 - **`tsconfig.json` strict: false**. Enable after clearing `any` backlog.
-- **Mixed file extensions**: 50 `.jsx` + 6 `.tsx`. Gradual migration to `.tsx` with proper types.
+- **Mixed file extensions**: 45 `.jsx` + 19 `.tsx` (the `.tsx` count grew with the 2026-07-03 `src/components/ui/` design-system primitives and the extracted `calculations/`/`trackers/` modules, all written in TypeScript per that session's new-code convention). Gradual migration of remaining `.jsx` continues.
 - **`actionPlanBuilder.ts`** is 1200 lines with complexity 53. Candidate for splitting into scoring, annotation, and compound-efficiency modules.
-- **`src/utils/` is flat** (48 files). Candidate for subdirectories: `bottlenecks/`, `calculations/`, `actionPlanning/`, `hooks/`.
-- **Chunk size** warning on build (~502 kB). Could benefit from dynamic imports for ProgressChart and calculators.
+- **`src/utils/` subdirectory split partially done** (2026-07-03): `storage/`, `calculations/`, and `trackers/` now exist (see Architecture above). Still flat/uncategorized: bottleneck detectors, action-planning modules. `actionPlanBuilder.ts` splitting (above) would be the next candidate for its own subdirectory.
+- **Chunk size** warning on build (main chunk ~531 kB as of 2026-07-03, ceiling 591 kB via `scripts/bundleReport.mjs`). Could benefit from dynamic imports for ProgressChart and calculators.
+- **`heading-order` (moderate axe violation)** on results/actionPlan views: `GTA6Countdown`'s `<h3>` doesn't nest cleanly under the page `<h1>` in every child component. Not part of the 0-serious/critical a11y gate; deferred pending a broader heading-level audit across the `gamification/` component suite. See `docs/ux-overhaul/A11Y.md`.
 
 ## Conventions
 

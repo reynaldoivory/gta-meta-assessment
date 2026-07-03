@@ -9,6 +9,54 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed — 2026-07-03 · UX overhaul + structural refactor ("Arcade HUD")
+One documented design system across every view, plus a structural refactor separating
+assessment math and localStorage access from the UI layer. Full audit trail, before/after
+screenshots, and phase-by-phase notes in `docs/ux-overhaul/` (see `REPORT.md` for the summary).
+
+- **Design system**: new "Arcade HUD" visual direction (Deep Navy `#050b14` / Slate Blue
+  `#0a192f`, HUD Blue `#29d2e3` + Vice Pink `#ff007f` two-channel status system, Outfit +
+  Fira Code typefaces, self-hosted woff2) replaces three overlapping, undocumented color
+  authorities. Full token reference + contrast matrix in `docs/DESIGN_SYSTEM.md`.
+- **New `src/components/ui/` primitives**: Button, Card, Badge, Modal (with a re-queried
+  `useFocusTrap`), Stat, SectionHeader, AppShell, Table, Field/Input, EmptyState,
+  Spinner/LoadingOverlay. All four views (form, results, action plan, garage) rebuilt on
+  these, mobile-first at 390px through 1440px.
+- **Garage**: table view (desktop) and a new card-list view (phone) are mounted
+  conditionally via a `useMediaQuery` hook, never both at once. Sortable column headers are
+  now real keyboard-operable buttons (previously mouse-only `onClick` divs).
+- **Structural refactor** (scope explicitly widened by the owner mid-engagement, superseding
+  the original "don't touch assessment math / localStorage" constraint): all assessment math
+  (ROI, strength training, income comparisons) and date/time tracker math (Acid Lab, daily
+  reset, GTA VI countdown) extracted out of UI components into `src/utils/calculations/` and
+  `src/utils/trackers/`; every localStorage read/write centralized behind
+  `src/utils/storage/appStorage.ts` + a `useStoredState` hook — UI components no longer call
+  `localStorage` directly. A 6-fixture characterization test suite (frozen clock, golden
+  JSON) pins `computeAssessment` output across the whole refactor as a behavior-preserving
+  guard.
+- **Compile-time branded types** (`src/types/branded.ts`): `Dollars`/`Income`/`Hours`/`Days`
+  nominal types via the `unique symbol` pattern, applied at the ROI/income calculation
+  modules' public boundaries. Zero runtime cost; catches unit-confusion bugs (e.g. passing an
+  hourly rate where a total was expected) at compile time.
+- **Accessibility**: WCAG AA contrast verified for every semantic token pair
+  (`scripts/contrastAudit.mjs`); axe-core sweep across 4 views x 3 widths found and fixed 5
+  serious/critical issues (down to 0) — the most notable was an `opacity-N` dimming pattern
+  used on several "locked"/"unselected"/"completed" card states that silently multiplied an
+  already-muted text color below the 4.5:1 floor; fixed by using fully-opaque, independently
+  AA-passing colors instead of opacity. Lighthouse accessibility >= 97 on every view
+  (`docs/ux-overhaul/LIGHTHOUSE.md`). Global `prefers-reduced-motion` support; a `<main>`
+  landmark added.
+- **Removed**: unreachable `QuickStartGuide.jsx` view, 6 dead shared components (~1,100 LOC,
+  including `CarWashExpiryBadge` — the Master Control Terminal cannot monitor the Car Wash
+  business, making it mechanically useless), the legacy `gta.*`/`primary.*`/`surface.*` color
+  token aliases and their matching deprecated `index.css` `@apply` classes (all confirmed
+  zero-usage via exhaustive grep before deletion).
+- CSP tightened: fonts are now self-hosted, so `fonts.googleapis.com`/`gstatic.com` are gone
+  from `style-src`/`font-src` entirely — the policy is fully same-origin.
+- Bundle size held flat (~531 kB main chunk, within the 591 kB ceiling) despite the new
+  design-system primitives, because dead-code removal and legacy-token deletion offset the
+  addition.
+
 ### Changed — 2026-07-03 · July 2026 content + hygiene refresh
 - Weekly events refreshed Apr 16-23 -> **Jul 2-13 2026 Independence Day Special** (free Lago Zancudo
   Bunker, 2X Bunker sells/research, 3X Stunt Races, 5X G's Cache + 2X Smuggler/KnoWay Out as GTA+

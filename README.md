@@ -23,6 +23,7 @@ A client-side criminal-empire evaluator for GTA Online. Players enter their asse
 - **Gamification** — 13 achievements, streaks, XP, progress charts
 - **Weekly events** — auto-expiring bonuses tracked against Rockstar's Thursday rotation
 - **Exports** — CSV, AI-assistant prompts, Google Doc-ready reports, social share cards
+- **Arcade HUD design system** — one dark, mobile-first visual system across every view (see [docs/DESIGN_SYSTEM.md](docs/DESIGN_SYSTEM.md)); WCAG AA contrast, keyboard-operable throughout, Lighthouse accessibility >= 97 on every view
 
 ## Stack
 
@@ -52,7 +53,7 @@ npm run dev          # localhost:5173
 ```bash
 npm run build        # production build -> dist/
 npm run preview      # preview production build
-npm test             # Jest unit tests (16 tests)
+npm test             # Jest unit tests (139 tests)
 npm run lint         # ESLint
 npm run type-check   # tsc --noEmit
 npm run deploy       # build + push to gh-pages
@@ -67,11 +68,11 @@ node scripts/generateModStack.mjs --class Super --hsw > my-stack.md
 
 ## Security
 
-- **CSP hardened** — `script-src 'self'; connect-src 'self'`. No external scripts, no third-party trackers.
-- **Prototype-pollution defended** — localStorage hydration uses an allowlisted key merge.
+- **CSP hardened** — `script-src 'self'; connect-src 'self'; font-src 'self'`. No external scripts, no third-party trackers, no external font requests (fonts are self-hosted under `public/fonts/`).
+- **Prototype-pollution defended** — localStorage reads/writes are centralized in `src/utils/storage/appStorage.ts`; hydration uses an allowlisted key merge.
 - **External links sanitized** — `DetailModal` enforces origin allowlist on all CSV-sourced URLs.
 - **CSV injection guarded** — export paths call `escapeCsvCell()` on every cell.
-- **npm audit** — 0 high/critical vulnerabilities.
+- **npm audit** — 0 high/critical vulnerabilities in production dependencies.
 - **No secrets, no backend** — fully client-side.
 
 See [SECURITY.md](SECURITY.md) for the disclosure policy.
@@ -93,6 +94,15 @@ AssessmentContext.runAssessment()
                                 ├── actionPlanBuilder
                                 ├── dynamicIncome (weekly bonuses)
                                 └── AIAssistantTools (LLM export)
+```
+
+```
+src/
+├── components/ui/          # Design-system primitives (Button, Card, Modal, AppShell, ...)
+├── utils/storage/          # Centralized localStorage access (appStorage.ts, useStoredState.ts)
+├── utils/calculations/     # Extracted pure math (ROI, income comparisons, strength training)
+├── utils/trackers/         # Extracted pure date/time math (daily reset, countdowns, Acid Lab)
+└── types/branded.ts        # Compile-time nominal types (Dollars/Income/Hours/Days) for calculation APIs
 ```
 
 Full architecture notes and single-source-of-truth registry: see [CLAUDE.md](CLAUDE.md) and [docs/](docs/).

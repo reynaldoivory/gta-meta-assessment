@@ -10,11 +10,12 @@ const toastIcons = {
   info: Info,
 };
 
+// Two-channel: success/info are "good" (cyan), warning/error are "bad" (pink).
 const toastColors = {
-  success: 'bg-gradient-to-r from-accent-green/90 to-primary-cyan-600/90 border-accent-green shadow-glow-cyan text-white',
-  error: 'bg-gradient-to-r from-accent-pink/90 to-primary-orange-600/90 border-accent-pink shadow-glow-orange text-white',
-  warning: 'bg-gradient-to-r from-primary-orange-500/90 to-accent-gold/90 border-primary-orange-500 shadow-glow-orange text-white',
-  info: 'bg-gradient-to-r from-primary-purple-600/90 to-primary-cyan-600/90 border-primary-purple-500 shadow-glow-purple text-white',
+  success: 'bg-hud-blue/90 border-hud-blue shadow-glow-blue text-text-on-accent',
+  info: 'bg-hud-blue/90 border-hud-blue shadow-glow-blue text-text-on-accent',
+  warning: 'bg-hud-pink/90 border-hud-pink shadow-glow-pink text-text-on-accent',
+  error: 'bg-hud-pink/90 border-hud-pink shadow-glow-pink text-text-on-accent',
 };
 
 export interface ToastProps {

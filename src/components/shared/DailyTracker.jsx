@@ -159,7 +159,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
             key={task.id}
             className={`flex items-center p-3 rounded-lg border transition ${
               task.isCompleted
-                ? 'bg-hud-blue/10 border-hud-blue/50 opacity-75'
+                ? 'bg-hud-blue/10 border-hud-blue/50'
                 : 'bg-bg-raised border-border hover:border-border-strong'
             }`}
           >
@@ -167,6 +167,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
               type="checkbox"
               checked={task.isCompleted}
               onChange={() => toggleTask(task.id)}
+              aria-label={task.label}
               className="w-5 h-5 accent-hud-blue cursor-pointer rounded border-border bg-bg-raised"
             />
             <div className="ml-3 flex-1">
@@ -174,7 +175,7 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
                 {task.label}
               </p>
               {task.rewards.special && (
-                <p className="text-xs text-hud-pink mt-0.5">
+                <p className="text-xs text-accent-pink-text mt-0.5">
                   {task.rewards.special}
                 </p>
               )}

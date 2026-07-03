@@ -5,7 +5,10 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <!-- Fonts are self-hosted (public/fonts), so no external font hosts are needed.
-         TODO: Remove 'unsafe-inline' from style-src once all style={{}} JSX props are replaced with CSS classes. -->
+         TODO: Remove 'unsafe-inline' from style-src once all style={{}} JSX props are replaced with CSS classes.
+         Progress (2026-07-03 UX overhaul): 9 components remain (down from 13), all
+         dynamic-value cases (progress-bar widths, animation delays) that don't map
+         cleanly to static Tailwind classes -- see docs/ux-overhaul/AUDIT.md. -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data: blob:; connect-src 'self';" />
     <title>GTA Online Meta Assessment</title>
   </head>

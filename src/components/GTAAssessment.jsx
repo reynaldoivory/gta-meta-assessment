@@ -6,8 +6,8 @@ import AssessmentResults from '../views/AssessmentResults';
 import PriorityActionPlan from '../views/PriorityActionPlan';
 import GarageTab from '../views/GarageTab';
 import DevTools from './shared/DevTools';
-import LoadingSpinner from './shared/LoadingSpinner';
 import ErrorBoundary from './shared/ErrorBoundary';
+import { LoadingOverlay } from './ui';
 
 // Inner component to consume context
 const AssessmentRouter = () => {
@@ -15,7 +15,7 @@ const AssessmentRouter = () => {
 
   // Show loading state during calculation
   if (isCalculating) {
-    return <LoadingSpinner message="Crunching the Numbers..." />;
+    return <LoadingOverlay message="Crunching the Numbers..." />;
   }
 
   switch (step) {
@@ -36,11 +36,11 @@ const AssessmentRouter = () => {
 const GTAAssessment = () => (
   <ErrorBoundary>
     <AssessmentProvider>
-      <div className="min-h-screen bg-transparent font-body text-slate-50">
-        <div className="relative z-10">
+      <div className="min-h-screen bg-transparent font-body text-text-primary">
+        <main className="relative z-10">
           <AssessmentRouter />
-          <DevTools />
-        </div>
+        </main>
+        <DevTools />
       </div>
     </AssessmentProvider>
   </ErrorBoundary>

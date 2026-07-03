@@ -133,8 +133,8 @@ export default function FilterPanel({ filters, setFilters, classes, shops, makes
             Price: {formatPriceShort(filters.priceMin)} – {formatPriceShort(filters.priceMax)}
           </label>
           <div className="flex gap-2 items-center">
-            <input id="garage-price-min" aria-label="Minimum price" type="range" min="0" max="5000000" step="50000" value={filters.priceMin} onChange={(e) => updateFilter('priceMin', parseInt(e.target.value, 10))} className="flex-1 h-2 bg-bg-raised rounded-lg appearance-none cursor-pointer accent-hud-blue" />
-            <input aria-label="Maximum price" type="range" min="0" max="10000000" step="100000" value={filters.priceMax} onChange={(e) => updateFilter('priceMax', parseInt(e.target.value, 10))} className="flex-1 h-2 bg-bg-raised rounded-lg appearance-none cursor-pointer accent-hud-blue" />
+            <input id="garage-price-min" aria-label="Minimum price" aria-valuetext={formatPriceShort(filters.priceMin)} type="range" min="0" max="5000000" step="50000" value={filters.priceMin} onChange={(e) => updateFilter('priceMin', parseInt(e.target.value, 10))} className="flex-1 h-2 bg-bg-raised rounded-lg appearance-none cursor-pointer accent-hud-blue" />
+            <input aria-label="Maximum price" aria-valuetext={formatPriceShort(filters.priceMax)} type="range" min="0" max="10000000" step="100000" value={filters.priceMax} onChange={(e) => updateFilter('priceMax', parseInt(e.target.value, 10))} className="flex-1 h-2 bg-bg-raised rounded-lg appearance-none cursor-pointer accent-hud-blue" />
           </div>
         </div>
 

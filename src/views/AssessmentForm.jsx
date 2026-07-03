@@ -114,7 +114,7 @@ export default function AssessmentForm() {
         />
 
         {/* =========== MAIN (COL-SPAN-8): ASSETS & OPERATIONS =========== */}
-        <main className="col-span-12 lg:col-span-8 space-y-6">
+        <div className="col-span-12 lg:col-span-8 space-y-6">
 
           {/* ASSETS HEADER */}
           <section className="space-y-6">
@@ -453,7 +453,7 @@ export default function AssessmentForm() {
               {isCalculating ? 'Analyzing...' : 'Run Assessment'}
             </Button>
           </div>
-        </main>
+        </div>
       </div>
     </AppShell>
   );

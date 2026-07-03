@@ -94,8 +94,9 @@ const SessionConsultantCard = ({ sessionPlan, sessionMinutes, setSessionMinutes 
         </p>
       </div>
       <div className="flex items-center gap-2">
-        <span className="text-xs text-text-muted">I have</span>
+        <label htmlFor="session-minutes" className="text-xs text-text-muted">I have</label>
         <select
+          id="session-minutes"
           value={sessionMinutes}
           onChange={(e) => setSessionMinutes(Number(e.target.value))}
           className="bg-bg-raised border border-border rounded-lg px-3 py-2 text-sm text-text-primary"

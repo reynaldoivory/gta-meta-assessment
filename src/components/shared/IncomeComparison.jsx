@@ -15,7 +15,7 @@ export const IncomeComparison = ({ hasAutoShop }) => {
       </h3>
       <div className="space-y-3">
         <div className={`p-4 rounded-lg border-2 flex justify-between items-center ${
-          hasAutoShop ? 'bg-hud-blue/10 border-hud-blue/50' : 'bg-bg-raised/50 border-border opacity-75'
+          hasAutoShop ? 'bg-hud-blue/10 border-hud-blue/50' : 'bg-bg-raised border-border'
         }`}>
           <div>
             <div className="flex items-center gap-2">

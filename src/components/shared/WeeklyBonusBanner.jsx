@@ -43,9 +43,14 @@ const WeeklyBonusBanner = ({ hasGTAPlus = false }) => {
           {bonuses.map((b) => (
             <div
               key={b.activity}
+              // No opacity dimming for locked tiles: it multiplies the whole
+              // subtree (including text), pushing already-tight-contrast text
+              // below WCAG AA. "Locked" is instead conveyed via the lock icon
+              // overlay + swapping text to the muted token (still AA-passing
+              // on its own) + a dimmer border.
               className={`rounded-xl bg-bg-raised/80 backdrop-blur-sm p-4 border-2 transition-all duration-200 ${
                 b.locked
-                  ? 'border-border/60 opacity-60'
+                  ? 'border-border/60'
                   : 'border-hud-pink/40 hover:border-hud-pink hover:shadow-glow-pink hover:scale-105'
               } relative`}
             >
@@ -54,10 +59,10 @@ const WeeklyBonusBanner = ({ hasGTAPlus = false }) => {
                   <Lock className="h-4 w-4 text-text-muted" />
                 </div>
               )}
-              <div className="text-sm font-mono font-bold text-accent-pink-text mb-1">
+              <div className={`text-sm font-mono font-bold mb-1 ${b.locked ? 'text-text-muted' : 'text-accent-pink-text'}`}>
                 {b.multiplier}
               </div>
-              <div className="text-text-primary text-base font-bold mb-2">{b.activity}</div>
+              <div className={`text-base font-bold mb-2 ${b.locked ? 'text-text-muted' : 'text-text-primary'}`}>{b.activity}</div>
               <div className="text-xs text-text-secondary">{b.note}</div>
               {b.locked && (
                 <Badge tone="warning" size="sm" className="mt-2">GTA+ Required</Badge>

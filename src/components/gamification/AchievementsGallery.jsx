@@ -114,10 +114,13 @@ const AchievementsGallery = ({ unlockedIds = [], formData, results, history, str
               return (
                 <div
                   key={achievement.id}
+                  // No opacity dimming for locked cards -- the title/description
+                  // already switch to the muted text token below; multiplying
+                  // that by opacity too risked pushing it under WCAG AA.
                   className={`relative overflow-hidden rounded-2xl border p-4 transition-all ${
                     isUnlocked
                       ? `${colors.border} ${colors.bg}`
-                      : 'border-border bg-bg-base/60 opacity-60'
+                      : 'border-border bg-bg-base/60'
                   }`}
                 >
                   <div className="flex items-start justify-between gap-2">

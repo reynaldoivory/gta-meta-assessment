@@ -9,7 +9,12 @@ const AssetCard = ({ label, emoji, isOwned, onToggle, children, cost }) => {
         type="button"
         onClick={onToggle}
         aria-label={`Select ${label}`}
-        className="w-full rounded-xl border transition-all duration-300 bg-bg-surface/60 border-border-subtle opacity-80 hover:opacity-100 cursor-pointer text-left"
+        // No opacity-based dimming here: opacity multiplies the WHOLE subtree
+        // (including text-muted), silently pushing already-muted text below
+        // the WCAG AA contrast floor (axe caught this at 3.69:1/4.29:1).
+        // "Unselected" is instead conveyed via fully-opaque, deliberately
+        // muted colors that pass AA on their own.
+        className="w-full rounded-xl border transition-all duration-300 bg-bg-surface border-border-subtle hover:border-border cursor-pointer text-left"
       >
         <div className="p-3 md:p-4 flex items-center justify-between select-none">
           <div className="flex items-center gap-3">

@@ -19,6 +19,14 @@ const Confetti = ({ active, onComplete }) => {
   useEffect(() => {
     if (!active) return;
 
+    // requestAnimationFrame/Canvas isn't a CSS animation, so the global
+    // prefers-reduced-motion CSS override (index.css) can't reach it --
+    // check explicitly and skip the burst for motion-sensitive users.
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      onComplete?.();
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 

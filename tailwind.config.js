@@ -37,46 +37,8 @@ export default {
           danger: '#ff007f',
         },
         hud: { blue: '#29d2e3', pink: '#ff007f' },
-
-        // ============================================================
-        // LEGACY ALIASES -- re-pointed to Arcade HUD (DEPRECATED, removed Phase 4).
-        // Kept so un-migrated components shift color coherently instead of clashing.
-        // ============================================================
-        gta: {
-          dark: '#050b14',
-          panel: '#0a192f',
-          green: '#29d2e3', // was cyan; now HUD blue (positive/actionable)
-          red: '#ff007f',   // Vice pink (danger)
-          yellow: '#ff007f', // warning -> pink
-          gray: '#8399B4',
-        },
-        surface: {
-          dark: '#050b14',
-          card: '#0a192f',
-          elevated: '#12294a',
-        },
-        // primary.* ramps re-pointed: purple + cyan -> HUD-blue family, orange -> pink family.
-        primary: {
-          purple: {
-            50: '#e8fbfd', 100: '#c5f4f9', 400: '#5fe0ee', 500: '#29d2e3',
-            600: '#1ba9bf', 700: '#157f8f', 900: '#0c4a54',
-          },
-          cyan: {
-            50: '#e8fbfd', 100: '#c5f4f9', 400: '#5fe0ee', 500: '#29d2e3',
-            600: '#1ba9bf', 700: '#157f8f',
-          },
-          orange: {
-            50: '#ffe6f2', 100: '#ffcce0', 400: '#ff4d9e', 500: '#ff007f',
-            600: '#d1006a', 700: '#a30052',
-          },
-        },
         accent: {
-          DEFAULT: '#29d2e3',
-          blue: '#29d2e3',
-          pink: '#ff007f',        // re-pointed from #fb7185 -> Vice Pink
           'pink-text': '#ff5ba6', // body-safe pink tint (AA on all layers)
-          green: '#4ade80',       // @deprecated legacy accent, retained until Phase 4
-          gold: '#fbbf24',        // @deprecated
         },
       },
       fontFamily: {
@@ -95,12 +57,9 @@ export default {
         'full': '9999px',
       },
       boxShadow: {
-        // Arcade HUD glows -- two channels. Legacy names re-pointed so existing usages shift.
+        // Arcade HUD glows -- two channels only.
         'glow-blue': '0 0 24px rgba(41, 210, 227, 0.35), 0 0 48px rgba(41, 210, 227, 0.15)',
         'glow-pink': '0 0 24px rgba(255, 0, 127, 0.35), 0 0 48px rgba(255, 0, 127, 0.15)',
-        'glow-purple': '0 0 24px rgba(41, 210, 227, 0.35), 0 0 48px rgba(41, 210, 227, 0.15)', // -> blue
-        'glow-cyan': '0 0 24px rgba(41, 210, 227, 0.35), 0 0 48px rgba(41, 210, 227, 0.15)',
-        'glow-orange': '0 0 24px rgba(255, 0, 127, 0.35), 0 0 48px rgba(255, 0, 127, 0.15)', // -> pink
         'float': '0 8px 30px rgba(0, 0, 0, 0.35), 0 4px 8px rgba(0, 0, 0, 0.25)',
         'float-lg': '0 20px 50px rgba(0, 0, 0, 0.5), 0 8px 16px rgba(0, 0, 0, 0.3)',
       },

@@ -80,13 +80,16 @@ export default function VehicleTable({ vehicles, sortConfig, onSort, onSelect })
           <THead>
             <TR>
               {columns.map(col => (
-                <TH
-                  key={col.key}
-                  onClick={() => onSort(col.key)}
-                  className={`${col.width} cursor-pointer hover:text-hud-blue transition-colors`}
-                >
-                  {col.label}
-                  <SortIcon columnKey={col.key} />
+                <TH key={col.key} className={col.width}>
+                  <button
+                    type="button"
+                    onClick={() => onSort(col.key)}
+                    aria-label={`Sort by ${col.label}${sortConfig.key === col.key ? `, currently ${sortConfig.direction === 'asc' ? 'ascending' : 'descending'}` : ''}`}
+                    className="w-full text-left cursor-pointer hover:text-hud-blue transition-colors uppercase tracking-wider text-2xs font-semibold text-text-muted"
+                  >
+                    {col.label}
+                    <SortIcon columnKey={col.key} />
+                  </button>
                 </TH>
               ))}
             </TR>

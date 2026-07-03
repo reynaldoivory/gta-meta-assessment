@@ -1,25 +1,37 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700&display=swap');
+/* Self-hosted fonts (Arcade HUD). Variable woff2, latin subset, base-path absolute
+   URLs so they resolve on both the dev server and GitHub Pages. No runtime Google
+   Fonts request -- CSP is now fully same-origin. */
+@font-face {
+  font-family: 'Outfit';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('/gta-meta-assessment/fonts/Outfit-var.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Fira Code';
+  font-style: normal;
+  font-weight: 300 700;
+  font-display: swap;
+  src: url('/gta-meta-assessment/fonts/FiraCode-var.woff2') format('woff2');
+}
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
-  /* Enterprise Kid-Friendly Design System */
-  --font-display: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', system-ui, sans-serif;
-  --font-body: 'Inter', system-ui, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', 'Consolas', monospace;
-  
-  /* 3 Primary Colors */
-  --color-primary-purple: #a855f7;
-  --color-primary-cyan: #22d3ee;
-  --color-primary-orange: #fb923c;
-  
-  /* Surface colors */
-  --color-surface-dark: #0f0918;
-  --color-surface-card: #1a1128;
-  --color-surface-elevated: #251a35;
-  
+  --font-display: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-body: 'Outfit', system-ui, -apple-system, sans-serif;
+  --font-mono: 'Fira Code', ui-monospace, SFMono-Regular, Consolas, monospace;
+
+  /* Arcade HUD */
+  --color-bg-base: #050b14;
+  --color-bg-surface: #0a192f;
+  --color-bg-raised: #12294a;
+  --color-hud-blue: #29d2e3;
+  --color-hud-pink: #ff007f;
+
   color-scheme: dark;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -32,14 +44,13 @@ body {
   min-width: 320px;
   min-height: 100vh;
   font-family: var(--font-body);
-  color: #f1f5f9;
-  
-  /* Vibrant, Playful Gradient Background */
+  color: #E6EEF7;
+
+  /* Arcade HUD: deep navy with restrained HUD-blue + Vice-pink field glows. */
   background:
-    radial-gradient(1400px circle at 15% -10%, rgba(168, 85, 247, 0.18), transparent 50%),
-    radial-gradient(1000px circle at 85% 10%, rgba(34, 211, 238, 0.16), transparent 50%),
-    radial-gradient(800px circle at 50% 100%, rgba(251, 146, 60, 0.12), transparent 50%),
-    linear-gradient(180deg, #0f0918 0%, #1a1128 50%, #0f0918 100%);
+    radial-gradient(1200px circle at 12% -8%, rgba(41, 210, 227, 0.10), transparent 55%),
+    radial-gradient(900px circle at 88% 6%, rgba(255, 0, 127, 0.07), transparent 55%),
+    linear-gradient(180deg, #050b14 0%, #0a192f 55%, #050b14 100%);
   background-attachment: fixed;
   background-size: 100% 100%;
 }
@@ -56,7 +67,7 @@ button {
 
 .font-display {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  letter-spacing: -0.01em;
   font-weight: 700;
 }
 
@@ -68,86 +79,105 @@ button {
   font-family: var(--font-mono);
 }
 
-/* Enterprise Components Base Styles */
+@layer base {
+  /* Global visible-focus system -- primitives and every focusable are born accessible. */
+  :focus-visible {
+    outline: 2px solid theme('colors.border.focus');
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+
+  /* Respect reduced-motion: neutralize the decorative keyframe animations. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+    body {
+      background-attachment: scroll;
+    }
+  }
+}
+
+/* ============================================================
+   DEPRECATED @apply primitives. Superseded by src/components/ui/*.
+   Retained until their last consumers migrate in Phase 3, then deleted
+   (grep-0 gate). Values re-pointed to Arcade HUD tokens so any remaining
+   usage renders on-palette.
+   ============================================================ */
 @layer components {
-  /* Primary Button - Purple gradient with glow */
+  /* @deprecated use ui/Button variant="primary" */
   .btn-primary {
-    @apply px-6 py-3 rounded-2xl font-bold text-white;
-    @apply bg-gradient-to-r from-primary-purple-600 to-primary-purple-500;
-    @apply shadow-glow-purple hover:shadow-glow-purple;
-    @apply transform transition-all duration-200;
-    @apply hover:scale-105 active:scale-95;
-    @apply border-2 border-primary-purple-400/30;
+    @apply px-6 py-3 rounded-2xl font-bold text-bg-base;
+    @apply bg-hud-blue;
+    @apply shadow-glow-blue;
+    @apply transition-all duration-200;
+    @apply hover:brightness-110 active:brightness-95;
+    @apply border-2 border-hud-blue/40;
   }
-  
-  /* Secondary Button - Cyan */
+
+  /* @deprecated use ui/Button variant="secondary" */
   .btn-secondary {
-    @apply px-6 py-3 rounded-2xl font-bold text-white;
-    @apply bg-gradient-to-r from-primary-cyan-600 to-primary-cyan-500;
-    @apply shadow-glow-cyan hover:shadow-glow-cyan;
-    @apply transform transition-all duration-200;
-    @apply hover:scale-105 active:scale-95;
-    @apply border-2 border-primary-cyan-400/30;
+    @apply px-6 py-3 rounded-2xl font-bold text-hud-blue;
+    @apply bg-hud-blue/10;
+    @apply transition-all duration-200;
+    @apply hover:bg-hud-blue/20 active:brightness-95;
+    @apply border-2 border-hud-blue/40;
   }
-  
-  /* Accent Button - Orange */
+
+  /* @deprecated use ui/Button variant="danger" */
   .btn-accent {
-    @apply px-6 py-3 rounded-2xl font-bold text-white;
-    @apply bg-gradient-to-r from-primary-orange-600 to-primary-orange-500;
-    @apply shadow-glow-orange hover:shadow-glow-orange;
-    @apply transform transition-all duration-200;
-    @apply hover:scale-105 active:scale-95;
-    @apply border-2 border-primary-orange-400/30;
+    @apply px-6 py-3 rounded-2xl font-bold text-bg-base;
+    @apply bg-hud-pink;
+    @apply shadow-glow-pink;
+    @apply transition-all duration-200;
+    @apply hover:brightness-110 active:brightness-95;
+    @apply border-2 border-hud-pink/40;
   }
-  
-  /* Card - Elevated with subtle glow */
+
+  /* @deprecated use ui/Card */
   .card-enterprise {
-    @apply bg-surface-card rounded-2xl p-6;
-    @apply border border-primary-purple-500/20;
-    @apply shadow-float backdrop-blur-sm;
+    @apply bg-bg-surface rounded-2xl p-6;
+    @apply border border-border-subtle;
+    @apply shadow-float;
     @apply transition-all duration-300;
-    @apply hover:shadow-float-lg hover:border-primary-purple-500/40;
+    @apply hover:border-border;
   }
-  
-  /* Badge/Pill - Circular shape */
+
+  /* @deprecated use ui/Badge */
   .badge {
     @apply inline-flex items-center justify-center;
     @apply px-3 py-1 rounded-full text-xs font-bold;
     @apply border-2;
   }
-  
   .badge-purple {
-    @apply badge bg-primary-purple-500/20 text-primary-purple-400 border-primary-purple-500/40;
+    @apply badge bg-hud-blue/15 text-hud-blue border-hud-blue/40;
   }
-  
   .badge-cyan {
-    @apply badge bg-primary-cyan-500/20 text-primary-cyan-400 border-primary-cyan-500/40;
+    @apply badge bg-hud-blue/15 text-hud-blue border-hud-blue/40;
   }
-  
   .badge-orange {
-    @apply badge bg-primary-orange-500/20 text-primary-orange-400 border-primary-orange-500/40;
+    @apply badge bg-hud-pink/15 text-hud-pink border-hud-pink/40;
   }
-  
-  /* Input fields - Rounded with focus glow */
+
+  /* @deprecated use ui/Input */
   .input-enterprise {
     @apply w-full px-4 py-3 rounded-xl;
-    @apply bg-surface-elevated border-2 border-primary-purple-500/30;
-    @apply text-white placeholder-slate-400;
-    @apply focus:outline-none focus:border-primary-purple-400;
-    @apply focus:shadow-glow-purple;
+    @apply bg-bg-raised border-2 border-border;
+    @apply text-text-primary placeholder-text-muted;
+    @apply focus:outline-none focus:border-border-focus;
     @apply transition-all duration-200;
   }
-  
-  /* Headers with gradient text */
+
+  /* @deprecated headings are now solid text-primary + a rule, not gradients */
   .heading-gradient-purple {
-    @apply font-display font-bold;
-    @apply bg-gradient-to-r from-primary-purple-400 to-primary-cyan-400;
-    @apply bg-clip-text text-transparent;
+    @apply font-display font-bold text-text-primary;
   }
-  
   .heading-gradient-fire {
-    @apply font-display font-bold;
-    @apply bg-gradient-to-r from-primary-orange-400 to-accent-pink;
-    @apply bg-clip-text text-transparent;
+    @apply font-display font-bold text-hud-pink;
   }
 }

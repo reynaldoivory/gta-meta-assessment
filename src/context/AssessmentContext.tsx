@@ -8,7 +8,7 @@ import { checkStreak } from '../utils/streakTracker';
 import { STORAGE_KEYS, getJSON, setJSON, remove } from '../utils/storage/appStorage';
 import { TRAP_SEVERITY } from '../utils/trapDetector';
 import { useEmpire } from './EmpireContext';
-import { deriveAssessmentFlags } from '../utils/deriveAssessmentFlags';
+import { deriveAssessmentFlags, mergeDerivedFlags } from '../utils/deriveAssessmentFlags';
 
 export interface CascadeTrap {
   id: string;
@@ -178,14 +178,7 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
     setTimeout(() => {
       try {
         const derivedFlags = deriveAssessmentFlags(empireState);
-        // OR-merge: Property Matrix (EmpireContext) and the older AssetToggleCard
-        // checkboxes both mark a handful of the same businesses (Oppressor,
-        // Armored Kuruma, Agency, Auto Shop, Car Wash) owned -- either path
-        // counts as owned, so neither regresses the other.
-        const mergedFormData: AssessmentFormData = { ...formData };
-        for (const key of Object.keys(derivedFlags) as (keyof AssessmentFormData)[]) {
-          mergedFormData[key] = Boolean(derivedFlags[key]) || Boolean(formData[key]);
-        }
+        const mergedFormData = mergeDerivedFlags(formData, derivedFlags);
 
         if (import.meta.env.DEV) {
           console.table(derivedFlags);

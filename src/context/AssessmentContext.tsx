@@ -7,6 +7,8 @@ import { getProgressHistory } from '../utils/progressTracker';
 import { checkStreak } from '../utils/streakTracker';
 import { STORAGE_KEYS, getJSON, setJSON, remove } from '../utils/storage/appStorage';
 import { TRAP_SEVERITY } from '../utils/trapDetector';
+import { useEmpire } from './EmpireContext';
+import { deriveAssessmentFlags } from '../utils/deriveAssessmentFlags';
 
 export interface CascadeTrap {
   id: string;
@@ -90,6 +92,11 @@ const createInitialFormData = (): AssessmentFormData => ({
 });
 
 export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
+  // Business ownership marked in the Property Matrix UI (BusinessMatrixPanel /
+  // BusinessCard) lives in EmpireContext, separate from this context's flat
+  // formData flags. deriveAssessmentFlags() bridges the two at assessment time.
+  const { state: empireState } = useEmpire();
+
   // 1. State Initialization
   const [formData, setFormData] = useState<AssessmentFormData>(() => {
     const defaults = createInitialFormData();
@@ -170,13 +177,27 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
     setIsCalculating(true);
     setTimeout(() => {
       try {
-        const assessmentResults = computeAssessment(formData);
+        const derivedFlags = deriveAssessmentFlags(empireState);
+        // OR-merge: Property Matrix (EmpireContext) and the older AssetToggleCard
+        // checkboxes both mark a handful of the same businesses (Oppressor,
+        // Armored Kuruma, Agency, Auto Shop, Car Wash) owned -- either path
+        // counts as owned, so neither regresses the other.
+        const mergedFormData: AssessmentFormData = { ...formData };
+        for (const key of Object.keys(derivedFlags) as (keyof AssessmentFormData)[]) {
+          mergedFormData[key] = Boolean(derivedFlags[key]) || Boolean(formData[key]);
+        }
+
+        if (import.meta.env.DEV) {
+          console.table(derivedFlags);
+        }
+
+        const assessmentResults = computeAssessment(mergedFormData);
         setResults(assessmentResults);
 
         const history = getProgressHistory();
         const streakInfo = checkStreak();
         const gamResult = applyAssessmentGamification({
-          formData,
+          formData: mergedFormData,
           results: assessmentResults,
           history,
           streak: streakInfo?.streak ?? 0,

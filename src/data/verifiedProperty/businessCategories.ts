@@ -7,4 +7,5 @@ export const BUSINESS_CATEGORIES: BusinessCategory[] = [
   { id: 'specialized', name: 'Specialized Properties', order: 4 },
   { id: 'clubhouse', name: 'Motorcycle Clubhouse', order: 5 },
   { id: 'vehicle', name: 'Vehicle Assets', order: 6 },
+  { id: 'bailOffice', name: 'Bail Enforcement Offices', order: 7 },
 ];

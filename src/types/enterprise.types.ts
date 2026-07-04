@@ -38,10 +38,16 @@ export interface BusinessCategory {
   order: number;
 }
 
+// Bunker-only operational state (real mechanic: staff can be assigned to
+// stock manufacturing, research, or split across both -- splitting slows
+// both). Optional and meaningless for any other business.id.
+export type BunkerStaffAllocation = 'manufacturing' | 'research' | 'both';
+
 export interface OwnedBusiness {
   businessId: string;
   locationId: string;
   purchasedUpgradeIds: string[];
+  staffAllocation?: BunkerStaffAllocation;
 }
 
 export interface EmpireState {

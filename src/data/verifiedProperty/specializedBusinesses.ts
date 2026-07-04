@@ -34,6 +34,9 @@ export const SPECIALIZED_BUSINESSES: Business[] = [
       { id: 'cargo_darnell', name: 'Darnell Bros', price: 3000000 },
     ],
     upgrades: [],
+    // Large Special Cargo sells spawn one vehicle per ~cargo tier; a big load
+    // is 3-4 vehicles, the canonical "not solo-friendly" full sell.
+    soloFriendlySell: false,
   },
   {
     id: 'salvage_yard',

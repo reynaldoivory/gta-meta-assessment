@@ -15,6 +15,9 @@ export const MONEY_FRONT_BUSINESSES: Business[] = [
     ],
     upgrades: [],
     notes: 'All locations functionally identical. Strawberry was free during Jan 8-14 2026 event.',
+    // The only safe-cap value the app already carries (modelConfig.carWash.maxSafe).
+    // Sourced from existing app data, not an external dataset.
+    safeCollectionCap: 250000,
   },
   {
     id: 'smoke_on_the_water',

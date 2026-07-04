@@ -30,6 +30,20 @@ export interface Business {
     description: string;
   }>;
   notes?: string;
+  /**
+   * True when a single-vehicle sell delivery is achievable solo. Only set on
+   * businesses that produce stock and run a sell mission. Semantics: sell at
+   * low/partial stock keeps it one vehicle; full-stock sells on some
+   * businesses can still spawn multiple vehicles. Left undefined for
+   * businesses with no stock-sell mission (vehicles, clubhouse, safe-only).
+   */
+  soloFriendlySell?: boolean;
+  /**
+   * Safe overflow cap (income stops accruing until collected). Only set where
+   * the app's own data already carries a cap value. Note: most safe businesses
+   * do NOT have a cap value in this app's data -- see the field's usage.
+   */
+  safeCollectionCap?: number;
 }
 
 export interface BusinessCategory {

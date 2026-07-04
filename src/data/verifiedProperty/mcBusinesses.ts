@@ -22,6 +22,9 @@ export const MC_BUSINESSES: Business[] = [
       { id: 'coke_security', name: 'Security Upgrade', cost: 351000 },
     ],
     recommendedLocationId: 'coke_senora',
+    // MC sells are single-vehicle at low/partial stock; full-stock sells can
+    // spawn multiple vehicles. Marked solo-friendly on the sell-low basis.
+    soloFriendlySell: true,
   },
   {
     id: 'meth_lab',
@@ -44,6 +47,7 @@ export const MC_BUSINESSES: Business[] = [
       { id: 'meth_security', name: 'Security Upgrade', cost: 297000 },
     ],
     recommendedLocationId: 'meth_senora',
+    soloFriendlySell: true,
   },
   {
     id: 'cash_factory',
@@ -67,6 +71,7 @@ export const MC_BUSINESSES: Business[] = [
     ],
     recommendedLocationId: 'cash_senora',
     notes: 'Check weekly events for 40% discounts.',
+    soloFriendlySell: true,
   },
   {
     id: 'weed_farm',
@@ -94,6 +99,7 @@ export const MC_BUSINESSES: Business[] = [
         description: '+20% Weed Farm output with Smoke on the Water.',
       },
     ],
+    soloFriendlySell: true,
   },
   {
     id: 'document_forgery',
@@ -108,5 +114,6 @@ export const MC_BUSINESSES: Business[] = [
     upgrades: [],
     avoid: true,
     notes: 'Recommendation: do not purchase early. Low ROI.',
+    soloFriendlySell: true,
   },
 ];

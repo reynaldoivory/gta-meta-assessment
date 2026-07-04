@@ -26,6 +26,8 @@ export const CORE_BUSINESSES: Business[] = [
       { id: 'nightclub_storage', name: 'Storage Floors (4 total)', cost: 1700000 },
     ],
     recommendedLocationId: 'nightclub_west_vinewood',
+    // Nightclub sells are always a single delivery vehicle regardless of stock.
+    soloFriendlySell: true,
   },
   {
     id: 'bunker',
@@ -50,6 +52,9 @@ export const CORE_BUSINESSES: Business[] = [
       { id: 'bunker_security', name: 'Security Upgrade', cost: 420000 },
     ],
     recommendedLocationId: 'bunker_chumash',
+    // Single vehicle when sold at low/partial stock (consistent with the
+    // "sell at ~25%" solo tip already in weeklyEvents.ts); full sells can go multi-vehicle.
+    soloFriendlySell: true,
   },
   {
     id: 'acid_lab',
@@ -65,6 +70,8 @@ export const CORE_BUSINESSES: Business[] = [
       { id: 'acid_equipment', name: 'Equipment Upgrade', cost: 750000, required: true },
     ],
     notes: 'Complete First and Last Dose missions for free acquisition.',
+    // Single Manchez Scout bike delivery -- solo-friendly at any stock.
+    soloFriendlySell: true,
   },
   {
     id: 'agency',

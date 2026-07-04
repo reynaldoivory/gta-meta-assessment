@@ -5,6 +5,17 @@
 export const MODEL_CONFIG = {
   // Scoring system
   scoring: {
+    // Income/asset/stat weight caps read by calculateScore.ts. Previously
+    // calculateScore read `scoring.weights` (which did not exist here) and
+    // silently fell back to these same hardcoded values, so the grade was not
+    // actually config-tunable. Values match the old fallbacks exactly, so
+    // grades are unchanged -- but editing them now takes effect.
+    weights: {
+      activeIncome: 40,
+      passiveIncome: 25,
+      assets: 20,
+      stats: 15
+    },
     rank: {
       high: {
         threshold: 100,

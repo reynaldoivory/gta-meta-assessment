@@ -290,3 +290,32 @@ export const getWeeklyBonuses = (options: any = {}) => {
 
   return regularBonuses;
 };
+
+// ---------------------------------------------------------------------------
+// Staleness guard
+// ---------------------------------------------------------------------------
+// This file is hand-maintained ("update every Thursday"). If it stops being
+// updated, the whole time-sensitive action plan silently serves stale advice
+// with no signal. These helpers surface that. `now` is a parameter so they
+// stay pure and testable; no module-load side effects.
+
+export const WEEKLY_DATA_STALE_AFTER_DAYS = 10;
+
+export const weeklyDataAgeDays = (now) => {
+  const last = new Date(WEEKLY_EVENTS.meta?.lastUpdated ?? 0).getTime();
+  return Math.floor((now.getTime() - last) / (1000 * 60 * 60 * 24));
+};
+
+export const isWeeklyDataStale = (now, thresholdDays = WEEKLY_DATA_STALE_AFTER_DAYS) =>
+  weeklyDataAgeDays(now) > thresholdDays;
+
+// Logs a console warning if the weekly data is stale. Wire into app startup
+// (one call) to surface it; kept out of module load so imports stay pure.
+export const warnIfWeeklyDataStale = (now = new Date()) => {
+  if (!isWeeklyDataStale(now)) return false;
+  console.warn(
+    `[weeklyEvents] meta.lastUpdated (${WEEKLY_EVENTS.meta?.lastUpdated}) is more than ` +
+      `${WEEKLY_DATA_STALE_AFTER_DAYS} days old -- weekly bonuses may be stale.`
+  );
+  return true;
+};

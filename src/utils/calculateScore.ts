@@ -2,7 +2,7 @@
 // Score calculation logic extracted from computeAssessment.js
 
 import { MODEL_CONFIG as _MODEL_CONFIG } from './modelConfig.js';
-const MODEL_CONFIG: any = _MODEL_CONFIG;
+const MODEL_CONFIG = _MODEL_CONFIG;
 
 /**
  * Calculate assessment score and tier based on player data
@@ -47,13 +47,16 @@ export const calculateScore = (params) => { // NOSONAR
     hasOppressor,
   } = params;
 
-  const scoring = MODEL_CONFIG.scoring || {};
-  const weights = scoring.weights || {};
+  // Config guarantees scoring.weights (see modelConfig.js). No `|| {}` / `?? N`
+  // fallbacks: with MODEL_CONFIG no longer cast to `any`, TypeScript now enforces
+  // this block exists -- deleting it from config would be a compile error, not a
+  // silent fall-through to defaults (the bug this whole change fixes).
+  const weights = MODEL_CONFIG.scoring.weights;
 
-  const wActive = weights.activeIncome ?? 40;
-  const wPassive = weights.passiveIncome ?? 25;
-  const wAssets = weights.assets ?? 20;
-  const wStats = weights.stats ?? 15;
+  const wActive = weights.activeIncome;
+  const wPassive = weights.passiveIncome;
+  const wAssets = weights.assets;
+  const wStats = weights.stats;
 
   let score = 0;
 

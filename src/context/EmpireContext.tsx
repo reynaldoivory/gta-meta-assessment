@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
 import type { ReactNode } from 'react';
-import type { EmpireState, OwnedBusiness } from '../types/enterprise.types';
+import type { BunkerStaffAllocation, EmpireState, OwnedBusiness } from '../types/enterprise.types';
 import { STORAGE_KEYS, getJSON, setJSON } from '../utils/storage/appStorage';
 
 const STORAGE_KEY = STORAGE_KEYS.EMPIRE_STATE;
@@ -10,6 +10,7 @@ type EmpireContextValue = {
   setBusinessOwned: (businessId: string, owned: boolean, locationId?: string) => void;
   updateBusinessLocation: (businessId: string, locationId: string) => void;
   toggleBusinessUpgrade: (businessId: string, upgradeId: string) => void;
+  setBunkerStaffAllocation: (businessId: string, allocation: BunkerStaffAllocation) => void;
   clearOwnedBusinesses: () => void;
 };
 
@@ -108,6 +109,19 @@ export const EmpireProvider = ({ children }: { children: ReactNode }) => {
     }));
   };
 
+  // Bunker-only in practice (see BunkerStaffAllocation's doc comment) -- not
+  // enforced here, same as updateBusinessLocation/toggleBusinessUpgrade not
+  // validating which businesses have locations/upgrades. Callers (future UI)
+  // are expected to only render this control for a bunker.
+  const setBunkerStaffAllocation = (businessId: string, allocation: BunkerStaffAllocation) => {
+    setState((prev) => ({
+      ...prev,
+      ownedBusinesses: prev.ownedBusinesses.map((item) =>
+        item.businessId === businessId ? { ...item, staffAllocation: allocation } : item
+      ),
+    }));
+  };
+
   const clearOwnedBusinesses = () => {
     setState((prev) => ({ ...prev, ownedBusinesses: [] }));
   };
@@ -118,6 +132,7 @@ export const EmpireProvider = ({ children }: { children: ReactNode }) => {
       setBusinessOwned,
       updateBusinessLocation,
       toggleBusinessUpgrade,
+      setBunkerStaffAllocation,
       clearOwnedBusinesses,
     }),
     [state]

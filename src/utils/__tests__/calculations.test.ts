@@ -56,15 +56,16 @@ describe('calculations/roi', () => {
 });
 
 describe('calculations/incomeComparison', () => {
-  test('CAYO_RATE constant', () => {
-    expect(Number(CAYO_RATE)).toBe(466000);
+  test('CAYO_RATE is the canonical cooldown-honest solo rate from config', () => {
+    // Single source: modelConfig income.cayo.solo.effectiveHourlyRate (433k).
+    expect(Number(CAYO_RATE)).toBe(433000);
   });
-  test('auto shop rate is a positive number with a valid multiplier', () => {
+  test('auto shop rate = canonical config $/hr x weekly multiplier', () => {
     const { rate, isActive, multiplier } = computeAutoShopRate();
     expect(Number(rate)).toBeGreaterThan(0);
     expect(typeof isActive).toBe('boolean');
     expect(multiplier).toBeGreaterThanOrEqual(1);
-    // base 300000 * (60/25) contracts/hr * multiplier
-    expect(Number(rate)).toBe(300000 * (60 / 25) * multiplier);
+    // canonical $1.0M/hr base x multiplier
+    expect(Number(rate)).toBe(1_000_000 * multiplier);
   });
 });

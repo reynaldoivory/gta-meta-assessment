@@ -1,11 +1,15 @@
 // src/utils/calculations/incomeComparison.ts
 // Pure income-comparison math extracted from IncomeComparison.jsx.
-// computeAutoShopRate is moved verbatim; CAYO_RATE was the inline cayoRate.
+// All rates now trace to modelConfig.js (no local constants).
 import { WEEKLY_EVENTS } from '../../config/weeklyEvents';
+import { MODEL_CONFIG } from '../modelConfig.js';
 import type { Income } from '../../types/branded';
 import { asIncome } from '../../types/branded';
 
-export const CAYO_RATE: Income = asIncome(466000);
+// Canonical solo Cayo $/hr (cooldown-honest). Single source: modelConfig.
+export const CAYO_RATE: Income = asIncome(
+  MODEL_CONFIG.income?.cayo?.solo?.effectiveHourlyRate ?? 433000
+);
 
 export interface AutoShopRate {
   rate: Income;
@@ -14,13 +18,13 @@ export interface AutoShopRate {
 }
 
 export const computeAutoShopRate = (): AutoShopRate => {
-  const baseContractPayout = 300000;
-  const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
+  // Canonical Auto Shop $/hr from config (was a local 300000 * 60/25 formula).
+  const baseRate = MODEL_CONFIG.income?.autoShop?.perHour ?? 1000000;
   const autoShopBonus = WEEKLY_EVENTS.bonuses?.autoShop;
   const isActive = autoShopBonus?.isActive === true;
   const multiplier = isActive ? (autoShopBonus.multiplier || 2) : 1;
   return {
-    rate: asIncome(baseContractPayout * contractsPerHour * multiplier),
+    rate: asIncome(baseRate * multiplier),
     isActive,
     multiplier,
   };

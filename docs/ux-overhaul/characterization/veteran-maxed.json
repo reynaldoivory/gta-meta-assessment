@@ -3,8 +3,8 @@
     "score": 100,
     "tier": "S",
     "tierColor": "text-yellow-400",
-    "incomePerHour": 1783500,
-    "activeIncome": 1570000,
+    "incomePerHour": 1856500,
+    "activeIncome": 1643000,
     "passiveIncome": 213500,
     "gtaPlusBonus": 25000,
     "gtaPlusActive": true,
@@ -251,7 +251,7 @@
     "netWorthPerHour": 23048,
     "dynamicIncome": {
       "bestSource": "Auto Shop",
-      "bestIncome": 720000,
+      "bestIncome": 1000000,
       "isEventBoosted": false,
       "activeEvents": [],
       "daysUntilExpiry": 8

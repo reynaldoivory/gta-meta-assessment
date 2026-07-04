@@ -29,40 +29,12 @@ export const MODEL_CONFIG = {
     stats: {
       minBars: 3,
       perStat: 5
-    },
-    assets: {
-      kosatka: 15,
-      kosatkaEfficiency: {
-        elite: {
-          maxTime: 50,
-          minRuns: 20,
-          points: 20
-        },
-        good: {
-          maxTime: 65,
-          minRuns: 10,
-          points: 10
-        },
-        average: {
-          maxTime: 80,
-          points: 5
-        }
-      },
-      agency: 10,
-      agencyDreContract: 5,
-      acidLab: 5,
-      nightclub: {
-        max: {
-          points: 15
-        },
-        partial: {
-          points: 8
-        },
-        minimal: {
-          points: 3
-        }
-      }
     }
+    // NOTE: scoring.assets removed 2026-07-04. It was dead config -- a richer
+    // kosatka-efficiency asset model that nothing read. calculateScore.ts uses
+    // its own flat asset points (kosatka +5, agency +3, ...), which are now the
+    // single source. If the richer model is ever wanted, build it with
+    // calibration, not magic numbers.
   },
 
   // Tier thresholds
@@ -219,7 +191,12 @@ export const MODEL_CONFIG = {
       }
     },
     autoShop: {
-      perHour: 400000             // Auto Shop income per hour (matches calculateIncome.ts hardcoded value)
+      // Canonical Auto Shop $/hr (single source; read by calculateIncome.ts,
+      // incomeComparison.ts, actionPlanBuilder.ts). $1.0M/hr = realistic
+      // practiced back-to-back Union Depository finales (~$540-600k / 20-25min,
+      // no cooldown). Locked 2026-07-04; replaces the old 400000 (too
+      // conservative) and the inflated $1.3M-$1.5M action-plan strings.
+      perHour: 1000000
     },
     // Car Wash passive income (Bottom Dollar Bounties DLC)
     carWash: {

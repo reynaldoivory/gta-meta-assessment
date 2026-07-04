@@ -8,7 +8,7 @@ import { MODEL_CONFIG } from './modelConfig.js';
  */
 export const calculateCayoIncome = (avgTime, completions) => {
   const config = MODEL_CONFIG.income?.cayo || {};
-  const basePayout = config.basePayout ?? 700000;
+  const basePayout = config.basePayout ?? 1200000; // fallback matches config.income.cayo.basePayout
   const masteryBonus = config.masteryBonus ?? 1.1;
   const masteryThreshold = config.masteryThreshold ?? 10;
   

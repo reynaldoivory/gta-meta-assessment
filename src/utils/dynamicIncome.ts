@@ -5,6 +5,10 @@ import { WEEKLY_EVENTS, getWeeklyBonuses, formatExpiry } from '../config/weeklyE
 import { MODEL_CONFIG } from './modelConfig';
 import type { AssessmentFormData } from '../types/domain.types';
 
+// Canonical income rates -- single source is modelConfig.js.
+const AUTO_SHOP_PER_HOUR = MODEL_CONFIG.income?.autoShop?.perHour ?? 1_000_000;
+const CAYO_SOLO_BASE_PAYOUT = MODEL_CONFIG.income?.cayo?.solo?.basePayout ?? 1_300_000;
+
 /**
  * Extract numeric multiplier from string (e.g., "2X" -> 2, "1.5X" -> 1.5)
  */
@@ -70,10 +74,9 @@ const calculateAutoShopIncome = (formData: AssessmentFormData, events: any[], is
   }
 
   if (formData.hasAutoShop) {
-    // Base Auto Shop income: ~$300k per contract, ~25 minutes per contract
-    const baseContractPayout = 300000;
-    const contractsPerHour = 60 / 25; // ~2.4 contracts/hour
-    income = (baseContractPayout * contractsPerHour * multiplier);
+    // Canonical Auto Shop $/hr (AUTO_SHOP_PER_HOUR, from config) scaled by any
+    // active event multiplier. Was a hardcoded 300000 * (60/25) = $720k base.
+    income = AUTO_SHOP_PER_HOUR * multiplier;
   }
 
   return { income, multiplier, event };
@@ -104,7 +107,10 @@ const calculateCayoIncome = (formData: AssessmentFormData, events: any[], isEven
     }
 
     const config: any = (MODEL_CONFIG as any).income?.cayo || {};
-    const basePayout = config.basePayout ?? 700000;
+    // Solo per-run payout from config ($1.3M, CAYO_SOLO_BASE_PAYOUT). With bag
+    // fill 0.8 and the 144-min cooldown below, derives the canonical ~$433k/hr
+    // solo (higher on Cayo event weeks via `multiplier`). Was a `?? 700000`.
+    const basePayout = CAYO_SOLO_BASE_PAYOUT;
     // Solo cooldown is 144 minutes (2h 24m) in invite-only sessions.
     // Average run (prep + finale) is ~75 min for a safe-pace player.
     // Effective cycle = max(75, 144) = 144 min between payouts.

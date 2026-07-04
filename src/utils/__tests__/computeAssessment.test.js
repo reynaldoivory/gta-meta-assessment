@@ -209,9 +209,9 @@ describe('computeAssessment', () => {
         playMode: 'solo'
       });
       const result = computeAssessment(profile);
-      // Kosatka owner gets Cayo income: ~$560k/hr (700k * 60/75)
-      // Plus Car Wash passive (~$5k/hr from base form)
-      expect(result.incomePerHour).toBeGreaterThan(500000);
+      // Kosatka owner gets canonical cooldown-honest Cayo income: ~$433k/hr
+      // (config income.cayo.solo.effectiveHourlyRate) plus Car Wash passive (~$5k/hr).
+      expect(result.incomePerHour).toBeGreaterThan(400000);
       expect(result.incomePerHour).toBeLessThan(1000000);
     });
   });

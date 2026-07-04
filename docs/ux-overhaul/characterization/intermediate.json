@@ -1,10 +1,10 @@
 {
   "result": {
-    "score": 69,
-    "tier": "B",
-    "tierColor": "text-blue-400",
-    "incomePerHour": 1011000,
-    "activeIncome": 960000,
+    "score": 48,
+    "tier": "C",
+    "tierColor": "text-purple-400",
+    "incomePerHour": 484000,
+    "activeIncome": 433000,
     "passiveIncome": 51000,
     "gtaPlusBonus": 0,
     "gtaPlusActive": false,
@@ -186,16 +186,6 @@
         "timeHours": 1
       },
       {
-        "id": "no_agency",
-        "label": "No Agency for Dre/Payphone",
-        "critical": false,
-        "impact": "medium",
-        "solution": "Purchase Agency ($2M+) and complete setup missions",
-        "actionType": "purchase",
-        "detail": "Agency unlocks Dr. Dre ($1M) and Payphone Hits (~250k/hr filler).",
-        "timeHours": 3
-      },
-      {
         "id": "nightclub_equipment",
         "label": "🎭 Nightclub Equipment Upgrade Missing",
         "critical": false,
@@ -246,16 +236,6 @@
         "timeHours": 0.5
       },
       {
-        "id": "consider_gta_plus",
-        "label": "Consider GTA+ for extra bonuses",
-        "critical": false,
-        "impact": "medium",
-        "solution": "Subscribe to GTA+ via Rockstar Games Launcher or console store",
-        "actionType": "subscription",
-        "detail": "At your income level, the $500k monthly bonus + event boosts pay for the sub in <1 hour.",
-        "timeHours": 0
-      },
-      {
         "id": "stamina_low",
         "label": "Maximize Stamina",
         "solution": "Run, bike, or swim regularly to build stamina",
@@ -285,7 +265,7 @@
     "netWorthPerHour": 33060,
     "dynamicIncome": {
       "bestSource": "Cayo Perico",
-      "bestIncome": 400000,
+      "bestIncome": 433333,
       "isEventBoosted": false,
       "activeEvents": [],
       "daysUntilExpiry": 8

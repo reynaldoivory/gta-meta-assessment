@@ -4,6 +4,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any, complexity, max-lines */
 
 import { WEEKLY_EVENTS as _rawWEEKLY_EVENTS, getDaysRemaining, getExpiryLabel } from '../config/weeklyEvents.js';
+import { MODEL_CONFIG as _MODEL_CONFIG } from './modelConfig.js';
 import { validateStat } from './assessmentHelpers.js';
 import { isExpiringSoon, isExpiringCritical } from './eventHelpers.js';
 import { getNightclubTechnicianCost, generateInfrastructureRecommendations } from './infrastructureAdvisor.js';
@@ -12,6 +13,21 @@ import { checkGatekeeper } from './gatekeeperEngine.js';
 
 // Use direct imports, remove redundant type assertions (TypeScript will infer types)
 const WEEKLY_EVENTS = _rawWEEKLY_EVENTS;
+const MODEL_CONFIG: any = _MODEL_CONFIG;
+
+// Canonical income rates -- single source is modelConfig.js. No dollar figures
+// in the action-plan strings below are hardcoded; they derive from these.
+const AUTO_SHOP_PER_HOUR = MODEL_CONFIG.income?.autoShop?.perHour ?? 1_000_000;
+const CAYO_SOLO_PER_HOUR = MODEL_CONFIG.income?.cayo?.solo?.effectiveHourlyRate ?? 433_000;
+const AUTO_SHOP_RATE_LABEL = `~$${(AUTO_SHOP_PER_HOUR / 1_000_000).toFixed(1)}M/hr`;
+// "Ahead of solo Cayo" only when the auto-shop rate actually clears it.
+const CAYO_COMPARE_LABEL =
+  AUTO_SHOP_PER_HOUR > CAYO_SOLO_PER_HOUR
+    ? ` Ahead of solo Cayo (~$${Math.round(CAYO_SOLO_PER_HOUR / 1000)}k/hr).`
+    : '';
+// Rough labeled projection for "potential over the event": modest ~2h/day grind.
+const projectAutoShopEarnings = (days: number): string =>
+  `$${((days * 2 * AUTO_SHOP_PER_HOUR) / 1_000_000).toFixed(1)}M over ${days} day${days === 1 ? '' : 's'} (~2h/day)`;
 
 // ======================================================================
 // Types & Interfaces
@@ -430,12 +446,12 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
       urgency: 'URGENT',
       type: 'PURCHASE',
       title: `âš¡ BUY AUTO SHOP NOW (Ends ${WEEKLY_EVENTS.meta?.displayDate ?? 'this week'})`,
-      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks $1.3Mâ€‘$1.5M/hr income (2X Bonus - GTA+ Exclusive). Union Depository Contract pays ~$675k in 25 mins. Beats Cayo Perico.`,
+      why: `You have $${(cash / 1_000_000).toFixed(1)}M. Buying this unlocks ${AUTO_SHOP_RATE_LABEL} active income, no cooldown.${CAYO_COMPARE_LABEL} Union Depository ~$540-600k per 20-25 min finale.`,
       cost: shopCost,
-      earnings: '$1.3Mâ€‘$1.5M/hr',
+      earnings: AUTO_SHOP_RATE_LABEL,
       timeRemaining: `${daysLeft} days`,
       timeToComplete: '15 minutes (purchase + setup)',
-      potentialEarnings: `$4â€‘5M in ${daysLeft} days`,
+      potentialEarnings: projectAutoShopEarnings(daysLeft),
       expiresAt: expiry ? new Date(expiry).getTime() : null,
     });
     return actions;
@@ -460,16 +476,16 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
         urgency: 'URGENT',
         type: 'MISSION',
         title: 'ðŸ”¥ Grind Auto Shop Robbery Contracts (2X Event)',
-        why: `Zero prep, ~$540â€‘600k per 20â€‘25 min finale (realistic at Rank ${playerRank}). Expect ~$1.0â€‘1.5M/hr once practiced. One of the best active income sources in 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
+        why: `Zero prep, ~$540â€‘600k per 20â€‘25 min finale (realistic at Rank ${playerRank}). ${AUTO_SHOP_RATE_LABEL} once practiced, no cooldown. Strong active income in the 2026 meta. ${getExpiryLabel(autoShopBonus?.gtaPlusValidUntil ?? WEEKLY_EVENTS.meta?.validUntil ?? '')}.`,
         solution:
           'Rotation: Union Depository finale â†’ Client vehicle delivery (also 2X) while staff preps â†’ Repeat. Eliminates downtime.',
         timeToComplete: '20â€‘25 min per finale, ~$540â€‘600k payout',
-        earnings: '$1.0â€‘1.5M/hr (realistic)',
+        earnings: `${AUTO_SHOP_RATE_LABEL} (realistic)`,
         timeRemaining: expiryText,
-        potentialEarnings: `$${(daysLeftAutoShop * 10 * 1.8).toFixed(1)}M potential over next ${daysLeftAutoShop} days`,
-        strategy: 'Eliminates downtime between contracts. Highest $/hr in game right now.',
+        potentialEarnings: projectAutoShopEarnings(daysLeftAutoShop),
+        strategy: `No cooldown, repeatable back-to-back.${CAYO_COMPARE_LABEL}`,
         expiresAt: autoShopExpiry,
-        savingsPerHour: 1_800_000,
+        savingsPerHour: AUTO_SHOP_PER_HOUR,
       });
 
       if (strengthPct < 60) {
@@ -510,13 +526,13 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
           urgency: 'URGENT',
           type: 'GRIND',
           title: `âš¡ FARM UNION DEPOSITORY CONTRACT (${daysLeftAutoShop} days left)`,
-          why: 'This is the highest paying activity in the game right now. Union Depository Contract pays ~$540â€‘600k (with 2X bonus) in ~20â€‘25 mins. No cooldown â€“ repeat endlessly. Beats Cayo Perico this week.',
-          earnings: '$1.3Mâ€‘$1.5M/hr',
+          why: `Union Depository ~$540â€‘600k (with 2X bonus) in ~20â€‘25 mins. No cooldown â€“ repeat endlessly.${CAYO_COMPARE_LABEL}`,
+          earnings: AUTO_SHOP_RATE_LABEL,
           timeRemaining: `${daysLeftAutoShop} days`,
           timeToComplete: '25 mins per contract (repeatable)',
           method:
             'Select "Union Depository Contract" from Auto Shop board. If not available, do a short contract to refresh the board.',
-          potentialEarnings: `$4â€‘5M by event end`,
+          potentialEarnings: projectAutoShopEarnings(daysLeftAutoShop),
           expiresAt: autoShopExpiry,
         });
       }
@@ -526,7 +542,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
 
   if (!formData.hasAutoShop && cash < shopCost && daysLeft > 0) {
     const needed = shopCost - cash;
-    const bestGrindIncome = 466_000;
+    const bestGrindIncome = CAYO_SOLO_PER_HOUR; // canonical Cayo $/hr from config
     const hoursNeeded = needed / bestGrindIncome;
     const autoShopExpiry = (WEEKLY_EVENTS.bonuses?.autoShop as any)?.gtaPlusValidUntil
       ? new Date((WEEKLY_EVENTS.bonuses.autoShop as any).gtaPlusValidUntil).getTime()
@@ -540,7 +556,7 @@ const buildAutoShopActions = (formData: FormData, now: number): Action[] => { //
       why: `Auto Shop 2X event ends in ${daysLeft} days. You need $${(needed / 1000).toFixed(0)}k more (${hoursNeeded.toFixed(1)} hours of grinding). Buy it before the event ends!`,
       cost: needed,
       timeToComplete: `${hoursNeeded.toFixed(1)} hours`,
-      potentialEarnings: `$4â€‘5M after purchase`,
+      potentialEarnings: `${projectAutoShopEarnings(daysLeft)} after purchase`,
       expiresAt: autoShopExpiry,
     });
   }

@@ -5,6 +5,10 @@ import { MODEL_CONFIG as _MODEL_CONFIG } from './modelConfig.js';
 const MODEL_CONFIG: any = _MODEL_CONFIG;
 import { calculateDynamicIncome } from './dynamicIncome.js';
 
+// Canonical income rates -- single source is modelConfig.js.
+const CAYO_SOLO_PER_HOUR = MODEL_CONFIG.income?.cayo?.solo?.effectiveHourlyRate ?? 433000;
+const AUTO_SHOP_PER_HOUR = MODEL_CONFIG.income?.autoShop?.perHour ?? 1000000;
+
 // ============================================
 // 2026 Meta Rates (Dollars per Hour)
 // Source: GTA Online After Hours Business Rates
@@ -107,12 +111,11 @@ export const calculateIncome = (params, formData) => { // NOSONAR
 
   // --- 2.1 Cayo Perico (Kosatka) – one of many active income sources ---
   if (hasKosatka) {
-    const config = MODEL_CONFIG.income?.cayo || {};
-    const basePayout = config.basePayout ?? 700000;       // avg post-nerf payout
-    // Assume ~75 min avg run (prep + heist) for a typical player
-    const avgRunTime = 75; // minutes
-    const runsPerHour = 60 / avgRunTime;
-    activeIncome += basePayout * runsPerHour;             // ~$560k/hr
+    // Canonical cooldown-honest solo Cayo $/hr (~$433k/hr = $1.3M * 0.8 bag fill
+    // * 60/144 cooldown). The old inline basePayout * (60/75) ignored the 144-min
+    // cooldown and inflated this to ~$960k/hr. dynamicIncome.ts recomputes a
+    // higher rate on Cayo event weeks.
+    activeIncome += CAYO_SOLO_PER_HOUR;
   }
 
   // --- 2.2 Agency / Payphone Hits ---
@@ -179,8 +182,8 @@ export const calculateIncome = (params, formData) => { // NOSONAR
 
   // --- 2.9 Auto Shop Contracts ---
   if (hasAutoShop) {
-    // Union Depository ~$300k for ~30 min = ~$600k/hr. Average contracts ~$400k/hr.
-    activeIncome += 400000;
+    // Canonical Auto Shop $/hr from config (single source). Was hardcoded 400000.
+    activeIncome += AUTO_SHOP_PER_HOUR;
   }
 
   // --- 2.10 GTA+ Passive Equivalent ---

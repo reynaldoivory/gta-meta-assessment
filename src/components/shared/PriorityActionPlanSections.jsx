@@ -18,9 +18,9 @@ EmptyResultsState.propTypes = {
 
 const NextGoalCard = ({ nextGoal }) => (
   <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-lg p-4">
-    <h3 className="text-xl font-bold text-hud-blue mb-2">
+    <h2 className="text-xl font-bold text-hud-blue mb-2">
       🎯 Next Goal: {nextGoal.name}
-    </h3>
+    </h2>
     {nextGoal.canAffordNow ? (
       <p className="text-hud-blue text-lg">✅ You can buy this NOW!</p>
     ) : (
@@ -88,7 +88,7 @@ const SessionConsultantCard = ({ sessionPlan, sessionMinutes, setSessionMinutes 
   <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
     <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
       <div>
-        <h3 className="text-xl font-bold text-text-primary">Session Consultant</h3>
+        <h2 className="text-xl font-bold text-text-primary">Session Consultant</h2>
         <p className="text-sm text-text-muted">
           Compound Efficiency: start passive clocks first, then bridge with best executable money, then invest in unlocks.
         </p>

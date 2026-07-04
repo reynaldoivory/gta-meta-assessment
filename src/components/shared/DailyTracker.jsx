@@ -145,9 +145,9 @@ const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
     // results view.
     <div className="contain-paint contain-layout bg-bg-surface border border-hud-blue/30 rounded-xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-xl font-bold text-hud-blue flex items-center gap-2">
+        <h2 className="text-xl font-bold text-hud-blue flex items-center gap-2">
           <span className="text-2xl">💰</span> Daily Cash Loop
-        </h3>
+        </h2>
         <div className="text-xs text-text-muted">
           Resets in {hours}h {minutes}m
         </div>

@@ -44,7 +44,7 @@ const TrapFixSteps = ({ requiredSteps }) => {
 
   return (
     <div className="space-y-2">
-      <h5 className="text-sm font-bold text-text-secondary">Step-by-Step Fix:</h5>
+      <h4 className="text-sm font-bold text-text-secondary">Step-by-Step Fix:</h4>
       <ol className="space-y-2">
         {requiredSteps.map((stepItem) => {
           const { step, reason } = getStepDetails(stepItem);
@@ -81,9 +81,9 @@ const RecoveryTimelinePanel = ({ recoveryCalculation }) => {
 
   return (
     <div className="mt-3 bg-hud-blue/10 border border-hud-blue/30 rounded-lg p-3">
-      <h5 className="text-sm font-bold text-hud-blue mb-2 flex items-center gap-1">
+      <h4 className="text-sm font-bold text-hud-blue mb-2 flex items-center gap-1">
         <Clock className="w-4 h-4" /> Recovery Timeline
-      </h5>
+      </h4>
       <div className="grid grid-cols-2 gap-3 text-sm">
         <div>
           <span className="text-text-muted">Current Income:</span>
@@ -119,7 +119,7 @@ const EfficiencyMetricsPanel = ({ efficiencyData }) => {
 
   return (
     <div className="mt-3 bg-hud-blue/10 border border-hud-blue/30 rounded-lg p-3">
-      <h5 className="text-sm font-bold text-hud-blue mb-2">Performance Metrics</h5>
+      <h4 className="text-sm font-bold text-hud-blue mb-2">Performance Metrics</h4>
       <div className="grid grid-cols-3 gap-3 text-center">
         <div className="bg-bg-base/30 p-2 rounded">
           <div className="text-xs text-text-muted">Historical Avg</div>
@@ -149,7 +149,7 @@ const RecoveryTipsPanel = ({ recoveryTips }) => {
 
   return (
     <div className="mt-3 bg-hud-blue/10 border border-hud-blue/30 rounded-lg p-3">
-      <h5 className="text-sm font-bold text-hud-blue mb-2">Recovery Tips</h5>
+      <h4 className="text-sm font-bold text-hud-blue mb-2">Recovery Tips</h4>
       <ul className="text-sm text-text-secondary space-y-1">
         {recoveryTips.map((tip) => (
           <li key={tip} className="flex items-start gap-2">
@@ -186,16 +186,16 @@ TrapFixTime.propTypes = {
 const TrapExpandedDetails = ({ trap }) => (
   <div className="px-4 pb-4 pt-0 border-t border-border-subtle">
     <div className="bg-bg-base/30 rounded-lg p-3 mb-3">
-      <h5 className="text-sm font-bold text-text-secondary mb-1 flex items-center gap-1">
+      <h4 className="text-sm font-bold text-text-secondary mb-1 flex items-center gap-1">
         <Info className="w-4 h-4" /> Why This Matters
-      </h5>
+      </h4>
       <p className="text-sm text-text-muted">{trap.reasoning}</p>
     </div>
 
     <div className="bg-hud-blue/10 border border-hud-blue/30 rounded-lg p-3 mb-3">
-      <h5 className="text-sm font-bold text-hud-blue mb-1 flex items-center gap-1">
+      <h4 className="text-sm font-bold text-hud-blue mb-1 flex items-center gap-1">
         <Zap className="w-4 h-4" /> Solution
-      </h5>
+      </h4>
       <p className="text-sm text-hud-blue">{trap.solution}</p>
     </div>
 
@@ -245,9 +245,9 @@ export const TrapCard = ({ trap, isExpanded, onToggle }) => {
             )}
           </div>
 
-          <h4 className="font-bold text-text-primary text-lg leading-tight">
+          <h3 className="font-bold text-text-primary text-lg leading-tight">
             {trap.title}
-          </h4>
+          </h3>
 
           <p className={`text-sm ${config.text} mt-1`}>
             {trap.problem}

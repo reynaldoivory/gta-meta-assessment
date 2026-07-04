@@ -78,7 +78,7 @@ const BottlenecksList = ({ bottlenecks }) => (
   <div className="bg-bg-surface border border-hud-pink/30 rounded-2xl p-6">
     <div className="flex items-center gap-3 mb-4">
       <AlertCircle className="text-hud-pink w-6 h-6" />
-      <h3 className="text-xl font-bold text-text-primary">Bottlenecks</h3>
+      <h2 className="text-xl font-bold text-text-primary">Bottlenecks</h2>
     </div>
     <div className="space-y-3">
       {bottlenecks.map((b) => (
@@ -123,9 +123,9 @@ OptionalBottlenecks.propTypes = {
 
 const NextGoalCard = ({ nextGoal, incomePerHour }) => (
   <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-lg p-4">
-    <h3 className="text-xl font-bold text-hud-blue mb-2">
+    <h2 className="text-xl font-bold text-hud-blue mb-2">
       🎯 Next Major Goal: {nextGoal.name}
-    </h3>
+    </h2>
     {nextGoal.canAffordNow ? (
       <p className="text-hud-blue text-lg">✅ You can afford this now! Go buy it.</p>
     ) : (

@@ -48,10 +48,10 @@ export const AIAssistantTools = ({
 
   return (
     <div className="bg-bg-surface border border-border rounded-2xl p-6">
-      <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+      <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
         <BookOpen className="w-5 h-5 text-hud-blue" />
         AI Assistant Tools
-      </h3>
+      </h2>
       <p className="text-sm text-text-muted mb-4">
         Paste these prompts into your AI assistant to cross-check against current weekly bonuses and GTA+ meta.
       </p>

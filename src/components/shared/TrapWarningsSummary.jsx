@@ -7,10 +7,10 @@ export const FixedTrapsCelebration = ({ fixes }) => {
 
   return (
     <div className="bg-hud-blue/10 border border-hud-blue/40 rounded-xl p-4 mb-4">
-      <h4 className="font-bold text-hud-blue flex items-center gap-2 mb-3">
+      <h3 className="font-bold text-hud-blue flex items-center gap-2 mb-3">
         <CheckCircle className="w-5 h-5" />
         Recently Fixed Traps! 🎉
-      </h4>
+      </h3>
       <div className="space-y-2">
         {fixes.map((fix, idx) => (
           <div key={`${fix.trapId || fix.trapTitle}-${idx}`} className="flex items-center justify-between bg-bg-base/30 rounded-lg p-2 text-sm">
@@ -40,10 +40,10 @@ export const TrapSummary = ({ traps }) => {
   return (
     <div className="flex items-center justify-between flex-wrap gap-4 mb-4">
       <div>
-        <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+        <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
           <AlertTriangle className="w-6 h-6 text-hud-pink" />
           {traps.length} Trap{traps.length === 1 ? '' : 's'} Detected
-        </h3>
+        </h2>
         {criticalCount > 0 && (
           <p className="text-sm text-accent-pink-text mt-1">
             ⚠️ {criticalCount} critical issue{criticalCount === 1 ? '' : 's'} requiring immediate attention
@@ -77,7 +77,7 @@ export const NoActiveTrapsState = ({ recentFixes }) => (
     <FixedTrapsCelebration fixes={recentFixes} />
     <div className="text-center py-4">
       <CheckCircle className="w-12 h-12 text-hud-blue mx-auto mb-2" />
-      <h3 className="text-xl font-bold text-hud-blue">No Active Traps!</h3>
+      <h2 className="text-xl font-bold text-hud-blue">No Active Traps!</h2>
       <p className="text-text-muted text-sm">Your setup is optimized. Keep grinding! 💰</p>
     </div>
   </div>

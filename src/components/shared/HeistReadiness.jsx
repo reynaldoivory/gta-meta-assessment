@@ -23,10 +23,10 @@ export const HeistReadiness = ({ heistReady, heistReadyPercent }) => {
   return (
     <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="font-display text-xl font-bold text-text-primary flex items-center gap-2">
+        <h2 className="font-display text-xl font-bold text-text-primary flex items-center gap-2">
           <Target className="w-6 h-6 text-hud-blue" />
           Heist Leadership Readiness
-        </h3>
+        </h2>
         <div className={`text-4xl font-bold ${getHeistReadyColor(heistReadyPercent)}`}>
           {heistReadyPercent.toFixed(0)}%
         </div>

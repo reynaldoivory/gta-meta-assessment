@@ -59,13 +59,13 @@ const CommunityTrapStats = ({ formData, currentTraps }) => {
 
   return (
     <div className="my-6 p-6 rounded-xl border border-hud-blue/30 bg-gradient-to-br from-hud-blue/10 to-bg-surface shadow-float animate-pop-in">
-      <h4 className="text-hud-blue text-base font-semibold mb-4 flex items-center gap-2">
+      <h2 className="text-hud-blue text-base font-semibold mb-4 flex items-center gap-2">
         <Users className="w-4 h-4" />
         Community Trap Statistics
         {occurrenceRates.isEstimated && (
           <span className="text-xs text-text-muted ml-2">(Estimated)</span>
         )}
-      </h4>
+      </h2>
 
       {/* Player Comparison Banner */}
       {avoidanceStats && (

@@ -68,10 +68,17 @@ resolving both `landmark-one-main` and ~44 `region` violations at once (which in
 real duplicate-`<main>` conflict in `AssessmentForm.jsx`, fixed by demoting the inner one to a
 `<div>`); a keyboard-inoperable sortable table header (mouse-only `onClick` div -> real `<button>`).
 
-Remaining (moderate, outside the 0-serious/critical exit bar, deferred): `heading-order` on
-results/actionPlan (1 each) -- `GTA6Countdown`'s `<h3>` doesn't nest cleanly under the page `<h1>`
-in every child component. Would need a broader heading-level audit across the `gamification/`
-component suite; noted in repo `CLAUDE.md` Known Technical Debt.
+**Update 2026-07-04**: the one remaining moderate finding at the time of this report --
+`heading-order` on results/actionPlan (1 each), caused by `GTA6Countdown`'s `<h3>` not nesting
+cleanly under the page `<h1>` -- has been fixed. A full heading audit across every component
+reachable from `AssessmentResults.jsx`/`PriorityActionPlan.jsx` found the same pattern repeated in
+~15 other components (card-level section titles using `h3`/`h4` where they should be `h2`, since
+they're flat sibling sections under the page's single `h1`, not nested under any intermediate
+heading). All of them were corrected to a consistent `h1 -> h2` (top-level cards) `-> h3` (one
+level of true nesting, e.g. `ROICalculator`'s "Time to Goal", trap cards) `-> h4` (a further level,
+inside an expanded trap's sub-panels). `docs/ux-overhaul/A11Y.md` now reports 0 violations of any
+severity, not just 0 serious/critical. See repo `CLAUDE.md` Known Technical Debt for the fix
+details.
 
 ### Lighthouse (`docs/ux-overhaul/LIGHTHOUSE.md`, user-flow snapshot API -- the SPA has no URL
 routing, so Lighthouse's normal per-URL runner can't reach results/actionPlan/garage)
@@ -126,8 +133,8 @@ raised surfaces). The script fails only on undocumented regressions.
 - **`<main>` landmark**: not explicitly scoped in the Phase 4 checklist, added opportunistically
   because it resolved ~44 axe `region` violations at once. Surfaced and fixed a real duplicate-
   `<main>` conflict in `AssessmentForm.jsx` as a side effect.
-- **`heading-order`**: deferred as a moderate-severity, out-of-gate finding (see Accessibility
-  above and repo `CLAUDE.md` Known Technical Debt).
+- **`heading-order`**: originally deferred as a moderate-severity, out-of-gate finding; fixed
+  2026-07-04 (see the Accessibility section update above).
 - **URL routing**: explicitly out of scope per the plan (the `setStep`-during-render fix was
   scoped to a `useEffect` + `EmptyState`, not a router migration). This is also why Lighthouse
   needed the user-flow snapshot API instead of a normal per-URL run.

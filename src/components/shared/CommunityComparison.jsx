@@ -42,7 +42,7 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
       <div className="contain-paint contain-layout bg-bg-surface/60 border border-border rounded-2xl p-6">
         <div className="flex items-center gap-2 mb-2">
           <DollarSign className="w-6 h-6 text-hud-blue" />
-          <h3 className="text-xl font-bold text-text-primary">Community Comparison</h3>
+          <h2 className="text-xl font-bold text-text-primary">Community Comparison</h2>
         </div>
         <p className="text-sm text-text-muted">
           Run at least two assessments to see how your empire stacks up against the community average. All stats stay in your browser -- nothing leaves your machine.
@@ -81,10 +81,10 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
       <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
         <div className="flex items-center justify-between mb-4">
           <div>
-            <h3 className="text-xl font-bold text-text-primary flex items-center gap-2">
+            <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
               <DollarSign className="w-6 h-6 text-hud-blue" />
               Community Comparison
-            </h3>
+            </h2>
             <p className="text-text-muted text-sm">
               Based on {communityAvg.sampleSize} assessments (last 30 days)
             </p>
@@ -144,10 +144,10 @@ export const CommunityComparison = ({ formData, results, progressHistory, showTo
 
       {progressData && progressData.timestamps.length > 1 && (
         <div className="bg-bg-surface/60 border border-border rounded-2xl p-6">
-          <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+          <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
             <TrendingUp className="w-6 h-6 text-hud-blue" />
             Progress Over Time
-          </h3>
+          </h2>
           <Suspense fallback={<div className="text-sm text-text-muted">Loading charts...</div>}>
             <ProgressChart history={progressHistory} />
           </Suspense>

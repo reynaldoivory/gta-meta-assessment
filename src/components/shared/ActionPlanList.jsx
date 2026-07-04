@@ -191,9 +191,9 @@ const ActionCard = ({ action }) => {
         )}
       </div>
 
-      <h4 className={`text-lg font-bold mb-2 ${getTitleColor(isUrgent, isBlocker)}`}>
+      <h3 className={`text-lg font-bold mb-2 ${getTitleColor(isUrgent, isBlocker)}`}>
         {action.title}
-      </h4>
+      </h3>
 
       <p className="text-text-secondary text-sm mb-3">{action.why}</p>
       <ActionStats action={action} />
@@ -232,7 +232,7 @@ export const ActionPlanList = ({ actionPlan }) => {
     <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
       <div className="flex items-center gap-3 mb-4">
         <Target className="text-hud-blue w-6 h-6" />
-        <h3 className="text-xl font-bold text-text-primary">Action Plan</h3>
+        <h2 className="text-xl font-bold text-text-primary">Action Plan</h2>
         <span className="text-xs text-text-muted bg-bg-raised px-2 py-1 rounded">
           {actionPlan.length} steps
         </span>

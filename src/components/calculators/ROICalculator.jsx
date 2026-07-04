@@ -111,7 +111,7 @@ const TimeToGoalPanel = ({ timeData, incomePerHour }) => {
     <div className="bg-hud-blue/10 border border-hud-blue/30 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-3">
         <TrendingUp className="w-5 h-5 text-hud-blue" />
-        <h4 className="font-bold text-text-primary">Time to Goal</h4>
+        <h3 className="font-bold text-text-primary">Time to Goal</h3>
       </div>
 
       {timeData.hours === Infinity
@@ -163,7 +163,7 @@ const ROICalculator = ({ formData, results }) => {
     <div className="bg-bg-surface border border-border rounded-2xl p-6">
       <div className="flex items-center gap-2 mb-4">
         <Target className="w-6 h-6 text-hud-blue" />
-        <h3 className="text-xl font-bold text-text-primary">ROI Calculator</h3>
+        <h2 className="text-xl font-bold text-text-primary">ROI Calculator</h2>
         <span className="text-xs text-text-muted">What are you saving for?</span>
       </div>
 

@@ -76,7 +76,7 @@ const AcidLabTracker = ({ hasAcidLab, acidLabUpgraded }) => {
     // cascading into the rest of the results view.
     <div className={`contain-paint contain-layout bg-bg-surface rounded-lg p-4 border ${borderClasses}`}>
       <div className="flex items-center justify-between mb-3">
-        <h3 className="text-lg font-bold text-hud-blue">🧪 Acid Lab Tracker</h3>
+        <h2 className="text-lg font-bold text-hud-blue">🧪 Acid Lab Tracker</h2>
         {isReady && (
           <span className="px-2 py-1 bg-hud-pink text-text-on-accent text-xs font-bold rounded animate-pulse">
             SELL NOW

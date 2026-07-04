@@ -41,7 +41,7 @@ export const EfficiencyBenchmarks = ({ efficiencyMetrics }) => {
     <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6">
       <div className="flex items-center gap-3 mb-6">
         <TrendingUp className="text-hud-blue w-6 h-6" />
-        <h3 className="text-xl font-bold text-text-primary">Efficiency vs Feb 2026 Benchmarks</h3>
+        <h2 className="text-xl font-bold text-text-primary">Efficiency vs Feb 2026 Benchmarks</h2>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

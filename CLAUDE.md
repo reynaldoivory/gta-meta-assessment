@@ -150,7 +150,8 @@ Also covered (added during the 2026-07-03 UX overhaul + structural refactor): `c
 - **`actionPlanBuilder.ts`** is 1200 lines with complexity 53. Candidate for splitting into scoring, annotation, and compound-efficiency modules.
 - **`src/utils/` subdirectory split partially done** (2026-07-03): `storage/`, `calculations/`, and `trackers/` now exist (see Architecture above). Still flat/uncategorized: bottleneck detectors, action-planning modules. `actionPlanBuilder.ts` splitting (above) would be the next candidate for its own subdirectory.
 - **Chunk size** warning on build (main chunk ~531 kB as of 2026-07-03, ceiling 591 kB via `scripts/bundleReport.mjs`). Could benefit from dynamic imports for ProgressChart and calculators.
-- **`heading-order` (moderate axe violation)** on results/actionPlan views: `GTA6Countdown`'s `<h3>` doesn't nest cleanly under the page `<h1>` in every child component. Not part of the 0-serious/critical a11y gate; deferred pending a broader heading-level audit across the `gamification/` component suite. See `docs/ux-overhaul/A11Y.md`.
+
+**Resolved 2026-07-04**: the `heading-order` moderate axe violation on results/actionPlan (flagged 2026-07-03, listed as deferred above at the time) has been fixed. Every card-level section title across `AssessmentResults.jsx`/`PriorityActionPlan.jsx` and their children is now `h2` (the page title from `AppShell` is the sole `h1`); one level of true nesting (e.g. `ROICalculator`'s "Time to Goal", trap cards within the trap-warnings section) steps down exactly one level at a time. `docs/ux-overhaul/A11Y.md` now reports 0 violations of any severity (was 1 moderate each on results/actionPlan). No regressions: gates stayed green (139/139 tests, 76 warnings, tsc clean) and the fix is tag-only -- every heading kept its existing Tailwind typography classes, so nothing shifted visually.
 
 ## Conventions
 

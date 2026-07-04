@@ -10,9 +10,9 @@ export const IncomeComparison = ({ hasAutoShop }) => {
 
   return (
     <div className="bg-bg-surface border border-hud-blue/30 rounded-2xl p-6 mb-6">
-      <h3 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
+      <h2 className="text-xl font-bold text-text-primary mb-4 flex items-center gap-2">
         <TrendingUp className="w-5 h-5 text-hud-blue" /> Income Options This Week
-      </h3>
+      </h2>
       <div className="space-y-3">
         <div className={`p-4 rounded-lg border-2 flex justify-between items-center ${
           hasAutoShop ? 'bg-hud-blue/10 border-hud-blue/50' : 'bg-bg-raised border-border'

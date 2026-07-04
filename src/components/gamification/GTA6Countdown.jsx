@@ -69,7 +69,7 @@ const GTA6Countdown = () => {
           <div className="flex items-center gap-3">
             <Calendar className="w-8 h-8 text-hud-blue" />
             <div>
-              <h3 className="text-2xl font-bold text-text-primary">GTA VI Countdown</h3>
+              <h2 className="text-2xl font-bold text-text-primary">GTA VI Countdown</h2>
               <p className="text-text-muted text-sm">Official Release: November 19, 2026</p>
               <p className="text-text-muted text-xs mt-1">PS5 & Xbox Series X|S</p>
             </div>

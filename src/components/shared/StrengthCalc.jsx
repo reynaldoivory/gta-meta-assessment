@@ -9,9 +9,9 @@ export const StrengthCalc = ({ currentPct, hasMansion }) => {
 
   return (
     <div className="bg-hud-pink/10 border border-hud-pink/50 rounded-xl p-5 mb-6">
-      <h4 className="text-xl font-bold text-accent-pink-text mb-3 flex items-center gap-2">
+      <h2 className="text-xl font-bold text-accent-pink-text mb-3 flex items-center gap-2">
         <span className="text-2xl">🏋️</span> Strength Training Math
-      </h4>
+      </h2>
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
         {[

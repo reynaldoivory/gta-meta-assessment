@@ -16,7 +16,7 @@ npm run dev          # Vite dev server (localhost:5173)
 npm run build        # Production build to dist/
 npm run preview      # Preview production build locally
 npm test             # Jest unit tests
-npm run lint         # ESLint (0 errors, ~76 warnings expected)
+npm run lint         # ESLint (0 errors, ~73 warnings expected)
 npm run type-check   # tsc --noEmit
 npm run deploy       # Build + gh-pages push to GitHub Pages
 
@@ -29,7 +29,7 @@ node scripts/generateModStack.mjs [--class Super] [--hsw] [--ids 001,025] ...
 | Layer | Technology |
 |-------|-----------|
 | Framework | React 19 (JSX + TSX mixed) |
-| Build | Vite 7, TypeScript (strict: false, allowJs: true) |
+| Build | Vite 7, TypeScript (strict: true, allowJs: true) |
 | Styling | Tailwind CSS 3 |
 | Charts | Chart.js 4 + react-chartjs-2 |
 | Icons | lucide-react |
@@ -148,8 +148,8 @@ Also covered (added during the 2026-07-03 UX overhaul + structural refactor): `c
 
 ## Known Technical Debt
 
-- **~56 `any` annotations**. Largest cluster: `actionPlanBuilder.ts` (1200 LOC, file-wide eslint disable). Needs proper interface extraction.
-- **`tsconfig.json` strict: false**. Enable after clearing `any` backlog.
+- **~50 `any` annotations** (was 56; the `AssessmentContext` results/gamification values are now precisely typed). Largest remaining cluster: `actionPlanBuilder.ts` (1200 LOC, file-wide eslint disable). Needs proper interface extraction.
+- **`tsconfig.json` strict: true** (enabled 2026-07-18). Reached by annotating implicit-any params + adding null-safety guards across the assessment engine, all gated by the characterization goldens (byte-identical) + 194 unit tests. `checkJs` stays off, so JS modules are still only surfaced via their JSDoc/inferred types. Keep new code strict-clean; the remaining `any`s are isolated and do not block the flag.
 - **Mixed file extensions**: 45 `.jsx` + 19 `.tsx` (the `.tsx` count grew with the 2026-07-03 `src/components/ui/` design-system primitives and the extracted `calculations/`/`trackers/` modules, all written in TypeScript per that session's new-code convention). Gradual migration of remaining `.jsx` continues.
 - **`actionPlanBuilder.ts`** is 1200 lines with complexity 53. Candidate for splitting into scoring, annotation, and compound-efficiency modules.
 - **`src/utils/` subdirectory split partially done** (2026-07-03): `storage/`, `calculations/`, and `trackers/` now exist (see Architecture above). Still flat/uncategorized: bottleneck detectors, action-planning modules. `actionPlanBuilder.ts` splitting (above) would be the next candidate for its own subdirectory.

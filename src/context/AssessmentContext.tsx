@@ -31,11 +31,11 @@ export interface AssessmentContextValue {
   lastSaved: Date | null;
   clearSavedData: () => void;
   runAssessment: () => void;
-  results: any;
+  results: ReturnType<typeof computeAssessment> | null;
   step: string;
   setStep: (s: string) => void;
-  gamification: any;
-  gamificationSummary: any;
+  gamification: ReturnType<typeof applyAssessmentGamification>['state'] | null;
+  gamificationSummary: ReturnType<typeof applyAssessmentGamification>['summary'] | null;
   whatIfText: string;
   setWhatIfText: (s: string) => void;
   isCalculating: boolean;
@@ -122,9 +122,9 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
   const [isCalculating, setIsCalculating] = useState(false);
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const [step, setStep] = useState<string>('form');
-  const [results, setResults] = useState<any>(null);
-  const [gamification, setGamification] = useState<any>(null);
-  const [gamificationSummary, setGamificationSummary] = useState<any>(null);
+  const [results, setResults] = useState<ReturnType<typeof computeAssessment> | null>(null);
+  const [gamification, setGamification] = useState<ReturnType<typeof applyAssessmentGamification>['state'] | null>(null);
+  const [gamificationSummary, setGamificationSummary] = useState<ReturnType<typeof applyAssessmentGamification>['summary'] | null>(null);
   const [whatIfText, setWhatIfText] = useState<string>('');
   
   // 2. Calculated Logic (Traps)

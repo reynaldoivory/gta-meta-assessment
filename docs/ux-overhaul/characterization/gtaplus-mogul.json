@@ -11,16 +11,16 @@
     "bottlenecks": [
       {
         "id": "claim_free_car",
-        "label": "🎁 Claim Free Ocelot Stromberg",
+        "label": "🎁 Claim Free Grotti Veleno GT (Attack livery)",
         "critical": false,
         "urgent": false,
         "impact": "low",
         "solution": "Visit The Vinewood Car Club",
         "actionType": "vehicle_claim",
-        "detail": "Free $3.2M vehicle for GTA+ members. Claim even if you won't drive it - free garage asset.",
+        "detail": "Free $1.6M vehicle for GTA+ members. Claim even if you won't drive it - free garage asset.",
         "timeHours": 0.1,
         "savingsPerHour": 0,
-        "savingsValue": 3185350
+        "savingsValue": 1600000
       },
       {
         "id": "weekly_event_stuntRaceSeries",
@@ -305,7 +305,7 @@
       "bestIncome": 1000000,
       "isEventBoosted": false,
       "activeEvents": [],
-      "daysUntilExpiry": 8
+      "daysUntilExpiry": 18
     },
     "nextGoal": null,
     "efficiencyMetrics": {

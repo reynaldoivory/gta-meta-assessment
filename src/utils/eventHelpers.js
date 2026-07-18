@@ -47,6 +47,9 @@ const collectWeeklyBonuses = (bonuses, date) => {
   for (const [key, bonus] of Object.entries(bonuses)) {
     if (!bonus.isActive) continue;
 
+    // Additive weekly model: entries may be future-dated (added before their
+    // week starts) — respect a per-entry validFrom when present.
+    if (bonus.validFrom && date < new Date(bonus.validFrom)) continue;
     const endDate = new Date(bonus.validUntil);
     if (date > endDate) continue;
 
@@ -85,6 +88,7 @@ const collectWeeklyBonuses = (bonuses, date) => {
 const collectWeeklyDiscounts = (discounts, date) => {
   const results = [];
   for (const [key, discount] of Object.entries(discounts)) {
+    if (discount.validFrom && date < new Date(discount.validFrom)) continue;
     const endDate = new Date(discount.validUntil);
     if (date > endDate) continue;
 
@@ -118,6 +122,7 @@ const collectGTAPlusBonuses = (playerData, date) => {
   }
   const results = [];
   for (const monthly of WEEKLY_EVENTS.gtaPlus.monthlyBonuses) {
+    if (monthly.validFrom && date < new Date(monthly.validFrom)) continue;
     const endDate = new Date(monthly.expires);
     if (date > endDate) continue;
 
@@ -153,17 +158,12 @@ const collectGTAPlusBonuses = (playerData, date) => {
 export const getActiveEvents = (playerData, currentDate = new Date()) => {
   const date = new Date(currentDate);
 
-  // Read date boundaries from config
-  const weekStart = new Date(WEEKLY_EVENTS.meta.validFrom);
-  const weekEnd = new Date(WEEKLY_EVENTS.meta.validUntil);
-  const isWithinWeek = date >= weekStart && date <= weekEnd;
-
-  const weeklyBonuses = isWithinWeek
-    ? collectWeeklyBonuses(WEEKLY_EVENTS.bonuses || {}, date)
-    : [];
-  const weeklyDiscounts = isWithinWeek
-    ? collectWeeklyDiscounts(WEEKLY_EVENTS.discounts || {}, date)
-    : [];
+  // Per-entry dates are authoritative (every bonus/discount carries
+  // validUntil, optionally validFrom) — the old meta-window hard gate made
+  // the additive Thursday update model impossible: bumping meta.validFrom
+  // instantly hid every still-valid entry from earlier weeks.
+  const weeklyBonuses = collectWeeklyBonuses(WEEKLY_EVENTS.bonuses || {}, date);
+  const weeklyDiscounts = collectWeeklyDiscounts(WEEKLY_EVENTS.discounts || {}, date);
   const gtaPlusBonuses = collectGTAPlusBonuses(playerData, date);
 
   return [...weeklyBonuses, ...weeklyDiscounts, ...gtaPlusBonuses];

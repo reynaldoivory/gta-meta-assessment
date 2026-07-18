@@ -254,7 +254,7 @@
       "bestIncome": 1000000,
       "isEventBoosted": false,
       "activeEvents": [],
-      "daysUntilExpiry": 8
+      "daysUntilExpiry": 18
     },
     "nextGoal": null,
     "efficiencyMetrics": {

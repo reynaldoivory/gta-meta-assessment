@@ -1,16 +1,16 @@
 // src/config/weeklyEvents.js
 // The "Source of Truth" for weekly events
 // Update this file every Thursday when Rockstar announces new bonuses
-// Last updated: Jul 3, 2026
+// Last updated: Jul 18, 2026 (Jul 16-22 week; sources: gtabase.com + dexerto.com weekly recaps)
 // Source: rockstargames.com/newswire + powerupgaming/rockstarintel/gtabase weekly recaps
 
 export const WEEKLY_EVENTS: any = {
   meta: {
-    lastUpdated: '2026-07-03',
-    validFrom: '2026-07-02T09:00:00Z', // Thursday 5AM EDT
-    validUntil: '2026-07-13T09:00:00Z', // Extended holiday event week (Fine Art Collector Program runs through Jul 13)
-    displayDate: 'Jul 2 - Jul 13',
-    eventTag: 'independence_day_2026',
+    lastUpdated: '2026-07-18',
+    validFrom: '2026-07-16T09:00:00Z', // Thursday 5AM EDT
+    validUntil: '2026-07-23T09:00:00Z',
+    displayDate: 'Jul 16 - Jul 22',
+    eventTag: 'kortz_center_heist_week',
   },
   bonuses: {
     // Independence Day Special — extended 11-day event week
@@ -96,6 +96,45 @@ export const WEEKLY_EVENTS: any = {
       highValue: true,
       soloTip: 'Pairs with 60% off Hangars + upgrades — cheapest week to enter the Smuggler business.',
     },
+
+    // ── Jul 16-22 week (Kortz Center Heist launch) ──────────────────────────
+    communitySeriesJul16: {
+      isActive: true,
+      validFrom: '2026-07-16T09:00:00Z',
+      multiplier: 3,
+      label: '3X Community Series',
+      validUntil: '2026-07-23T09:00:00Z',
+      category: 'race',
+    },
+    sumoRemix: {
+      isActive: true,
+      validFrom: '2026-07-16T09:00:00Z',
+      multiplier: 3,
+      label: '3X Sumo (Remix)',
+      validUntil: '2026-07-23T09:00:00Z',
+      category: 'adversary',
+      requiresMultiplayer: true,
+      soloNote: 'Adversary mode — requires other players.',
+    },
+    hswTimeTrials: {
+      isActive: true,
+      validFrom: '2026-07-16T09:00:00Z',
+      multiplier: 2,
+      label: '2X HSW Time Trials',
+      validUntil: '2026-07-23T09:00:00Z',
+      category: 'freemode',
+      soloFriendly: true,
+      soloTip: 'One attempt pays out on beating par time — quick solo money on new-gen (HSW requires PS5/XSX-gen).',
+    },
+    blackBoxFile: {
+      isActive: true,
+      validFrom: '2026-07-16T09:00:00Z',
+      multiplier: 2,
+      label: '2X The Black Box File',
+      validUntil: '2026-07-23T09:00:00Z',
+      category: 'mission',
+      soloFriendly: true,
+    },
   },
   specialEvents: {
     independenceDay2026: {
@@ -113,6 +152,17 @@ export const WEEKLY_EVENTS: any = {
         'Mansion owners (Jul 13): free Annihilator Stealth, $1M off Art Studio upgrade, High-End Painting in Kortz Center Heist',
       ],
     },
+    kortzCenterHeist: {
+      label: 'The Kortz Center Heist launch week',
+      validUntil: '2026-07-23T09:00:00Z',
+      rewards: [
+        'NEW: The Kortz Center Heist — first new big score since Cayo Perico (requires Mansion + Art Studio)',
+        'Weekly Challenge: complete The Kortz Center Heist once -> GTA$100,000',
+        'Podium Vehicle: Dinka Jester RR',
+        'Prize Ride: Obey Omnis e-GT (top-4 in LS Car Meet Series)',
+        'Salvage Yard robbery vehicles: Pfister Neon (McTony), Gauntlet Hellfire (Duggan), Blista Kanjo (Cargo Ship)',
+      ],
+    },
   },
   oneTimeBonuses: [
     {
@@ -127,6 +177,13 @@ export const WEEKLY_EVENTS: any = {
       reward: 500000,
       description: 'Log in during the event -> GTA$500,000 (within 72hr)',
       expires: '2026-07-13T09:00:00Z',
+      deliveryTime: '72hr',
+    },
+    {
+      id: 'kortz_weekly_challenge_100k',
+      reward: 100000,
+      description: 'Complete The Kortz Center Heist once this week -> GTA$100,000',
+      expires: '2026-07-23T09:00:00Z',
       deliveryTime: '72hr',
     },
   ],
@@ -194,15 +251,29 @@ export const WEEKLY_EVENTS: any = {
       requiresGTAPlus: true,
       validUntil: '2026-07-13T09:00:00Z',
     },
+    vehicles30Jul16: {
+      validFrom: '2026-07-16T09:00:00Z',
+      label: '30% off: Hellion, Greenwood, Brawler, Nightshade, Futo GTX, Stryder, Taxi, FMJ, Neo',
+      percent: 30,
+      requiresGTAPlus: false,
+      validUntil: '2026-07-23T09:00:00Z',
+    },
+    hswConversions: {
+      validFrom: '2026-07-14T09:00:00Z',
+      label: "Hao's Special Works conversions",
+      percent: 50,
+      requiresGTAPlus: true,
+      validUntil: '2026-08-12T09:00:00Z',
+    },
   },
   gtaPlus: {
-    freeCar: 'Ocelot Stromberg',
-    freeCarValue: 3185350,
+    freeCar: 'Grotti Veleno GT (Attack livery)',
+    freeCarValue: 0, // new July 2026 vehicle — list price unverified, do not guess
     freeCarLocation: 'The Vinewood Car Club',
     earlyAccess: '',
     earlyAccessDiscount: 0,
     monthlyCash: 500000,
-    benefitsExpire: '2026-07-13T09:00:00Z',
+    benefitsExpire: '2026-08-12T09:00:00Z', // GTA+ period Jul 14 - Aug 12
     monthlyBonuses: [
       // NOTE: this event week's GTA+ multipliers (5X G's Cache, 2X KnoWay Out, 2X Smuggler Sells)
       // live in `bonuses` above with gtaPlusOnly: true, so they render with the weekly set.
@@ -211,6 +282,27 @@ export const WEEKLY_EVENTS: any = {
         multiplier: 1,
         label: '60% off Hangars + mods (GTA+ Perk, stacks with event pricing)',
         expires: '2026-07-13T09:00:00Z',
+      },
+      {
+        activity: 'mansion_discount',
+        validFrom: '2026-07-14T09:00:00Z',
+        multiplier: 1,
+        label: 'Up to GTA$2,000,000 off Mansion properties (until Aug 5)',
+        expires: '2026-08-05T09:00:00Z',
+      },
+      {
+        activity: 'art_studio_discount',
+        validFrom: '2026-07-14T09:00:00Z',
+        multiplier: 1,
+        label: 'GTA$1,000,000 off the Mansion Art Studio (needed for the Kortz Center Heist)',
+        expires: '2026-08-12T09:00:00Z',
+      },
+      {
+        activity: 'vehicle_discount_20',
+        validFrom: '2026-07-14T09:00:00Z',
+        multiplier: 1,
+        label: '20% off select vehicles (Deluxo, Scramjet, LRC GT, E-Stride, Cartuccia GT, Itali RSX, LM87, Astrale, Revolter)',
+        expires: '2026-08-12T09:00:00Z',
       },
     ],
   },
@@ -266,6 +358,7 @@ export const getWeeklyBonuses = (options: any = {}) => {
   const regularBonuses = Object.entries(WEEKLY_EVENTS.bonuses)
     .filter(([, bonus]: any) => {
       if (!bonus.isActive) return false;
+      if (bonus.validFrom && new Date(bonus.validFrom).getTime() > Date.now()) return false;
       if (bonus.validUntil && new Date(bonus.validUntil).getTime() < Date.now()) return false;
       return true;
     })

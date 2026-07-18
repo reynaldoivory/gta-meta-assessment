@@ -72,6 +72,8 @@ export interface GtaPlusMonthlyBonus {
   activity: string;
   label: string;
   expires: string;
+  /** Perk start (ISO) — future-dated entries are skipped until this passes */
+  validFrom?: string;
   multiplier: number;
   estimatedHourlyRate?: number;
   soloTip?: string;

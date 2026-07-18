@@ -232,6 +232,7 @@ const processGtaPlusMonthlyBonuses = (
   const bonuses = gtaPlusBonuses as GtaPlusMonthlyBonus[];
 
   for (const bonus of bonuses) {
+    if (bonus.validFrom && nowTs < new Date(bonus.validFrom).getTime()) continue;
     const expiryDate = new Date(bonus.expires);
     if (nowTs >= expiryDate.getTime()) continue;
 

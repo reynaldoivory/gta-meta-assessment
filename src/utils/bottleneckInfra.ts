@@ -15,8 +15,23 @@ import {
 // Bunker Infrastructure
 // ============================================
 
+/**
+ * Shape of the passive-income leak analysis returned by
+ * `calculateBunkerLeak` (typed here because infrastructureAdvisor.js is a
+ * JS module whose JSDoc only declares the loose `Object` return type).
+ */
+interface BunkerLeak {
+  hasLeak: boolean;
+  currentIncome: number;
+  potentialIncome: number;
+  lostPerHour: number;
+  roiHours: number;
+  missingEquipment: boolean;
+  missingStaff: boolean;
+}
+
 /** Resolve bunker upgrade solution text and cost. */
-const resolveBunkerUpgrade = (bunkerLeak: Record<string, unknown>): { solution: string; cost: number } => {
+const resolveBunkerUpgrade = (bunkerLeak: BunkerLeak): { solution: string; cost: number } => {
   const equipCost = INFRASTRUCTURE_COSTS.bunker.equipmentUpgrade;
   const staffCost = INFRASTRUCTURE_COSTS.bunker.staffUpgrade;
 
@@ -42,7 +57,7 @@ const detectBunkerInfra = (params: DetectionParams, formData: DetectionFormData)
     staffUpgrade: formData.bunkerStaffUpgrade || bunkerUpgraded,
   };
 
-  const bunkerLeak = calculateBunkerLeak(bunkerState);
+  const bunkerLeak = calculateBunkerLeak(bunkerState) as BunkerLeak;
   if (!bunkerLeak.hasLeak) return [];
 
   const { solution, cost } = resolveBunkerUpgrade(bunkerLeak);

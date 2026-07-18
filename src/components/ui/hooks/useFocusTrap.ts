@@ -29,7 +29,7 @@ interface FocusTrapOptions {
 export function useFocusTrap<T extends HTMLElement = HTMLDivElement>(
   active: boolean,
   { onEscape, initialFocusRef, restoreFocus = true }: FocusTrapOptions = {}
-): React.RefObject<T> {
+): React.RefObject<T | null> {
   const containerRef = useRef<T>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
 

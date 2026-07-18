@@ -147,7 +147,7 @@ export const useAssessmentResults = () => {
       fireConfetti('achievement');
     }
 
-    if (summary.newAchievements?.length > 0) {
+    if ((summary.newAchievements?.length ?? 0) > 0) {
       soundEffects.achievement();
       fireConfetti('achievement');
     }
@@ -156,7 +156,7 @@ export const useAssessmentResults = () => {
   const progressHistory = getProgressHistory();
   const streakInfo = checkStreak();
   const quote = getRandomQuote();
-  const motivation = getMotivationalMessage(typedResults?.score, typedResults?.tier);
+  const motivation = getMotivationalMessage(typedResults?.score ?? 0, typedResults?.tier);
 
   const { strengthPct, needsStrengthTraining } = getStrengthSummary(typedFormData);
   const { totalHours, timePartsLabel, shouldShowTimePlayed } = getTimePlayedSummary(typedFormData);

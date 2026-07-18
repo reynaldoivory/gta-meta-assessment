@@ -193,7 +193,9 @@ const createSafeIncomeRows = (state: EmpireState, effectiveHeat: number) => {
   const frontsCycle = (hasCarWash ? 8500 : 0) + (hasDispensary ? 5000 : 0) + (hasHelitours ? 5000 : 0);
   const activeFrontsCycle = isRedHeat ? 0 : frontsCycle;
 
-  const rows: Array<IncomeRow | null> = [
+  // No explicit `Array<IncomeRow | null>` annotation here: it would override
+  // the type guard below and re-widen `rows` back to nullable.
+  const rows = [
     hasBusiness(state, 'nightclub') ? toIncomeRow('nightclub_safe', '🟢 Nightclub Safe (Max Pop.)', 50000, 48) : null,
     hasBusiness(state, 'agency') ? toIncomeRow('agency_safe', '🟢 Agency Safe', 20000, 48) : null,
     hasCarWash || hasDispensary || hasHelitours

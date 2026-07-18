@@ -188,12 +188,14 @@ export const AssessmentProvider = ({ children }: { children: ReactNode }) => {
         setResults(assessmentResults);
 
         const history = getProgressHistory();
-        const streakInfo = checkStreak();
+        // checkStreak() lives in a JS module whose JSDoc declares only `Object`;
+        // narrow to the field we read here.
+        const streakInfo = checkStreak() as { streak?: number };
         const gamResult = applyAssessmentGamification({
           formData: mergedFormData,
           results: assessmentResults,
           history,
-          streak: streakInfo?.streak ?? 0,
+          streak: streakInfo.streak ?? 0,
         });
         setGamification(gamResult.state);
         setGamificationSummary(gamResult.summary);

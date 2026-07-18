@@ -878,7 +878,7 @@ const getPassiveEmpireSteps = (formData: FormData): string[] => {
 const generateSessionTaxActions = (formData: FormData): Action[] => {
   const actions: Action[] = [];
   const hasPassiveEmpire = formData.hasAcidLab || formData.hasBunker || formData.hasNightclub;
-  const hasAnySafe = formData.hasNightclub || formData.hasAgency || formData.hasCarWash;
+  const hasAnySafe = !!(formData.hasNightclub || formData.hasAgency || formData.hasCarWash);
   const missingDaily = getMissingDailyTasks(formData, hasAnySafe);
 
   if (missingDaily.length > 0) {

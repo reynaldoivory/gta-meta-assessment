@@ -42,14 +42,15 @@ export const submitAnonymousStats = (formData: AssessmentFormData, assessmentRes
     
     // Stat averages
     avgStat: (
-      (formData.strength +
-        formData.flying +
-        formData.shooting +
-        formData.stealth +
-        formData.stamina +
-        formData.driving +
-        (formData.lungCapacity || 0)) /
-      7
+      [
+        formData.strength,
+        formData.flying,
+        formData.shooting,
+        formData.stealth,
+        formData.stamina,
+        formData.driving,
+        formData.lungCapacity,
+      ].reduce((total, stat) => total + (Number(stat) || 0), 0) / 7
     ).toFixed(1),
     
     cayoCompletions: Number(formData.cayoCompletions) || 0,
@@ -89,8 +90,8 @@ export const getCommunityAverages = () => {
     return null;
   }
 
-  const sum = (arr) => arr.reduce((a, b) => a + b, 0);
-  const avg = (arr) => arr.length ? sum(arr) / arr.length : 0;
+  const sum = (arr: number[]) => arr.reduce((a, b) => a + b, 0);
+  const avg = (arr: number[]) => arr.length ? sum(arr) / arr.length : 0;
 
   return {
     sampleSize: recent.length,
@@ -142,7 +143,7 @@ export const compareToCommunity = (formData: AssessmentFormData, assessmentResul
   };
 };
 
-const calculatePercentile = (score, _communityAvg) => {
+const calculatePercentile = (score: number, _communityAvg: unknown) => {
   let pool: any[];
   try {
     pool = JSON.parse(getRaw(COMMUNITY_STATS_KEY) || '[]');
@@ -392,8 +393,8 @@ export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps
   }
   
   const avoided = [];
-  const fellFor = [];
-  
+  const fellFor: Array<{ trapId: string; trap: string; lostPerHour: number; severity: string }> = [];
+
   // Check which common traps player AVOIDED
   // Calculate feeders from nightclubSources (new format) or use legacy number
   const nightclubFeeders = formData.nightclubSources 
@@ -432,7 +433,7 @@ export const getTrapAvoidanceStats = (formData: AssessmentFormData, currentTraps
   }
   
   // Check which traps they FELL FOR
-  currentTraps.forEach(trap => {
+  currentTraps.forEach((trap: { id: string; title: string; severity: string; lostPerHour?: number }) => {
     if (trap.severity === 'CRITICAL' || trap.severity === 'critical') {
       fellFor.push({
         trapId: trap.id,

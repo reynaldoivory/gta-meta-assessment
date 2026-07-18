@@ -5,7 +5,12 @@ import { TASK_REQUIREMENTS } from '../config/gatekeeperSchema.js';
  * @param {object} userProfile - { stats: { flying: 20... }, assets: ['kosatka'] }
  * @returns {object} - { status: 'LOCKED' | 'WARNING' | 'GREEN', reason: string, score_penalty: number }
  */
-export const checkGatekeeper = (taskId, userProfile) => {
+interface GatekeeperProfile {
+  stats: Record<string, number>;
+  assets: string[];
+}
+
+export const checkGatekeeper = (taskId: string, userProfile: GatekeeperProfile) => {
     const rules = TASK_REQUIREMENTS[taskId];
     if (!rules) return { status: 'GREEN', reason: 'Optimal', score_penalty: 1.0 }; // No rules = safe
 
@@ -22,7 +27,7 @@ export const checkGatekeeper = (taskId, userProfile) => {
 
     // 2. CHECK SOFT GATES (Stats & Skills)
     let penaltyMultiplier = 1.0;
-    let warnings = [];
+    const warnings: string[] = [];
 
     rules.soft_gates.forEach(gate => {
         const userStat = userProfile.stats[gate.stat] || 0;

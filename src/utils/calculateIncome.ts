@@ -4,6 +4,8 @@
 import { MODEL_CONFIG as _MODEL_CONFIG } from './modelConfig.js';
 const MODEL_CONFIG: any = _MODEL_CONFIG;
 import { calculateDynamicIncome } from './dynamicIncome.js';
+import type { AssessmentFormData } from '../types/domain.types';
+import type { NormalizedParams } from './computeAssessment';
 
 // Canonical income rates -- single source is modelConfig.js.
 const CAYO_SOLO_PER_HOUR = MODEL_CONFIG.income?.cayo?.solo?.effectiveHourlyRate ?? 433000;
@@ -29,15 +31,15 @@ const NC_RATES = {
  * @param {Object} formData - Player form data
  * @returns {number} Income per hour in GTA$
  */
-export const calculateNightclubIncome = (formData) => {
+export const calculateNightclubIncome = (formData: AssessmentFormData) => {
   // 1. Get Technician Count (max 5)
   const techs = Math.min(5, Number(formData.nightclubTechs) || 0);
-  
+
   // 2. Exact Math (New System) - Uses nightclubSources object
   if (formData.nightclubSources) {
     // Identify which businesses are OWNED (set to true)
     const ownedIds = Object.keys(formData.nightclubSources)
-      .filter(key => formData.nightclubSources[key]);
+      .filter(key => formData.nightclubSources[key]) as (keyof typeof NC_RATES)[];
 
     // Sort owned businesses by value (Highest to Lowest)
     // This simulates "Smart Assignment": techs assigned to best available slots
@@ -85,7 +87,7 @@ export const getNightclubRates = () => NC_RATES;
  * @param {Object} formData - Original form data for dynamic income calculation
  * @returns {Object} Income calculation results
  */
-export const calculateIncome = (params, formData) => { // NOSONAR
+export const calculateIncome = (params: NormalizedParams, formData: AssessmentFormData) => { // NOSONAR
   const {
     securityContracts,
     hasKosatka,

@@ -313,7 +313,7 @@ export const WEEKLY_EVENTS: any = {
  * @param {string} isoDate - ISO date string (e.g., '2026-02-12T10:00:00Z')
  * @returns {string} Formatted short date (e.g., 'Feb 12')
  */
-export const formatExpiry = (isoDate) => {
+export const formatExpiry = (isoDate: string | null | undefined) => {
   if (!isoDate) return 'Unknown';
   const date = new Date(isoDate);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', timeZone: 'UTC' });
@@ -325,7 +325,7 @@ export const formatExpiry = (isoDate) => {
  * @param {number} [now] - Current timestamp (defaults to Date.now())
  * @returns {string} e.g., 'Expires Feb 12 (3 days left)'
  */
-export const getExpiryLabel = (isoDate, now = Date.now()) => {
+export const getExpiryLabel = (isoDate: string | null | undefined, now: number = Date.now()) => {
   if (!isoDate) return '';
   const expiryMs = new Date(isoDate).getTime();
   const hoursLeft = Math.ceil((expiryMs - now) / (1000 * 60 * 60));
@@ -371,7 +371,7 @@ export const getWeeklyBonuses = (options: any = {}) => {
 
   // Add GTA+ monthly bonuses if includeGTAPlus is true
   if (includeGTAPlus && WEEKLY_EVENTS.gtaPlus?.monthlyBonuses) {
-    const gtaPlusBonuses = WEEKLY_EVENTS.gtaPlus.monthlyBonuses.map(bonus => ({
+    const gtaPlusBonuses = WEEKLY_EVENTS.gtaPlus.monthlyBonuses.map((bonus: { label: string; multiplier: number }) => ({
       activity: bonus.label.replace(/^\d+(\.\d+)?X\s*/, ''),
       multiplier: `${bonus.multiplier}X`,
       note: bonus.label,
@@ -394,12 +394,12 @@ export const getWeeklyBonuses = (options: any = {}) => {
 
 export const WEEKLY_DATA_STALE_AFTER_DAYS = 10;
 
-export const weeklyDataAgeDays = (now) => {
+export const weeklyDataAgeDays = (now: Date) => {
   const last = new Date(WEEKLY_EVENTS.meta?.lastUpdated ?? 0).getTime();
   return Math.floor((now.getTime() - last) / (1000 * 60 * 60 * 24));
 };
 
-export const isWeeklyDataStale = (now, thresholdDays = WEEKLY_DATA_STALE_AFTER_DAYS) =>
+export const isWeeklyDataStale = (now: Date, thresholdDays: number = WEEKLY_DATA_STALE_AFTER_DAYS) =>
   weeklyDataAgeDays(now) > thresholdDays;
 
 // Logs a console warning if the weekly data is stale. Wire into app startup

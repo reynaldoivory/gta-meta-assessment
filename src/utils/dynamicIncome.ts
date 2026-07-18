@@ -41,7 +41,7 @@ const calculateAutoShopIncome = (formData: AssessmentFormData, events: any[], is
   if (formData.hasGTAPlus) {
     // Only apply Auto Shop multiplier if a matching monthly bonus exists in config
     const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
-    const autoShopMonthly = monthlyBonuses.find(b => b.activity.includes('auto_shop'));
+    const autoShopMonthly = monthlyBonuses.find((b: { activity: string }) => b.activity.includes('auto_shop'));
 
     if (autoShopMonthly) {
       const monthlyBenefitEnd = new Date(autoShopMonthly.expires).getTime();
@@ -241,7 +241,7 @@ export const calculateDynamicIncome = (formData: AssessmentFormData) => {
   // Calculate days until event expires
   // For GTA+ monthly benefits, use the longest monthly bonus expiry from config
   const monthlyBonuses = WEEKLY_EVENTS.gtaPlus?.monthlyBonuses || [];
-  const latestMonthlyExpiry = monthlyBonuses.reduce((latest, b) => {
+  const latestMonthlyExpiry = monthlyBonuses.reduce((latest: number, b: { expires: string }) => {
     const t = new Date(b.expires).getTime();
     return Math.max(t, latest);
   }, 0);
@@ -281,7 +281,7 @@ export const calculateDynamicIncome = (formData: AssessmentFormData) => {
  * @param {number} liquidCash - Current cash
  * @returns {string} Phase: 'SURVIVAL' | 'GROWTH' | 'OPTIMIZATION'
  */
-export const getPlayerPhase = (liquidCash) => {
+export const getPlayerPhase = (liquidCash: number) => {
   if (liquidCash < 500000) return 'SURVIVAL'; // Need income NOW
   if (liquidCash < 2000000) return 'GROWTH'; // Build assets
   return 'OPTIMIZATION'; // Buy meta
@@ -292,7 +292,7 @@ export const getPlayerPhase = (liquidCash) => {
  * @param {string} activity - Activity name
  * @returns {Object} Required stats
  */
-export const getActivityRequirements = (activity) => {
+export const getActivityRequirements = (activity: string) => {
   const requirements = {
     'Auto Shop Contracts': { strength: 60, flying: 40, shooting: 50 },
     'Agency Contracts': { strength: 60, shooting: 60 },
@@ -317,21 +317,24 @@ export const getActivityRequirements = (activity) => {
  * @param {Object} requirements - Required stats
  * @returns {Object} { meets: boolean, missing: Array<string> }
  */
-export const checkStatRequirements = (formData, requirements) => {
+export const checkStatRequirements = (
+  formData: AssessmentFormData,
+  requirements: Record<string, number> | null,
+) => {
   if (!requirements) return { meets: true, missing: [] };
-  
-  const missing = [];
+
+  const missing: string[] = [];
   const statMap = {
-    strength: formData.strength * 20, // Convert bars to percentage
-    flying: formData.flying * 20,
-    shooting: formData.shooting * 20,
-    driving: formData.driving * 20,
-    stealth: formData.stealth * 20,
-    stamina: formData.stamina * 20,
+    strength: (formData.strength ?? 0) * 20, // Convert bars to percentage
+    flying: (formData.flying ?? 0) * 20,
+    shooting: (formData.shooting ?? 0) * 20,
+    driving: (formData.driving ?? 0) * 20,
+    stealth: (formData.stealth ?? 0) * 20,
+    stamina: (formData.stamina ?? 0) * 20,
   };
-  
+
   for (const [stat, required] of Object.entries(requirements)) {
-    if (statMap[stat] < required) {
+    if (statMap[stat as keyof typeof statMap] < required) {
       missing.push(`${stat.charAt(0).toUpperCase() + stat.slice(1)} ${required}%`);
     }
   }

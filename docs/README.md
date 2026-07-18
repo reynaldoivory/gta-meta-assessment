@@ -1,3 +1,7 @@
+> **Historical document.** Parts of this overview lag the code (the file tree
+> below predates the 2026-07 design-system overhaul). The authoritative,
+> maintained reference is [`AGENTS.md`](../AGENTS.md) at the repo root.
+
 # GTA Online Meta Assessment Tool
 
 A comprehensive assessment and optimization tool for GTA Online players, built with React and modern architecture patterns.
@@ -54,9 +58,9 @@ src/
 │       ├── StatBar.jsx
 │       └── WeeklyBonusBanner.jsx
 ├── config/
-│   └── weeklyEvents.js   # Single source of truth for weekly bonuses
+│   └── weeklyEvents.ts   # Single source of truth for weekly bonuses
 ├── context/
-│   └── AssessmentContext.jsx  # Centralized state management
+│   └── AssessmentContext.tsx  # Centralized state management
 ├── utils/
 │   ├── actionPlanBuilder.js
 │   ├── assessmentHelpers.js
@@ -103,12 +107,12 @@ function MyComponent() {
 
 - **Automatic Persistence**: Form data auto-saves to localStorage
 - **Debounced Saves**: Prevents excessive writes (1 second delay)
-- **Version Management**: Context version (`v5`) for migration support
+- **Version Management**: field-presence-based localStorage migrations (no numbered format version)
 - **Error Handling**: Centralized error state
 
 ## 📅 Weekly Events Configuration
 
-Update weekly bonuses in **one place**: `src/config/weeklyEvents.js`
+Update weekly bonuses in **one place**: `src/config/weeklyEvents.ts`
 
 ```javascript
 export const WEEKLY_EVENTS = {
@@ -185,7 +189,7 @@ npm run lint         # Lint code
 
 ### Updating Weekly Events
 
-Edit `src/config/weeklyEvents.js` every Thursday when Rockstar announces new bonuses:
+Edit `src/config/weeklyEvents.ts` every Thursday when Rockstar announces new bonuses:
 
 ```javascript
 export const WEEKLY_EVENTS = {
@@ -338,7 +342,7 @@ npm run deploy
 
 ## 📊 Project Stats
 
-- **31 files** organized by purpose
+- **~150 source files** organized by purpose
 - **13 achievements** with unlock logic
 - **3 LLM prompt types** for AI optimization
 - **4 distinct views** with seamless routing
@@ -347,7 +351,7 @@ npm run deploy
 
 ## 🎯 Built With
 
-- **React 18** (Context API for state)
+- **React 19** (Context API for state)
 - **Vite** (dev server + build tool)
 - **Tailwind CSS** (styling)
 - **Chart.js** (progress charts)
@@ -361,7 +365,7 @@ npm run deploy
 
 ## 📚 Verified GTA Online Resources (Data Sources & Reliability Policy)
 
-This app's income models, cooldowns, and meta recommendations are cross-checked against the following tiered sources. Weekly event data in `weeklyEvents.js` is updated manually each Thursday after Rockstar's newswire post.
+This app's income models, cooldowns, and meta recommendations are cross-checked against the following tiered sources. Weekly event data in `weeklyEvents.ts` is updated manually each Thursday after Rockstar's newswire post.
 
 ### Tier 1 — Official (Ground Truth)
 

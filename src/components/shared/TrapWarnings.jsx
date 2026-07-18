@@ -34,13 +34,17 @@ const getEmptyTrapContent = (traps, recentFixes) => {
 const TrapWarnings = ({ traps, showCelebration = true, defaultExpanded = false }) => {
   const [expandedId, setExpandedId] = useState(getInitialExpandedId(defaultExpanded, traps));
 
-  React.useEffect(() => {
+  // Auto-expand the first critical trap when the traps prop changes, using
+  // React's adjust-state-during-render pattern (the previous effect version
+  // tripped react-hooks/set-state-in-effect).
+  const [prevTraps, setPrevTraps] = useState(traps);
+  if (prevTraps !== traps) {
+    setPrevTraps(traps);
     const criticalTrap = traps.find(trapIsCritical);
     if (criticalTrap && !expandedId) {
       setExpandedId(criticalTrap.id);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run when traps change, not when expandedId changes
-  }, [traps]);
+  }
 
   const recentFixes = showCelebration ? getRecentlyFixedTraps() : [];
 

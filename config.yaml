@@ -2,5 +2,6 @@ models:
   - name: DeepSeek R1 14B (Remote PC)
     provider: ollama
     model: deepseek-r1:14b
-    apiBase: http://192.168.50.176
-      # Replace with your PC's IP
+    apiBase: http://YOUR_PC_IP:11434
+      # Replace with the LAN IP of the machine running ollama.
+      # Never commit a real private IP here — this repo is public.

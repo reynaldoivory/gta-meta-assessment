@@ -37,7 +37,7 @@ jobs:
       - name: Use Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
           cache: npm
       - name: Install dependencies
         run: npm ci
@@ -45,6 +45,11 @@ jobs:
         run: npm test -- --coverage
       - name: SonarQube Scan
         uses: SonarSource/sonarqube-scan-action@v7
+        # Non-blocking since 2026-07-18: the stored SONAR_TOKEN returns HTTP
+        # 403 (expired/revoked — red on every push since 2026-07-03). Rotate
+        # the token at sonarcloud.io → repo secret SONAR_TOKEN, then remove
+        # continue-on-error so the quality gate blocks again.
+        continue-on-error: true
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: https://sonarcloud.io

@@ -39,16 +39,18 @@ const CORE_DAILIES = [
 
 // Get next reset time (6:00 AM UTC)
 
-const loadSavedTasks = () => {
+// Pure read of the saved tracker state — no writes, safe for useState
+// initializers. The 'reset' persistence side-effect happens in the mount
+// effect (react-hooks/set-state-in-effect forbids sync setState there, so
+// state is hydrated lazily instead).
+const readSavedTasks = () => {
   const parsed = getJSON(STORAGE_KEYS.DAILY_TRACKER, null);
   if (!parsed || typeof parsed !== 'object') {
     return { tasks: CORE_DAILIES, resetTime: Date.now(), syncMode: 'init' };
   }
   if (shouldResetTasks(parsed.lastResetTime)) {
     const resetTasks = CORE_DAILIES.map(task => ({ ...task, isCompleted: false }));
-    const resetTime = Date.now();
-    setJSON(STORAGE_KEYS.DAILY_TRACKER, { tasks: resetTasks, lastResetTime: resetTime });
-    return { tasks: resetTasks, resetTime, syncMode: 'reset' };
+    return { tasks: resetTasks, resetTime: Date.now(), syncMode: 'reset' };
   }
   const loadedTasks = Array.isArray(parsed.tasks)
     ? parsed.tasks.filter(t => t && typeof t === 'object' && typeof t.id === 'string')
@@ -59,43 +61,56 @@ const loadSavedTasks = () => {
     syncMode: 'load',
   };
 };
+
+const calcResetTimer = () => {
+  const diff = getNextResetTime() - Date.now();
+  return {
+    hours: Math.floor(diff / (1000 * 60 * 60)),
+    minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
+  };
+};
+
 const DailyTracker = ({ hasNightclub, hasAgency, formData, setFormData }) => {
-  const [tasks, setTasks] = useState(CORE_DAILIES);
-  const [lastResetTime, setLastResetTime] = useState(() => Date.now());
+  // Hydrate from localStorage in the initializers (one lazy read shared via
+  // the first useState) instead of a mount effect with sync setState.
+  const [initialLoad] = useState(readSavedTasks);
+  const [tasks, setTasks] = useState(initialLoad.tasks);
+  const [lastResetTime] = useState(initialLoad.resetTime);
 
-  // Load tasks from localStorage on mount and sync with formData
-  // Run on mount only: load tasks from localStorage and sync initial state into formData.
-  // formData must NOT be in deps -- adding it would cause an infinite loop because
-  // this effect calls setFormData, which produces a new formData reference, re-triggering the effect.
+  // Mount-only: persist a daily reset (write moved out of readSavedTasks so
+  // the initializer stays pure) and sync initial completion into formData.
+  // formData must NOT be in deps -- adding it would cause an infinite loop
+  // because setFormData produces a new formData reference.
   useEffect(() => {
-    const { tasks: loadedTasks, resetTime, syncMode } = loadSavedTasks();
-    setTasks(loadedTasks);
-    setLastResetTime(resetTime);
-
-    if (syncMode === 'reset' && setFormData) {
-      setFormData(prev => ({ ...prev, dailyStashHouse: false, dailyGsCache: false, dailySafeCollect: false }));
-    } else if (syncMode === 'load' && setFormData) {
+    if (initialLoad.syncMode === 'reset') {
+      setJSON(STORAGE_KEYS.DAILY_TRACKER, {
+        tasks: initialLoad.tasks,
+        lastResetTime: initialLoad.resetTime,
+      });
+      if (setFormData) {
+        setFormData(prev => ({ ...prev, dailyStashHouse: false, dailyGsCache: false, dailySafeCollect: false }));
+      }
+    } else if (initialLoad.syncMode === 'load' && setFormData) {
       setFormData(prev => ({
         ...prev,
-        dailyStashHouse: loadedTasks[0]?.isCompleted || false,
-        dailyGsCache: loadedTasks[1]?.isCompleted || false,
-        dailySafeCollect: loadedTasks[2]?.isCompleted || false,
+        dailyStashHouse: initialLoad.tasks[0]?.isCompleted || false,
+        dailyGsCache: initialLoad.tasks[1]?.isCompleted || false,
+        dailySafeCollect: initialLoad.tasks[2]?.isCompleted || false,
       }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps -- intentional mount-only effect; setFormData is stable
   }, []);
 
-  // Calculate time until next reset
-  const nowRef = useRef(Date.now());
-  useEffect(() => { nowRef.current = Date.now(); }, [lastResetTime]);
-  const resetTimer = useMemo(() => {
-    const nextReset = getNextResetTime();
-    const diff = nextReset - nowRef.current;
-    return {
-      hours: Math.floor(diff / (1000 * 60 * 60)),
-      minutes: Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60)),
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- lastResetTime triggers recalculation intentionally
+  // Countdown to next reset — recomputed on lastResetTime change and every
+  // minute thereafter (the old nowRef version froze between prop changes and
+  // read Date.now()/refs during render, which the hooks lint forbids).
+  const [resetTimer, setResetTimer] = useState({ hours: 0, minutes: 0 });
+  useEffect(() => {
+    let cancelled = false;
+    const tick = () => { if (!cancelled) setResetTimer(calcResetTimer()); };
+    const kickoff = setTimeout(tick, 0);
+    const interval = setInterval(tick, 60 * 1000);
+    return () => { cancelled = true; clearTimeout(kickoff); clearInterval(interval); };
   }, [lastResetTime]);
 
   // Filter tasks based on owned properties
